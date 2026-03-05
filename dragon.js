@@ -213,6 +213,13 @@ class RaceManager {
                 this.renderUI();
                 showToast(`CÉL: #${bib} ${result.racer.name} - ${this.formatTime(result.racer.totalTime)}`, 'success');
                 console.log("StopRacer success:", result);
+
+                // Focus vissza a beviteli mezőre a gyors rögzítéshez
+                const bibInputEl = document.getElementById('bib-input');
+                if (bibInputEl) {
+                    bibInputEl.value = '';
+                    bibInputEl.focus();
+                }
             } else {
                 showToast(result.error, 'error');
                 console.warn("StopRacer error:", result.error);
@@ -411,10 +418,30 @@ class RaceManager {
 
     renderUI() {
         this.renderRacersList();
+        this.renderAdminStats();
         if (typeof window.renderAdminTable === 'function') {
             window.renderAdminTable();
         }
         this.renderAdminControlButtons();
+    }
+
+    renderAdminStats() {
+        const statsEl = document.getElementById('admin-global-stats');
+        if (!statsEl) return;
+
+        const total = this.data.racers.length;
+        const running = this.data.racers.filter(r => r.status === 'running').length;
+        const finished = this.data.racers.filter(r => r.status === 'finished').length;
+        const registered = this.data.racers.filter(r => r.status === 'registered').length;
+
+        statsEl.innerHTML = `
+            <div style="display: flex; gap: 20px;">
+                <div class="stat-item"><span style="color: #888; font-size: 0.8rem;">ÖSSZES:</span> <strong style="color: white;">${total}</strong></div>
+                <div class="stat-item"><span style="color: var(--accent-primary); font-size: 0.8rem;">FUTÓ:</span> <strong>${running}</strong></div>
+                <div class="stat-item"><span style="color: #00ff88; font-size: 0.8rem;">CÉLBA ÉRT:</span> <strong>${finished}</strong></div>
+                <div class="stat-item"><span style="color: var(--text-secondary); font-size: 0.8rem;">VÁRAKOZIK:</span> <strong>${registered}</strong></div>
+            </div>
+        `;
     }
 
     renderAdminControlButtons() {
