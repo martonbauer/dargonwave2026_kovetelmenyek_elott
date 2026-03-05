@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="hu">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DragonWave 2026 | Event Management</title>
+    <link rel="stylesheet" href="drgon.css">
+</head>
+
+<body>
+    <header>
+        <div
+            style="display: flex; justify-content: space-between; align-items: center; max-width: 1400px; margin: 0 auto; padding: 0 2rem;">
+            <!-- Bal oldal: Pontos Idő és Dátum -->
+            <div id="local-time-container"
+                style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
+                <span id="local-date-display"
+                    style="font-size: 0.9rem; color: var(--text-secondary); text-transform: capitalize;"></span>
+                <span id="local-time-display"
+                    style="font-family:'Space Mono', monospace; font-size:1.8rem; font-weight:bold; color:#00ff9d; text-shadow:0 0 15px rgba(0,255,157,0.5);">--:--:--</span>
+            </div>
+
+            <!-- Közép: Logó / Cím -->
+            <h1 style="margin: 0;">DragonWave 2026</h1>
+
+            <!-- Jobb oldal: Navigáció -->
+            <nav id="main-nav" style="margin: 0;">
+                <button class="nav-btn active" onclick="switchTab('public')">Verseny + Fizetés</button>
+                <button class="nav-btn" onclick="switchTab('admin')">Adminisztráció</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Kép Szekció -->
+    <div
+        style="width: 100%; max-height: 400px; overflow: hidden; position: relative; border-bottom: 2px solid var(--accent-primary); box-shadow: 0 5px 20px rgba(0, 255, 157, 0.2);">
+        <!-- Ezt a képet be kell másolnod a mappába 'dragonwave_2026_photo.jpg' néven -->
+        <img src="dragonwave_2026_photo.jpg" alt="DragonWave Verseny"
+            style="width: 100%; height: 100%; object-fit: cover; object-position: center 30%; filter: brightness(0.8);">
+        <div
+            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, transparent 60%, var(--bg-primary) 100%);">
+        </div>
+    </div>
+
+    <main style="margin-top: -30px; position: relative; z-index: 10;">
+        <section id="registration-form" style="text-align: center;">
+            <h3
+                style="color: var(--accent-primary); margin-bottom: 0.5rem; letter-spacing: 1px; font-size: 1.1rem; text-transform: uppercase; opacity: 0.9;">
+                Magyar Viztúra bajnokság</h3>
+            <h1
+                style="color: white; margin-bottom: 1.5rem; font-size: 2.2rem; text-shadow: 0 0 20px rgba(0,255,157,0.3);">
+                DunakesziFutam 2026</h1>
+            <hr
+                style="border: 0; height: 1px; background: linear-gradient(to right, transparent, var(--accent-primary), transparent); margin-bottom: 2rem; width: 60%; margin-left: auto; margin-right: auto;">
+
+            <h2 style="font-size: 1.5rem; margin-top: 2rem;">Online Nevezés és Fizetés</h2>
+            <form id="nevezesForm" style="text-align: left; max-width: 600px; margin: 0 auto;">
+                <label for="kategoria">Hajóegység / Kategória</label>
+                <select id="kategoria" required onchange="raceManager.updateMemberFields()">
+                    <option value="" disabled selected>Válassz kategóriát...</option>
+                    <optgroup label="Kajak (Egyéni)">
+                        <option value="versenykajak_noi_1">Versenykajak női-1 (38 cm)</option>
+                        <option value="versenykajak_ferfi_1">Versenykajak férfi-1 (38 cm)</option>
+                        <option value="turakajak_noi_1">Túrakajak női 1 (42-44-46-48-51 cm)</option>
+                        <option value="turakajak_ferfi_1">Túrakajak férfi-1 (42-44-46-48-51 cm)</option>
+                        <option value="tengeri_kajak_noi_1">Tengeri kajak női 1 (51cm>)</option>
+                        <option value="tengeri_kajak_ferfi_1">Tengeri kajak férfi 1 (51cm>)</option>
+                        <option value="surfski_noi">Surfski női kajak</option>
+                        <option value="surfski_ferfi">Surfski férfi kajak</option>
+                    </optgroup>
+                    <optgroup label="Kenu (Egyéni / Páros)">
+                        <option value="kenu_noi_1">Kenu női-1</option>
+                        <option value="kenu_ferfi_1">Kenu férfi-1</option>
+                        <option value="outrigger_noi_1">Outrigger női-1 (kenu)</option>
+                        <option value="outrigger_ferfi_1">Outrigger férfi-1 (kenu)</option>
+                        <option value="turakajak_2_nyitott">Túrakajak 2 (nyitott) - 2 fő</option>
+                        <option value="kenu_2_ferfi">Kenu 2 férfi - 2 fő</option>
+                        <option value="kenu_2_vegyes">Kenu 2 vegyes - 2 fő</option>
+                        <option value="outrigger_2_nyitott">Outrigger 2 (nyitott) - 2 fő</option>
+                    </optgroup>
+                    <optgroup label="Csapathajók (3-4 fő)">
+                        <option value="kenu_3_nyitott">Kenu 3 (nyitott) - 3 fő</option>
+                        <option value="kenu_4_nyitott">Kenu 4 (nyitott) - 4 fő</option>
+                        <option value="sarkanyhajo_otproba">Sárkányhajó ötpróba - egyéni</option>
+                    </optgroup>
+                    <optgroup label="SUP (Egyéni)">
+                        <option value="sup_noi_1_merev_39_alatt">SUP női-1 merev (39 év alatt)</option>
+                        <option value="sup_noi_1_merev_39_felett">SUP női-1 merev (40 év felett)</option>
+                        <option value="sup_ferfi_1_merev_39_alatt">SUP férfi-1 merev (39 év alatt)</option>
+                        <option value="sup_ferfi_1_merev_39_felett">SUP férfi-1 merev (40 év felett)</option>
+                        <option value="sup_noi_1_felfujhato_39_alatt">SUP női-1 felfújható (39 év alatt)</option>
+                        <option value="sup_noi_1_felfujhato_39_felett">SUP női-1 felfújható (40 év felett)</option>
+                        <option value="sup_ferfi_1_felfujhato_39_alatt">SUP férfi-1 felfújható (39 év alatt)</option>
+                        <option value="sup_ferfi_1_felfujhato_39_felett">SUP férfi-1 felfújható (40 év felett)</option>
+                    </optgroup>
+                </select>
+
+                <div id="members-container">
+                    <!-- Dinamikusan generált mezők helye -->
+                    <div
+                        style="text-align: center; padding: 20px; color: #888; border: 1px dashed #444; border-radius: 8px; margin: 15px 0;">
+                        Válassz kategóriát a jelentkezési űrlap megjelenítéséhez.
+                    </div>
+                </div>
+
+                <label for="versenytav">Versenytáv</label>
+                <select id="versenytav" required>
+                    <option value="11km">11 km (Rövid táv)</option>
+                    <option value="22km">22 km (Hosszú táv)</option>
+                    <option value="4km">4 km (SUP)</option>
+                </select>
+
+                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 1rem;">Nevezés
+                    Beküldése</button>
+                <p
+                    style="margin-top: 1.5rem; color: var(--accent-primary); font-size: 0.95rem; font-style: italic; text-align: center;">
+                    * A nevezés a fizetés megtörténte után válik elfogadottá.
+                </p>
+            </form>
+        </section>
+
+        <section id="live-results" class="hidden" style="max-width: 1000px;">
+            <div id="category-timers"></div>
+            <div id="results-tables-container"></div>
+        </section>
+
+        <section id="admin-view" class="hidden">
+            <div id="admin-login-panel">
+                <h2>Admin Belépés</h2>
+                <input type="password" id="admin-pass" placeholder="Jelszó">
+                <button onclick="loginAdmin()">Belépés</button>
+            </div>
+            <div id="admin-dashboard-panel" class="hidden">
+                <div id="admin-controls">
+                    <div class="admin-card">
+                        <h3
+                            style="color: var(--accent-primary); border-bottom: 1px solid rgba(0,255,157,0.2); padding-bottom: 10px;">
+                            Digitális Indítópult & Futó Órák</h3>
+                        <div id="admin-category-timers" style="margin-bottom: 20px;"></div>
+
+                        <!-- Rajtszámos megállítás helye az admin felületen -->
+                        <div id="bib-stop-panel"
+                            style="margin-bottom: 20px; padding: 15px; background: rgba(255, 0, 60, 0.05); border: 1px solid rgba(255, 0, 60, 0.2); border-radius: 12px;">
+                            <label
+                                style="color: var(--accent-secondary); margin-bottom: 10px; display: block; font-weight: bold;">Versenyző
+                                beérkeztetése (Rajtszám alapú):</label>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="number" id="bib-input" placeholder=" Rajtszám"
+                                    style="flex: 2; margin-bottom: 0;">
+                                <button onclick="window.stopRacer()" class="btn-primary"
+                                    style="flex: 1; margin: 0; background: linear-gradient(135deg, #ff4444, #cc0000); color: white;">STOP</button>
+                            </div>
+                        </div>
+
+                        <div id="category-start-buttons">
+                            <div style="text-align:center; padding:10px;">Gombok betöltése...</div>
+                        </div>
+                    </div>
+                    <div class="admin-card">
+                        <h3>Importálás & Adatok</h3>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary);">CSV fájl (Név, Kategória, Év, Táv):
+                        </p>
+                        <input type="file" id="csv-upload" accept=".csv">
+                        <button onclick="uploadCsv()" class="btn-primary" style="width:100%; margin:10px 0;">CSV
+                            Feltöltése</button>
+                        <hr style="border:0; height:1px; background:rgba(255,255,255,0.1); margin:15px 0;">
+                        <button onclick="raceManager.resetAll()"
+                            style="width:100%; background:transparent; color:#ff4444; border:1px solid #ff4444; padding:8px; border-radius:4px; cursor:pointer; font-size:0.8rem;">
+                            SZERVERTÖRLÉS (Minden adat törlése!)
+                        </button>
+                    </div>
+                </div>
+                <h3>Regisztrált Versenyzők</h3>
+                <div style="overflow-x: auto;">
+                    <table id="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Rajtszám</th>
+                                <th style="min-width: 250px;">Egység Tagjai</th>
+                                <th>Ötpróba ID-k</th>
+                                <th>Sorozat</th>
+                                <th>Kategória</th>
+                                <th>Táv</th>
+                                <th>Státusz</th>
+                                <th>Időeredmény</th>
+                                <th>Művelet</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="toast-container"></div>
+
+    <script src="dragon.js"></script>
+</body>
+
+</html>
