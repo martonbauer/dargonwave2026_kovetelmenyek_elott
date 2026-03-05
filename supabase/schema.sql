@@ -31,12 +31,18 @@ CREATE TABLE IF NOT EXISTS categories (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Enable RLS (Row Level Security) - initially public for simplicity, but can be hardened
+-- Enable RLS (Row Level Security)
 ALTER TABLE racers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 
 -- Allow all for now (development policy)
+-- We drop the policy if it exists to avoid errors on re-run
+DROP POLICY IF EXISTS "Public Access" ON racers;
 CREATE POLICY "Public Access" ON racers FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Public Access" ON members;
 CREATE POLICY "Public Access" ON members FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Public Access" ON categories;
 CREATE POLICY "Public Access" ON categories FOR ALL USING (true);

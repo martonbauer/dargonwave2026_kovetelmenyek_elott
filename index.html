@@ -10,24 +10,20 @@
 
 <body>
     <header>
-        <div
-            style="display: flex; justify-content: space-between; align-items: center; max-width: 1400px; margin: 0 auto; padding: 0 2rem;">
+        <div class="header-container">
             <!-- Bal oldal: Pontos Idő és Dátum -->
-            <div id="local-time-container"
-                style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px;">
-                <span id="local-date-display"
-                    style="font-size: 0.9rem; color: var(--text-secondary); text-transform: capitalize;"></span>
-                <span id="local-time-display"
-                    style="font-family:'Space Mono', monospace; font-size:1.8rem; font-weight:bold; color:#00ff9d; text-shadow:0 0 15px rgba(0,255,157,0.5);">--:--:--</span>
+            <div id="local-time-container">
+                <span id="local-date-display"></span>
+                <span id="local-time-display">--:--:--</span>
             </div>
 
             <!-- Közép: Logó / Cím -->
-            <h1 style="margin: 0;">DragonWave 2026</h1>
+            <h1 class="logo-text">DragonWave 2026</h1>
 
             <!-- Jobb oldal: Navigáció -->
-            <nav id="main-nav" style="margin: 0;">
-                <button class="nav-btn active" onclick="switchTab('public')">Verseny + Fizetés</button>
-                <button class="nav-btn" onclick="switchTab('admin')">Adminisztráció</button>
+            <nav id="main-nav">
+                <button class="nav-btn active" onclick="switchTab('public')">Verseny</button>
+                <button class="nav-btn" onclick="switchTab('admin')">Admin</button>
             </nav>
         </div>
     </header>
@@ -36,26 +32,21 @@
     <div
         style="width: 100%; max-height: 400px; overflow: hidden; position: relative; border-bottom: 2px solid var(--accent-primary); box-shadow: 0 5px 20px rgba(0, 255, 157, 0.2);">
         <!-- Ezt a képet be kell másolnod a mappába 'dragonwave_2026_photo.jpg' néven -->
-        <img src="dragonwave_2026_photo.jpg" alt="DragonWave Verseny"
+        <img src="dragonwave_2026_photo.jpg" alt="DragonWave Verseny" class="hero-img"
             style="width: 100%; height: 100%; object-fit: cover; object-position: center 30%; filter: brightness(0.8);">
         <div
             style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, transparent 60%, var(--bg-primary) 100%);">
         </div>
     </div>
 
-    <main style="margin-top: -30px; position: relative; z-index: 10;">
-        <section id="registration-form" style="text-align: center;">
-            <h3
-                style="color: var(--accent-primary); margin-bottom: 0.5rem; letter-spacing: 1px; font-size: 1.1rem; text-transform: uppercase; opacity: 0.9;">
-                Magyar Viztúra bajnokság</h3>
-            <h1
-                style="color: white; margin-bottom: 1.5rem; font-size: 2.2rem; text-shadow: 0 0 20px rgba(0,255,157,0.3);">
-                DunakesziFutam 2026</h1>
-            <hr
-                style="border: 0; height: 1px; background: linear-gradient(to right, transparent, var(--accent-primary), transparent); margin-bottom: 2rem; width: 60%; margin-left: auto; margin-right: auto;">
+    <main class="main-content">
+        <section id="registration-form" class="registration-section">
+            <h3 class="event-subtitle">Magyar Viztúra bajnokság</h3>
+            <h1 class="event-title">DunakesziFutam 2026</h1>
+            <div class="title-separator"></div>
 
-            <h2 style="font-size: 1.5rem; margin-top: 2rem;">Online Nevezés és Fizetés</h2>
-            <form id="nevezesForm" style="text-align: left; max-width: 600px; margin: 0 auto;">
+            <h2 class="section-title">Online Nevezés és Fizetés</h2>
+            <form id="nevezesForm" class="nevezes-form">
                 <label for="kategoria">Hajóegység / Kategória</label>
                 <select id="kategoria" required onchange="raceManager.updateMemberFields()">
                     <option value="" disabled selected>Válassz kategóriát...</option>
