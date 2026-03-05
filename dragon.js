@@ -4,7 +4,7 @@
  */
 
 // API Configuration - Set this to your Render.com URL in production
-const API_URL = window.DRAGONWAVE_API_URL || 'http://localhost:3000/api';
+const API_URL = window.DRAGONWAVE_API_URL || 'http://localhost:3001/api';
 const APP_VERSION = "2.2"; // Verziószám az ellenőrzéshez
 console.log(`DragonWave Logic v${APP_VERSION} initialized.`);
 
@@ -65,12 +65,20 @@ class RaceManager {
 
     async loadData() {
         try {
+            console.log(`Fetching data from: ${API_URL}/data`);
             const response = await fetch(`${API_URL}/data`);
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error("Server returned error:", errorData);
+                throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+            }
+
             this.data = await response.json();
-            console.log("Data loaded from API:", this.data);
+            console.log("Data successfully loaded:", this.data);
         } catch (err) {
-            console.error("Failed to load data:", err);
-            showToast("Szerver hiba az adatok betöltésekor!", "error");
+            console.error("CRITICAL: Failed to load data from server:", err);
+            showToast("Szerver hiba az adatok betöltésekor! Ellenőrizd a konzolt (F12).", "error");
         }
     }
 
@@ -756,6 +764,10 @@ window.switchTab = (tab) => {
         publicSections.forEach(s => s.classList.add('hidden'));
         adminView.classList.remove('hidden');
         btns[1].classList.add('active');
+        // Ha már be van lépve, frissítsünk rá
+        if (!document.getElementById('admin-dashboard-panel').classList.contains('hidden')) {
+            raceManager.renderUI();
+        }
     } else {
         publicSections.forEach(s => s.classList.remove('hidden'));
         adminView.classList.add('hidden');
