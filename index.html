@@ -111,9 +111,9 @@
             </form>
         </section>
 
-        <section id="live-results" class="hidden" style="max-width: 1000px;">
+        <section id="live-results" class="hidden">
+            <h2 class="section-title">⏱️ Élő Futamidők</h2>
             <div id="category-timers"></div>
-            <div id="results-tables-container"></div>
         </section>
 
         <section id="admin-view" class="hidden">
@@ -178,7 +178,14 @@
                 </div>
 
                 <div class="admin-table-section">
-                    <h3 class="section-title">Regisztrált Versenyzők Adatbázisa</h3>
+                    <h3 class="section-title">🏆 Eredmények & Helyezések</h3>
+                    <div id="results-tables-container">
+                        <!-- Ide kerülnek az átmozgatott eredménytáblázatok -->
+                    </div>
+                </div>
+
+                <div class="admin-table-section">
+                    <h3 class="section-title">👥 Versenyzői Adatbázis (Szerkeszthető)</h3>
                     <div class="table-responsive">
                         <table id="admin-table">
                             <thead>
