@@ -148,7 +148,10 @@
             </div>
             <div id="admin-dashboard-panel" class="hidden">
                 <div class="admin-top-bar">
-                    <h2 class="admin-title">Versenyirányító Központ</h2>
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <h2 class="admin-title" style="margin: 0;">Versenyirányító Központ</h2>
+                        <button class="btn-secondary" style="background: rgba(255, 0, 0, 0.2); color: #ff4444; border: 1px solid #ff4444; padding: 5px 15px; border-radius: 4px; cursor: pointer;" onclick="logoutAdmin()">🚪 Kijelentkezés</button>
+                    </div>
                     <div class="admin-stats" id="admin-global-stats">
                         <!-- Stats like total racers, finished, running will go here -->
                     </div>

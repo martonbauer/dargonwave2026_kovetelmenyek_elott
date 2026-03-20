@@ -72,7 +72,7 @@ window.loginAdmin = async () => {
         
         if (response.ok && result.success) {
             window.raceManager.adminPassword = password;
-            localStorage.setItem('dragonAdminPassword', password);
+            sessionStorage.setItem('dragonAdminPassword', password);
             document.getElementById('admin-login-panel').classList.add('hidden');
             document.getElementById('admin-dashboard-panel').classList.remove('hidden');
             window.renderAdminTable();
@@ -85,6 +85,17 @@ window.loginAdmin = async () => {
         console.error("Login error:", err);
         showToast("Hiba a belépés során!", "error");
     }
+};
+
+window.logoutAdmin = () => {
+    sessionStorage.removeItem('dragonAdminPassword');
+    if (window.raceManager) {
+        window.raceManager.adminPassword = '';
+    }
+    document.getElementById('admin-login-panel').classList.remove('hidden');
+    document.getElementById('admin-dashboard-panel').classList.add('hidden');
+    document.getElementById('admin-pass').value = '';
+    showToast('Sikeres kijelentkezés', 'info');
 };
 
 window.renderAdminTable = () => {
@@ -231,7 +242,7 @@ class RaceManager {
             events: []
         };
         this.serverTimeOffset = 0;
-        this.adminPassword = localStorage.getItem('dragonAdminPassword') || '';
+        this.adminPassword = sessionStorage.getItem('dragonAdminPassword') || '';
         this.categoryMap = {
             'versenykajak_noi_1': 'Versenykajak női-1 (38 cm)',
             'versenykajak_ferfi_1': 'Versenykajak férfi-1 (38 cm)',
@@ -346,7 +357,7 @@ class RaceManager {
                 const errorData = await response.json();
                 showToast(`Hitelesítési hiba: ${errorData.error}`, "error");
                 // Clear password if it's invalid
-                if (response.status === 403) localStorage.removeItem('dragonAdminPassword');
+                if (response.status === 403) sessionStorage.removeItem('dragonAdminPassword');
                 return;
             }
 
