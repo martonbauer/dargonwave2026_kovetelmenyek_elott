@@ -4,12 +4,12 @@
     --bg-dark: #f2f9f5;
     --bg-card: rgba(255, 255, 255, 0.85);
     --glass-border: #bce3d2;
-    --accent-primary: #008f6b;
-    --accent-secondary: #00a880;
-    --text-main: #0d3326;
-    --text-muted: #355e4e;
-    --grad-primary: linear-gradient(135deg, #008f6b 0%, #00a880 100%);
-    --grad-logo: linear-gradient(135deg, #008f6b 0%, #00a880 100%);
+    --accent-primary: #006b50;
+    --accent-secondary: #008f6b;
+    --text-main: #051c14;
+    --text-muted: #244236;
+    --grad-primary: linear-gradient(135deg, #006b50 0%, #008f6b 100%);
+    --grad-logo: linear-gradient(135deg, #006b50 0%, #008f6b 100%);
 }
 
 * {
@@ -106,7 +106,7 @@ header {
 }
 
 .nav-btn {
-    background: rgba(0, 143, 107, 0.05);
+    background: rgba(0, 107, 80, 0.05);
     color: var(--text-main);
     border: 1px solid var(--glass-border);
     padding: 0 20px;
@@ -130,7 +130,7 @@ header {
     color: #fff;
     border-color: var(--accent-primary);
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0, 143, 107, 0.3);
+    box-shadow: 0 8px 20px rgba(0, 107, 80, 0.3);
 }
 
 /* Hero Content */
@@ -205,7 +205,7 @@ header {
 }
 
 .btn-outline:hover {
-    background: rgba(0, 143, 107, 0.1);
+    background: rgba(0, 107, 80, 0.1);
     border-color: var(--accent-primary);
 }
 
@@ -311,7 +311,7 @@ section {
 
 .input-group input {
     width: 100%;
-    background: rgba(0, 143, 107, 0.05);
+    background: rgba(0, 107, 80, 0.05);
     border: 1px solid var(--glass-border);
     padding: 14px;
     border-radius: 10px;
@@ -324,7 +324,7 @@ section {
 .input-group input:focus {
     outline: none;
     border-color: var(--accent-primary);
-    background: rgba(0, 143, 107, 0.1);
+    background: rgba(0, 107, 80, 0.1);
 }
 
 .btn-submit {

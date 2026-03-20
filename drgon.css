@@ -3,16 +3,16 @@
 :root {
     --bg-primary: #f2f9f5;
     --bg-secondary: #e2f2ea;
-    --accent-primary: #008f6b;
-    --accent-secondary: #00a880;
-    --accent-warm: #007558;
-    --text-primary: #0d3326;
-    --text-secondary: #355e4e;
+    --accent-primary: #006b50;
+    --accent-secondary: #008f6b;
+    --accent-warm: #005540;
+    --text-primary: #051c14;
+    --text-secondary: #244236;
     --glass-bg: rgba(255, 255, 255, 0.85);
     --glass-border: #bce3d2;
-    --glass-shadow: 0 8px 32px 0 rgba(0, 143, 107, 0.15);
-    --grad-primary: linear-gradient(135deg, #008f6b 0%, #00a880 100%);
-    --grad-logo: linear-gradient(135deg, #008f6b 0%, #00a880 100%);
+    --glass-shadow: 0 8px 32px 0 rgba(0, 107, 80, 0.15);
+    --grad-primary: linear-gradient(135deg, #006b50 0%, #008f6b 100%);
+    --grad-logo: linear-gradient(135deg, #006b50 0%, #008f6b 100%);
     --transition-speed: 0.3s;
 }
 
@@ -79,7 +79,7 @@ header {
     font-size: 1.4rem;
     font-weight: 700;
     color: var(--accent-primary);
-    text-shadow: 0 0 15px rgba(0, 143, 107, 0.4);
+    text-shadow: 0 0 15px rgba(0, 107, 80, 0.4);
 }
 
 /* Admin Dashboard Grid System */
@@ -134,7 +134,7 @@ header {
 }
 
 .admin-card:hover {
-    border-color: rgba(0, 143, 107, 0.4);
+    border-color: rgba(0, 107, 80, 0.4);
 }
 
 .card-title {
@@ -192,7 +192,7 @@ header {
 
 #bib-input:focus {
     border-color: var(--accent-primary);
-    box-shadow: 0 0 20px rgba(0, 143, 107, 0.2);
+    box-shadow: 0 0 20px rgba(0, 107, 80, 0.2);
     outline: none;
 }
 
@@ -287,7 +287,7 @@ header {
 }
 
 .btn-secondary:hover {
-    background: rgba(0, 143, 107, 0.1);
+    background: rgba(0, 107, 80, 0.1);
     border-color: var(--accent-primary);
 }
 
@@ -329,10 +329,10 @@ header {
 }
 
 .stat-item {
-    background: rgba(0, 143, 107, 0.1);
+    background: rgba(0, 107, 80, 0.1);
     padding: 6px 14px;
     border-radius: 10px;
-    border: 1px solid rgba(0, 143, 107, 0.2);
+    border: 1px solid rgba(0, 107, 80, 0.2);
     white-space: nowrap;
     color: var(--text-primary);
     font-size: 0.85rem;
@@ -434,7 +434,7 @@ form select:focus {
     outline: none;
     border-color: var(--accent-primary);
     background: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 0 20px rgba(0, 143, 107, 0.2);
+    box-shadow: 0 0 20px rgba(0, 107, 80, 0.2);
 }
 
 .btn-primary {
@@ -447,12 +447,12 @@ form select:focus {
     font-size: 1.1rem;
     cursor: pointer;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    box-shadow: 0 15px 30px rgba(0, 143, 107, 0.2);
+    box-shadow: 0 15px 30px rgba(0, 107, 80, 0.2);
 }
 
 .btn-primary:hover {
     transform: scale(1.02) translateY(-2px);
-    box-shadow: 0 20px 40px rgba(0, 143, 107, 0.4);
+    box-shadow: 0 20px 40px rgba(0, 107, 80, 0.4);
 }
 
 .main-content {
@@ -570,7 +570,7 @@ form select:focus {
     font-size: 1.8rem;
     font-weight: 700;
     color: var(--accent-primary);
-    text-shadow: 0 0 15px rgba(0, 143, 107, 0.4);
+    text-shadow: 0 0 15px rgba(0, 107, 80, 0.4);
 }
 
 /* Eredménytáblázatok rácsa */
@@ -645,7 +645,7 @@ form select:focus {
 
 /* Buttons for Admin */
 .btn-start {
-    background: rgba(0, 143, 107, 0.1);
+    background: rgba(0, 107, 80, 0.1);
     border: 1px solid var(--accent-secondary);
     color: var(--accent-secondary);
     padding: 12px;
@@ -752,7 +752,7 @@ form select:focus {
 }
 
 .action-btn.edit {
-    background: rgba(0, 143, 107, 0.1);
+    background: rgba(0, 107, 80, 0.1);
     color: var(--accent-primary);
     border: 1px solid var(--glass-border);
     margin-right: 8px;
@@ -761,7 +761,7 @@ form select:focus {
 .action-btn.edit:hover {
     background: var(--accent-primary);
     color: #122b44;
-    box-shadow: 0 0 15px rgba(0, 143, 107, 0.4);
+    box-shadow: 0 0 15px rgba(0, 107, 80, 0.4);
 }
 
 .action-btn.delete {
