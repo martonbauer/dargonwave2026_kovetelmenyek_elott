@@ -1,18 +1,18 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Space+Mono:wght@400;700&display=swap');
 
 :root {
-    --bg-primary: #122b44;           /* vibrant azzurro navy base */
-    --bg-secondary: rgba(25, 55, 90, 0.8); /* matching mid-blue */
-    --accent-primary: #0091FF;       /* saturated sky blue */
-    --accent-secondary: #47B0FF;     /* light sky blue */
-    --accent-warm: #0077FF;          /* deep blue */
-    --text-primary: #f8fafc;         /* nearly white */
-    --text-secondary: #94adce;       /* lightened slate blue */
-    --glass-bg: rgba(40, 75, 115, 0.65);
-    --glass-border: rgba(0, 145, 255, 0.25);
-    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
-    --grad-primary: linear-gradient(135deg, #0091FF 0%, #47B0FF 100%);
-    --grad-logo: linear-gradient(135deg, #00d2ff 0%, #00ff9d 100%);
+    --bg-primary: #f0f7ff;
+    --bg-secondary: #e0effa;
+    --accent-primary: #0077b6;
+    --accent-secondary: #00b4a0;
+    --accent-warm: #005f91;
+    --text-primary: #0d2b40;
+    --text-secondary: #3a5a73;
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: #bee1f4;
+    --glass-shadow: 0 8px 32px 0 rgba(0, 119, 182, 0.15);
+    --grad-primary: linear-gradient(135deg, #0077b6 0%, #00b4a0 100%);
+    --grad-logo: linear-gradient(135deg, #0077b6 0%, #00b4a0 100%);
     --transition-speed: 0.3s;
 }
 
@@ -38,7 +38,7 @@ body {
 }
 
 header {
-    background: rgba(10, 20, 30, 0.85); /* Slightly tinted dark navy */
+    background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-bottom: 3px solid transparent;
@@ -111,7 +111,7 @@ header {
 }
 
 .modal-content {
-    background: #111827;
+    background: #ffffff;
     border: 1px solid var(--glass-border);
     max-width: 600px;
     width: 90%;
@@ -155,10 +155,10 @@ header {
 
 /* Bib Recorder Section */
 .bib-recorder {
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(0, 119, 182, 0.05);
     padding: 1.8rem;
     border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
 }
 
 .bib-recorder label {
@@ -182,9 +182,9 @@ header {
     font-size: 2.4rem;
     height: 75px;
     text-align: center;
-    background: rgba(255, 255, 255, 0.05);
+    background: #ffffff;
     border: 1px solid var(--glass-border);
-    color: #fff;
+    color: var(--text-primary);
     margin-bottom: 0;
     border-radius: 12px;
     transition: all 0.3s;
@@ -276,8 +276,8 @@ header {
 }
 
 .btn-secondary {
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--text-main);
+    background: rgba(0, 119, 182, 0.05);
+    color: var(--text-primary);
     border: 1px solid var(--glass-border);
     padding: 12px 24px;
     border-radius: 10px;
@@ -379,7 +379,7 @@ header {
 
 .nav-btn:hover {
     background: var(--accent-primary);
-    color: #122b44;
+    color: #fff;
     border-color: var(--accent-primary);
     transform: translateY(-2px);
     box-shadow: 0 8px 20px rgba(0, 210, 255, 0.3);
@@ -387,7 +387,7 @@ header {
 
 .nav-btn.active {
     background: var(--grad-logo);
-    color: #122b44;
+    color: #fff;
     border-color: transparent;
     box-shadow: 0 4px 15px rgba(0, 255, 157, 0.3);
 }
@@ -410,8 +410,8 @@ form select {
     margin-bottom: 1.5rem;
     border-radius: 12px;
     border: 1px solid var(--glass-border);
-    background: rgba(0, 0, 0, 0.3); /* Slightly darker for better contrast */
-    color: #fff;
+    background: #ffffff;
+    color: var(--text-primary);
     font-size: 1rem;
     font-family: 'Outfit', sans-serif;
     transition: all 0.3s;
@@ -419,12 +419,12 @@ form select {
 
 /* Ensure dropdown options are visible and match the theme */
 form select option {
-    background-color: #122b44; /* Match --bg-primary but solid */
-    color: #fff;
+    background-color: #ffffff;
+    color: var(--text-primary);
 }
 
 form select optgroup {
-    background-color: #0a1b2d;
+    background-color: #e0effa;
     color: var(--accent-primary);
     font-weight: 700;
 }
@@ -439,7 +439,7 @@ form select:focus {
 
 .btn-primary {
     background: var(--grad-primary);
-    color: #122b44;
+    color: #fff;
     border: none;
     padding: 18px 40px;
     border-radius: 14px;
@@ -619,7 +619,7 @@ form select:focus {
 
 .results-table td {
     padding: 1.2rem 1rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid var(--glass-border);
     color: var(--text-primary);
     font-size: 0.95rem;
 }
@@ -728,7 +728,7 @@ form select:focus {
     grid-template-columns: 2fr 1.5fr 1fr;
     gap: 10px;
     margin-bottom: 15px;
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(0, 119, 182, 0.03);
     padding: 10px;
     border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.05);
