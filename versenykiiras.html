@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="hu">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Versenykiírás | DunakesziFutam 2026</title>
+    <link rel="stylesheet" href="drgon.css">
+    <style>
+        .kiiras-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem 4rem;
+        }
+
+        .kiiras-hero {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 2px solid var(--accent-primary);
+        }
+
+        .kiiras-hero .event-subtitle {
+            color: var(--accent-primary);
+            font-size: 1rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .kiiras-hero h1 {
+            font-size: 2.5rem;
+            color: #fff;
+            margin: 0.3rem 0 1rem;
+            text-shadow: 0 0 30px rgba(0, 145, 255, 0.3);
+        }
+
+        .kiiras-meta {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .meta-badge {
+            background: rgba(0, 145, 255, 0.08);
+            border: 1px solid var(--accent-primary);
+            border-radius: 8px;
+            padding: 0.6rem 1.2rem;
+            font-size: 0.9rem;
+            color: var(--accent-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-block {
+            background: var(--bg-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-radius: 12px;
+            padding: 1.8rem 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-block h2 {
+            font-size: 1.2rem;
+            color: var(--accent-primary);
+            border-bottom: 1px solid rgba(0, 145, 255, 0.2);
+            padding-bottom: 0.6rem;
+            margin-top: 0;
+            margin-bottom: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .section-block h3 {
+            font-size: 1rem;
+            color: #ccc;
+            margin-top: 1.2rem;
+            margin-bottom: 0.6rem;
+        }
+
+        .section-block p {
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin: 0.5rem 0;
+        }
+
+        .section-block ul {
+            color: var(--text-secondary);
+            line-height: 1.9;
+            padding-left: 1.4rem;
+            margin: 0.5rem 0;
+        }
+
+        .section-block ul li {
+            margin-bottom: 0.2rem;
+        }
+
+        .program-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            margin-top: 0.8rem;
+        }
+
+        .program-table td {
+            padding: 0.5rem 0.8rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+        }
+
+        .program-table td:first-child {
+            color: var(--accent-primary);
+            font-weight: bold;
+            white-space: nowrap;
+            min-width: 160px;
+        }
+
+        .rajt-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            margin-top: 0.8rem;
+        }
+
+        .rajt-table th {
+            padding: 0.6rem 1rem;
+            background: rgba(0, 145, 255, 0.06);
+            color: var(--accent-primary);
+            text-align: center;
+            border: 1px solid rgba(0, 145, 255, 0.15);
+            font-size: 0.85rem;
+        }
+
+        .rajt-table td {
+            padding: 0.6rem 1rem;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+        }
+
+        .rajt-table td:first-child {
+            text-align: left;
+            color: #ddd;
+            font-weight: bold;
+        }
+
+        .highlight-box {
+            background: rgba(0, 145, 255, 0.06);
+            border-left: 3px solid var(--accent-primary);
+            border-radius: 0 8px 8px 0;
+            padding: 0.8rem 1.2rem;
+            margin: 0.8rem 0;
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+
+        .dij-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 0.8rem;
+        }
+
+        .dij-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .dij-card .dij-label {
+            font-size: 0.8rem;
+            color: #888;
+            margin-bottom: 0.4rem;
+        }
+
+        .dij-card .dij-amount {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent-primary);
+        }
+
+        .dij-card .dij-sub {
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 0.3rem;
+        }
+
+        .bank-info {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem 1.2rem;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.85rem;
+            color: #aaa;
+            line-height: 2;
+            margin-top: 0.8rem;
+        }
+
+        .bank-info strong {
+            color: #ddd;
+        }
+
+
+
+        .phone-link {
+            color: var(--accent-primary);
+            text-decoration: none;
+        }
+
+        .url-link {
+            color: var(--accent-primary);
+            word-break: break-all;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="header-container">
+            <!-- Bal oldal: Pontos Idő és Dátum -->
+
+            <!-- Közép: Logó / Cím -->
+            <h1 class="logo-text-unified">
+                DUNAKESZI FUTAM 2026
+            </h1>
+
+            <!-- Jobb oldal: Navigáció -->
+            <nav id="main-nav">
+                <a href="index.html" class="nav-btn">Főoldal</a>
+                <a href="management.html?view=regisztracio" class="nav-btn">Nevezés</a>
+                <a href="management.html?view=eredmenyek" class="nav-btn">Eredmények</a>
+                <a href="versenykiiras.html" class="nav-btn active">Versenykiírás</a>
+                <a href="management.html?view=admin" class="nav-btn">Admin</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Kép -->
+    <div
+        style="width:100%; max-height:280px; overflow:hidden; position:relative; border-bottom:2px solid var(--accent-primary); box-shadow:0 5px 20px rgba(0, 145, 255, 0.2);">
+        <img src="foldal_1.png" alt="DragonWave Verseny"
+            style="width:100%; height:100%; object-fit:cover; object-position:center 30%; filter:brightness(0.7);">
+        <div
+            style="position:absolute; top:0; left:0; width:100%; height:100%; background:linear-gradient(to bottom,transparent 40%,var(--bg-primary) 100%);">
+        </div>
+    </div>
+
+    <main class="main-content">
+        <div class="kiiras-container">
+
+
+
+            <div class="kiiras-hero">
+                <p class="event-subtitle">Magyar Vízitúra Bajnokság</p>
+                <h1>Dunakeszi Futam 2026<br><span
+                        style="font-size:1.4rem; color:var(--accent-primary);">Versenykiírás</span></h1>
+                <div class="kiiras-meta">
+                    <div class="meta-badge">📅 2026. május 30. szombat</div>
+                    <div class="meta-badge">📍 Dunakeszi Strand, Katonadomb–Duna part</div>
+                    <div class="meta-badge">🏆 Magyar Vízitúra Bajnokság</div>
+                </div>
+            </div>
+
+            <!-- Bevezető -->
+            <div class="section-block">
+                <h2>📋 A versenyről</h2>
+                <p>A Magyar Vízi Túra Szövetség (MAVITUSZ) célja az Országos Vízitúra Bajnokság program keretein belül,
+                    hogy olyan legalább 200–300 fős szabadidős versenyek jöjjenek létre országszerte, amelyek
+                    lehetőséget biztosítanak a lelkes szabadidős sportolóknak, hogy megméressék magukat, ugyanakkor a
+                    rendezvény egész napos vízparti családi program keretében kínáljon tartalmas időtöltést a résztvevők
+                    számára.</p>
+                <p>A Dunakeszi Futam 2018-ban kapcsolódott be a vízitúra versenysorozatba, és idén, 2026-ban is várja a
+                    természetet kedvelő sportos víztúrázókat és az amatőr vízi sportolók kedvelőit.</p>
+                <div class="highlight-box">
+                    <strong>Rendező:</strong> Dunakeszi Sárkányhajó, Kajak-kenu és Önkéntes Tűzoltó Sportegyesület
+                    (Dunakeszi SH ÖTSE) &amp; Magyar Vízitúra Szövetség
+                </div>
+            </div>
+
+            <!-- Program -->
+            <div class="section-block">
+                <h2>⏰ Napi Program</h2>
+                <table class="program-table">
+                    <tr>
+                        <td>08:00 – 09:30</td>
+                        <td>Érkezés, regisztráció</td>
+                    </tr>
+                    <tr>
+                        <td>09:35 – 09:45</td>
+                        <td>Technikai értekezlet</td>
+                    </tr>
+                    <tr>
+                        <td>09:30 – 10:30</td>
+                        <td>Rajtok (versenyszám szerint)</td>
+                    </tr>
+                    <tr>
+                        <td>kb. 12:30 – 13:00</td>
+                        <td>Tervezett eredményhirdetés</td>
+                    </tr>
+                </table>
+                <p style="margin-top:1rem; font-size:0.85rem; color:#888;">Kérjük minden versenyzőt, hogy a rajt előtt
+                    legkésőbb másfél órával érkezzen meg a helyszínre.</p>
+
+                <h3>Rajtidők kategóriánként</h3>
+                <table class="rajt-table">
+                    <thead>
+                        <tr>
+                            <th>Kategória</th>
+                            <th>Rövid táv (11 km)</th>
+                            <th>Hosszú táv (22 km)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>KAJAK</td>
+                            <td>10:20</td>
+                            <td>10:10</td>
+                        </tr>
+                        <tr>
+                            <td>KENU</td>
+                            <td>10:15</td>
+                            <td>10:00</td>
+                        </tr>
+                        <tr>
+                            <td>SUP (4 km)</td>
+                            <td>10:30</td>
+                            <td>–</td>
+                        </tr>
+                        <tr>
+                            <td>Ötpróba Sárkányhajó</td>
+                            <td>09:30</td>
+                            <td>–</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Kategóriák -->
+            <div class="section-block">
+                <h2>🚣 Kategóriák és Versenyszámok</h2>
+
+                <h3>Kajak kategóriák (MAVITUSZ pont- és önálló)</h3>
+                <ul>
+                    <li>Versenykajak női-1 (38 cm)</li>
+                    <li>Versenykajak férfi-1 (38 cm)</li>
+                    <li>Túrakajak női-1 (42–44–46–48–51 cm)</li>
+                    <li>Túrakajak férfi-1 (42–44–46–48–51 cm)</li>
+                    <li>Túrakajak 2 (nyitott, 42 cm felett)</li>
+                    <li>Tengeri kajak női-1 (51 cm felett)</li>
+                    <li>Tengeri kajak férfi-1 (51 cm felett)</li>
+                    <li>MK-1 fiú (8–14 év)</li>
+                    <li>MK-1 leány (8–14 év)</li>
+                </ul>
+
+                <h3>Kenu / Outrigger kategóriák</h3>
+                <ul>
+                    <li>Kenu női-1</li>
+                    <li>Kenu férfi-1</li>
+                    <li>Outrigger női-1</li>
+                    <li>Outrigger férfi-1</li>
+                    <li>Outrigger-2 (nyitott)</li>
+                    <li>Kenu 2 férfi</li>
+                    <li>Kenu 2 vegyes</li>
+                    <li>Kenu 3 (nyitott)</li>
+                    <li>Kenu 4 (nyitott)</li>
+                </ul>
+
+                <h3>SUP – Absolute (MAVITUSZ pontverseny)</h3>
+                <ul>
+                    <li>SUP női-1 (Abszolút – összesített sorrend)</li>
+                    <li>SUP férfi-1 (Abszolút – összesített sorrend)</li>
+                </ul>
+
+                <h3>SUP – Csak Dunakeszi (4 km)</h3>
+                <ul>
+                    <li>SUP női-1 merev deszka – 39 év alatt</li>
+                    <li>SUP női-1 merev deszka – 40 év felett</li>
+                    <li>SUP férfi-1 merev deszka – 39 év alatt</li>
+                    <li>SUP férfi-1 merev deszka – 40 év felett</li>
+                    <li>SUP női-1 felfújható deszka – 39 év alatt</li>
+                    <li>SUP női-1 felfújható deszka – 40 év felett</li>
+                    <li>SUP férfi-1 felfújható deszka – 39 év alatt</li>
+                    <li>SUP férfi-1 felfújható deszka – 40 év felett</li>
+                </ul>
+
+                <h3>Csak Dunakeszi (11 km)</h3>
+                <ul>
+                    <li>Sárkányhajó ötpróba</li>
+                </ul>
+
+                <div class="highlight-box">
+                    Azon kategóriá(ka)t, mely(ek)ben az esemény napján nincsen legalább 3 induló, az adott forduló
+                    szervezői összevonhatják a leginkább hasonló kategóriával.
+                </div>
+            </div>
+
+            <!-- Versenytávok -->
+            <div class="section-block">
+                <h2>🗺️ Versenytávok és Útvonalak</h2>
+                <p><strong>Start / Cél:</strong> Dunakeszi Strand (2120 Dunakeszi, Liget utca 1.)</p>
+
+                <h3>Hosszú táv – 22 km (Kajak, Kenu, Outrigger)</h3>
+                <p>Start: Dunakeszi 1665 Fkm. Völgymenet a bal part mellett 1 km megtétele után 1664 Fkm-nél két bója
+                    között keresztezni a hajózási útvonalat. Át evezni a Szentendrei-sziget oldalra, piros bója és a
+                    jobb part között a Szentendrei-sziget alsó szigetcsúcs kerülése után, majd felfelé a
+                    Szentendrei-sziget oldalon 4 km hegymeneti evezés a Szentendrei Duna-ágban, a Lupa-sziget kerülése
+                    vissza a sziget alsó csúcs, majd felevezés a Szentendrei-sziget oldalában, átkelés az 1664 Fkm-nél,
+                    ezt követően befutó az 1665 Fkm-nél.</p>
+
+                <h3>Rövid táv – 11 km (Kajak, Kenu, Outrigger, Sárkányhajó)</h3>
+                <p>Start: Dunakeszi, Völgymenet a bal partot követve, a zöld bója és a bal part között evezve, a
+                    Dunakeszi sóder kiemelőt megkerülve a bal part mellett (Duna 1660 Fkm), visszaevezni a célba,
+                    Dunakeszi strandra.</p>
+
+                <h3>SUP táv – 4 km</h3>
+                <p>Start: Dunakeszi, Völgymenet a bal partot követve, a zöld bója és a part között evezve, a Dunakeszi
+                    sóder kiemelőt megkerülve a bal part mellett (Duna 1663 Fkm), visszaevezni a célba, Dunakeszire.</p>
+
+                <h3>SUP Ügyességi verseny</h3>
+                <p>Minden 4 km-es versenyző regisztrálva van az ügyességi versenyre, de nem kötelező elindulni.
+                    Start/Cél: Dunakeszi strand. Partról felszereléssel a kézben a vízbe futva, szemközti bóját jobbról
+                    balra megkerülve folyásirányával megegyezően lefele 200 métert haladva a következő bójáig, majd
+                    jobbról balra megkerülve partmellé érve folyásiránnyal ellentétesen lefele 200 métert haladva a
+                    következő bójáig, balról jobbra megkerülve a part irányába, sóderen kifutva evezővel a kézben a
+                    célig.</p>
+            </div>
+
+            <!-- Nevezés -->
+            <div class="section-block">
+                <h2>📝 Nevezés</h2>
+
+                <h3>Online nevezés</h3>
+                <p>Az online nevezést <strong>2026. május 27-én 20:00 óráig</strong> lehet leadni. A hajóegység
+                    nevezését a Kapitány (a hajóegység nevezéséért felelős, hajóban ülő személy) kezdeményezheti. A
+                    regisztrációs felületen belépve a Kapitány megadja a nevezni kívánt hajóegység paramétereit és a
+                    hajóegységben résztvevő legénység tagjainak nevét és adatait. A nevezés után a nevezési díjat az
+                    online felületen kell befizetni.</p>
+
+                <h3>Helyszíni nevezés</h3>
+                <p>Korlátozott számban lehetőség van helyszíni nevezés leadására az esemény napján
+                    <strong>8:00–08:45</strong> között. A nevezés a díj befizetésével válik érvényessé.
+                </p>
+
+                <h3>Kötelező dokumentumok</h3>
+                <ul>
+                    <li>Egyéni felelősségvállalási nyilatkozat</li>
+                    <li>18 éven aluli versenyzők esetében szülői/gondviselői hozzájáruló nyilatkozat</li>
+                </ul>
+            </div>
+
+            <!-- Nevezési díj -->
+            <div class="section-block">
+                <h2>💳 Nevezési Díjak</h2>
+                <div class="dij-grid">
+                    <div class="dij-card">
+                        <div class="dij-label">Előnevezési díj<br>(2026. máj. 27. 20:00-ig)</div>
+                        <div class="dij-amount">7 000 Ft</div>
+                        <div class="dij-sub">/ fő</div>
+                    </div>
+                    <div class="dij-card">
+                        <div class="dij-label">Helyszíni nevezés díja</div>
+                        <div class="dij-amount">8 000 Ft</div>
+                        <div class="dij-sub">/ fő</div>
+                    </div>
+                    <div class="dij-card">
+                        <div class="dij-label">Kísérő ebédjegy<br>(Bab gulyás + kenyér)</div>
+                        <div class="dij-amount">2 500 Ft</div>
+                        <div class="dij-sub">elővételben / 3 000 Ft helyszínen</div>
+                    </div>
+                </div>
+
+                <h3>A díj tartalmazza</h3>
+                <ul>
+                    <li>Törvényes előírásoknak megfelelő ÁFA</li>
+                    <li>Egyedi, névre szóló letölthető online emléklap</li>
+                    <li>A táv teljesítőinek befutó érem</li>
+                    <li>Vízirendészet és vízimenő szolgálat által biztosított vízi útvonal</li>
+                    <li>Orvosi szolgálat</li>
+                    <li>Időmérés</li>
+                    <li>Frissítőpont és egyszeri meleg ebéd</li>
+                    <li>Verseny kategória I. helyezettek díjazása</li>
+                </ul>
+
+                <h3>Fizetés átutalással</h3>
+                <div class="bank-info">
+                    <div><strong>Számlabirtokos:</strong> Dunakeszi SH ÖTSE</div>
+                    <div><strong>Számlaszám:</strong> 10402018-50526768-89871004 (K&amp;H Bank)</div>
+                    <div><strong>Megjegyzés:</strong> egyén / csapat neve, Dunakeszi Futam</div>
+                </div>
+
+                <h3>Online fizetés (csak Ötpróba Sárkányhajó)</h3>
+                <p>A fizetés a Barion online fizetési rendszeren keresztül történik.</p>
+                <a href="https://nevezes.otprobatokioba.hu/termek/sarkanyhajozas/" target="_blank" class="url-link">
+                    https://nevezes.otprobatokioba.hu/termek/sarkanyhajozas/
+                </a>
+            </div>
+
+            <!-- Díjazás -->
+            <div class="section-block">
+                <h2>🏅 Díjazás</h2>
+                <ul>
+                    <li>Minden teljesítő befutóérmet és oklevelet kap.</li>
+                    <li>Kategóriánként az első három helyezett érem díjazásban részesül.</li>
+                    <li>A rövid táv abszolút sorrendben: az első öt éremdíjazásban részesül.</li>
+                    <li>MK-1 (leány-fiú együtt, 8–14 éves korig) rövid táv: az első 10 részesül éremdíjazásban.</li>
+                </ul>
+            </div>
+
+            <!-- Hajóbérlés -->
+            <div class="section-block">
+                <h2>🛶 Hajóbérlés</h2>
+                <p>SUP, Kajak és Kenu felszerelés bérlésére korlátozott számban van lehetőség telefonon és a helyszínen
+                    előzetes egyeztetés alapján.</p>
+                <div class="highlight-box">
+                    📞 Nagy Szabolcs: <a href="tel:+36703133509" class="phone-link">+36 70 313 3509</a>
+                </div>
+                <p>A rendezők sárkányhajókat, tapasztalt kormányosokat és lapátokat mindenki részére biztosítanak. Saját
+                    lapát használata megengedett.</p>
+            </div>
+
+            <!-- Biztonság -->
+            <div class="section-block">
+                <h2>⚠️ Biztonsági Előírások</h2>
+                <ul>
+                    <li>16 év felettiek számára a vízi járműben tartózkodók számának megfelelő számú vízirendészeti
+                        szabályoknak megfelelő mentőmellényt kell biztosítani.</li>
+                    <li>Mentőmellény viselése 16 év alatt kötelező.</li>
+                    <li>Az eseményen mindenki a saját felelősségére vesz részt, melyről a helyszínen nyilatkozik.</li>
+                    <li>Az esemény résztvevőire a hajózási szabályzat rendelkezései vonatkoznak.</li>
+                    <li>A fordulók rajtja előtt elhangzott vízterület sajátosságaira és főleg veszélyeire vonatkozó
+                        információkat kötelező betartani.</li>
+                </ul>
+            </div>
+
+            <!-- Egyéb info -->
+            <div class="section-block">
+                <h2>ℹ️ Egyéb Információk</h2>
+
+                <h3>Pontosság</h3>
+                <p>Kérjük minden résztvevőt, hogy a versenyre időben, minimálisan egy órával a futam kezdete előtt
+                    érkezzen meg. A futam előtt 25 perccel a csapatoknak a kijelölt vízre szálló helyen fel kell
+                    sorakozniuk ellenőrzés és időbeni vízre szállás céljából.</p>
+
+                <h3>Öltözés</h3>
+                <p>A versenyzőknek a Dunakeszi Kajak Club mosdói és zuhanyzói rendelkezésre állnak. Aki teheti, a
+                    zsúfoltság elkerülése végett már eleve sportfelszerelésben jöjjön! Az értékeire mindenki maga
+                    vigyázzon, a rendezők azokért felelősséget nem vállalnak.</p>
+
+                <h3>Parkolás</h3>
+                <p>Dunakeszi, Katonadomb u. 5. – Kijelölt parkolóban, a Katonadomb környékén a szabad területen. A Duna
+                    partra csak a hajó oda szállításának idejéig engedélyezett.</p>
+
+                <h3>Étkezés</h3>
+                <p>A verseny helyszínén büfé üzemel.</p>
+
+                <h3>Sárkányhajó ötpróba</h3>
+                <p>Sárkányhajó kategóriában lehetőség van egyénileg vagy kisebb csoportban is jelentkezni, ugyanis a
+                    végleges, teljes létszámú sárkányhajó egységek az eseményen kerülnek kihirdetésre.</p>
+            </div>
+
+        </div>
+    </main>
+
+    <div id="toast-container"></div>
+
+</body>
+
+</html>

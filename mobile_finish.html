@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <!-- Ensure mobile compatibility, prevent zooming for app-like feel -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DragonWave Befutó Rögzítő</title>
+    <!-- Use the same font as the main site -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0077b6;
+            --primary-action: #00b4a0;
+            --bg: #f0f7ff;
+            --text: #0d2b40;
+            --card-bg: #ffffff;
+            --error: #e63946;
+            --success: #0077b6;
+            --border: #bee1f4;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Montserrat', sans-serif;
+            -webkit-tap-highlight-color: transparent; /* Remove tap blue highlight on mobile */
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        header {
+            text-align: center;
+            padding: 10px 0 20px 0;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            text-transform: uppercase;
+        }
+        
+        header p {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* --- View Containers --- */
+        #login-view, #app-view {
+            width: 100%;
+            display: none;
+            flex-direction: column;
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        #login-view.active, #app-view.active {
+            display: flex;
+        }
+
+        h2 {
+            font-size: 1.25rem;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        /* --- Shared Form Elements --- */
+        .input-group {
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #555;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+        }
+
+        /* Specifically for bib input - HUGE */
+        #bib-input {
+            font-size: 3.5rem;
+            text-align: center;
+            font-weight: 800;
+            height: 100px;
+            letter-spacing: 2px;
+            padding: 10px;
+            color: var(--primary);
+        }
+
+        /* Remove default number arrows */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+
+        button {
+            width: 100%;
+            padding: 16px;
+            font-size: 1.2rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.1s, background-color 0.2s, box-shadow 0.2s;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        button:active {
+            transform: scale(0.97);
+        }
+
+        .btn-login {
+            background-color: var(--primary);
+        }
+
+        .btn-action {
+            background-color: var(--primary-action);
+            padding: 24px;
+            font-size: 1.8rem;
+            margin-top: 10px;
+        }
+        
+        .btn-action:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-logout {
+            background-color: transparent;
+            color: var(--error);
+            border: 2px solid var(--error);
+            box-shadow: none;
+            margin-top: auto; /* Push to bottom */
+            padding: 12px;
+            font-size: 0.9rem;
+        }
+
+        /* --- Feedback Toast --- */
+        #toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-150%);
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            color: white;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            font-size: 1rem;
+        }
+
+        #toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        #toast.success { background-color: var(--success); }
+        #toast.error { background-color: var(--error); }
+        #toast.warning { background-color: #ff9800; }
+
+        /* Keyboard pad hint for app view */
+        .hint {
+            text-align: center;
+            font-size: 0.85rem;
+            color: #888;
+            margin-top: 15px;
+        }
+        
+        /* Loading overlay */
+        .loading-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+            z-index: 10;
+            display: none;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* --- Keypad Styles --- */
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .key-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 18px 0;
+            font-size: 1.8rem;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.1s, background-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .key-btn:active {
+            transform: scale(0.95);
+            background-color: #005f91;
+        }
+
+        .key-del {
+            background-color: #6c757d;
+        }
+
+        .key-del:active {
+            background-color: #5a6268;
+        }
+
+        .key-submit {
+            background-color: var(--primary-action);
+            font-size: 1rem;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        .key-submit:active {
+            background-color: #008f80;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>DragonWave</h1>
+        <p>Hivatalos Befutó Rögzítő</p>
+    </header>
+
+    <div id="toast">Message here</div>
+
+    <div class="container">
+        
+        <!-- LOGIN VIEW -->
+        <div id="login-view">
+            <h2>Admin Belépés</h2>
+            <div class="input-group">
+                <label for="password-input">Jelszó</label>
+                <input type="password" id="password-input" placeholder="Ide írd a jelszót..." autocomplete="current-password">
+            </div>
+            <button class="btn-login" id="login-btn">Belépés</button>
+            <div class="loading-overlay" id="login-loading">
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
+
+        <!-- MAIN APP VIEW -->
+        <div id="app-view">
+            <h2>Kézi Beérkeztetés</h2>
+            
+            <div class="input-group" style="margin-bottom: 10px;">
+                <label for="bib-input">Rajtszám</label>
+                <input type="number" id="bib-input" inputmode="none" pattern="[0-9]*" placeholder="---" autocomplete="off" readonly>
+            </div>
+            
+            <div class="keypad">
+                <button class="key-btn" data-val="1">1</button>
+                <button class="key-btn" data-val="2">2</button>
+                <button class="key-btn" data-val="3">3</button>
+                
+                <button class="key-btn" data-val="4">4</button>
+                <button class="key-btn" data-val="5">5</button>
+                <button class="key-btn" data-val="6">6</button>
+                
+                <button class="key-btn" data-val="7">7</button>
+                <button class="key-btn" data-val="8">8</button>
+                <button class="key-btn" data-val="9">9</button>
+                
+                <button class="key-btn key-del" data-val="del">⌫</button>
+                <button class="key-btn key-submit" data-val="submit">BEVITEL</button>
+                <button class="key-btn" data-val="0">0</button>
+            </div>
+            
+            <button class="btn-action" id="submit-btn" style="display: none;">BEFUTTAT</button>
+            
+            <p class="hint">Írd be a rajtszámot, és nyomj a gombra vagy Entert!</p>
+            
+            <div class="loading-overlay" id="app-loading">
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
+
+    </div>
+    
+    <!-- Logout button at bottom -->
+    <button class="btn-logout" id="logout-btn" style="display: none;">Kijelentkezés</button>
+
+    <script>
+        // DOM Elements
+        const loginView = document.getElementById('login-view');
+        const appView = document.getElementById('app-view');
+        const toastEl = document.getElementById('toast');
+        const loginBtn = document.getElementById('login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const submitBtn = document.getElementById('submit-btn');
+        const passwordInput = document.getElementById('password-input');
+        const bibInput = document.getElementById('bib-input');
+        
+        // State
+        let adminPassword = localStorage.getItem('dragonwave_admin_pwd') || '';
+
+        // API URL (Relative, so it works wherever it's hosted, assuming same origin as backend)
+        const API_BASE = '/api';
+
+        // Initialize
+        function init() {
+            if (adminPassword) {
+                // Optimistically show app view. If an API call fails with 401/403, we will kick them out.
+                showApp();
+            } else {
+                showLogin();
+            }
+        }
+
+        // View Toggling
+        function showLogin() {
+            loginView.classList.add('active');
+            appView.classList.remove('active');
+            logoutBtn.style.display = 'none';
+            passwordInput.value = '';
+            passwordInput.focus();
+        }
+
+        function showApp() {
+            loginView.classList.remove('active');
+            appView.classList.add('active');
+            logoutBtn.style.display = 'block';
+            bibInput.value = '';
+            // Delay focus slightly so mobile keyboards don't act weird during transition
+            setTimeout(() => bibInput.focus(), 100); 
+        }
+
+        // Toast Notification
+        let toastTimeout;
+        function showToast(message, type = 'success') {
+            toastEl.textContent = message;
+            toastEl.className = ''; // Reset classes
+            toastEl.classList.add('show', type);
+            
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toastEl.classList.remove('show');
+            }, 3000); // Hide after 3 seconds
+        }
+
+        // Format milliseconds to M:SS.ms (similar to our display elsewhere)
+        function formatTime(ms) {
+            if (!ms) return "0:00";
+            let totalSec = Math.floor(ms / 1000);
+            let hours = Math.floor(totalSec / 3600);
+            let minutes = Math.floor((totalSec % 3600) / 60);
+            let seconds = totalSec % 60;
+
+            let timeStr = "";
+            if (hours > 0) {
+                timeStr += hours + ":" + (minutes < 10 ? "0" : "") + minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+            } else {
+                timeStr += minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+            }
+            return timeStr;
+        }
+
+        // --- Event Listeners ---
+
+        // Login Logic
+        async function handleLogin() {
+            const pwd = passwordInput.value.trim();
+            if (!pwd) {
+                showToast('Kérlek add meg a jelszót!', 'error');
+                return;
+            }
+
+            document.getElementById('login-loading').style.display = 'flex';
+            
+            try {
+                // Verify password against backend
+                const response = await fetch(`${API_BASE}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: pwd })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    adminPassword = pwd;
+                    localStorage.setItem('dragonwave_admin_pwd', passwordInput.value);
+                    showToast('Sikeres belépés!', 'success');
+                    showApp();
+                } else {
+                    showToast(data.error || 'Hibás jelszó!', 'error');
+                }
+            } catch (err) {
+                console.error("Login error:", err);
+                showToast('Hiba történt a csatlakozáskor.', 'error');
+            } finally {
+                document.getElementById('login-loading').style.display = 'none';
+            }
+        }
+
+        loginBtn.addEventListener('click', handleLogin);
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleLogin();
+        });
+
+        // Logout
+        logoutBtn.addEventListener('click', () => {
+            adminPassword = '';
+            localStorage.removeItem('dragonwave_admin_pwd');
+            showLogin();
+        });
+
+        // Submit Logic (Stop Racer)
+        async function handleSubmit() {
+            const bib = parseInt(bibInput.value);
+            
+            if (!bib || isNaN(bib)) {
+                showToast('Kérlek adj meg egy érvényes rajtszámot!', 'warning');
+                bibInput.focus();
+                return;
+            }
+
+            // Disable button and show loading
+            submitBtn.disabled = true;
+            document.getElementById('app-loading').style.display = 'flex';
+
+            try {
+                const response = await fetch(`${API_BASE}/stop-racer`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminPassword}`
+                    },
+                    body: JSON.stringify({ bib })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    // Success!
+                    const nameStr = data.racer?.name || 'Ismeretlen';
+                    const timeStr = formatTime(data.racer?.total_time);
+                    
+                    showToast(`Sikeres mentés!\n#${bib} - ${nameStr}\nIdő: ${timeStr} 🏁`, 'success');
+                    
+                    // Reset input for next person
+                    bibInput.value = '';
+                    
+                    // Force focus back (crucial for rapid entry)
+                    setTimeout(() => bibInput.focus(), 10);
+                } else {
+                    // Error (e.g., unauthorized, or racer not running)
+                    if (response.status === 401 || response.status === 403) {
+                        showToast('Lejárt a bejelentkezés.', 'error');
+                        logoutBtn.click(); // force logout
+                    } else {
+                        showToast(`Hiba: ${data.error || 'Ismeretlen hiba történt'}`, 'error');
+                        // Don't clear input so they can fix a typo easily
+                        bibInput.focus();
+                        bibInput.select(); // Highlight existing input for easy overwrite
+                    }
+                }
+            } catch (err) {
+                console.error("Submit error:", err);
+                showToast('Hálózati hiba. Nincs internetkapcsolat?', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                document.getElementById('app-loading').style.display = 'none';
+            }
+        }
+
+        submitBtn.addEventListener('click', handleSubmit);
+        bibInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Prevent accidental form submissions if placed inside form
+                handleSubmit();
+            }
+        });
+
+        // Keypad Event Handlers
+        document.querySelectorAll('.key-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const val = btn.getAttribute('data-val');
+                
+                if (val === 'del') {
+                    bibInput.value = bibInput.value.slice(0, -1);
+                } else if (val === 'submit') {
+                    handleSubmit();
+                } else {
+                    // Only allow up to 4 digits for bib (sanity check)
+                    if (bibInput.value.length < 4) {
+                        bibInput.value += val;
+                    }
+                }
+                
+                // Trigger an input event just in case anything is listening
+                bibInput.dispatchEvent(new Event('input'));
+            });
+        });
+
+        // Start initialization
+        init();
+    </script>
+</body>
+</html>

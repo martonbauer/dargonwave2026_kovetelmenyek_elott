@@ -4,210 +4,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DragonWave 2026 | Event Management</title>
-    <link rel="stylesheet" href="drgon.css">
+    git branch -M main
+    git push -u origin main    <title>DunakesziFutam 2026</title>
+    <link rel="stylesheet" href="landing.css">
 </head>
 
 <body>
-    <header>
+
+    <!-- Background Video -->
+    <div class="hero-video-container">
+        <video autoplay muted loop playsinline id="heroVideo">
+            <source src="foldal_video.mp4" type="video/mp4">
+        </video>
+        <div class="video-overlay"></div>
+    </div>
+
+    <!-- Navigation -->
+    <header id="navbar">
         <div class="header-container">
-            <!-- Bal oldal: Pontos Idő és Dátum -->
-            <div id="local-time-container">
-                <span id="local-date-display"></span>
-                <span id="local-time-display">--:--:--</span>
-            </div>
-
-            <!-- Közép: Logó / Cím -->
-            <h1 class="logo-text">DragonWave 2026</h1>
-
-            <!-- Jobb oldal: Navigáció -->
-            <nav id="main-nav">
-                <button class="nav-btn active" onclick="switchTab('public')">Verseny</button>
-                <button class="nav-btn" onclick="switchTab('admin')">Admin</button>
+            <h1 class="logo-text-unified">
+                DUNAKESZI FUTAM 2026
+            </h1>
+            <nav class="nav-links" id="main-nav">
+                <a href="index.html" class="nav-btn active">Főoldal</a>
+                <a href="management.html?view=regisztracio" class="nav-btn">Nevezés</a>
+                <a href="management.html?view=eredmenyek" class="nav-btn">Eredmények</a>
+                <a href="versenykiiras.html" class="nav-btn">Versenykiírás</a>
+                <a href="management.html?view=admin" class="nav-btn">Admin</a>
             </nav>
         </div>
     </header>
 
-    <!-- Hero Kép Szekció -->
-    <div
-        style="width: 100%; max-height: 400px; overflow: hidden; position: relative; border-bottom: 2px solid var(--accent-primary); box-shadow: 0 5px 20px rgba(0, 255, 157, 0.2);">
-        <!-- Ezt a képet be kell másolnod a mappába 'dragonwave_2026_photo.jpg' néven -->
-        <img src="dragonwave_2026_photo.jpg" alt="DragonWave Verseny" class="hero-img"
-            style="width: 100%; height: 100%; object-fit: cover; object-position: center 30%; filter: brightness(0.8);">
-        <div
-            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, transparent 60%, var(--bg-primary) 100%);">
+    <!-- Hero Section -->
+    <section class="hero">
+        <p class="hero-tagline">Magyar Vízitúra Bajnokság</p>
+        <h1>DUNAKESZI<br><span style="background: var(--grad-logo); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">FUTAM 2026</span></h1>
+        <div class="hero-btns">
+            <a href="management.html?view=regisztracio" class="btn-main">Nevezés Indítása</a>
+            <a href="#about" class="btn-outline">Részletek</a>
+        </div>
+    </section>
+
+    <!-- Info Section -->
+    <section id="about">
+        <div class="content-card">
+            <div class="section-grid">
+                <div class="section-text">
+                    <div class="accent-bar"></div>
+                    <h2 class="section-heading">A Verseny Élménye</h2>
+                    <p>A DunakesziFutam nem csupán egy evezős verseny, a MAVITUSZ víztúra bajnoki fordulójából, hanem
+                        Dunakeszi és a Dunakanyar leglátványosabb vízi sporteseménye. Csatlakozz hozzánk a Duna
+                        hullámain, ahol kajakosok, kenusok és SUP-osok mérik össze erejüket.</p>
+                    <br>
+                    <p>Hosszú táv (22km), rövid táv (11km) és speciális SUP kategóriák várják a jelentkezőket.
+                        Professzionális időmérés és garantált hangulat.</p>
+                </div>
+                <div class="section-image">
+                    <img src="foldal_1.png" alt="DunakesziFutam Verseny" class="section-img">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Login Modal -->
+    <div class="modal" id="loginModal">
+        <div class="login-card">
+            <h2>Admin Belépés</h2>
+            <div class="input-group">
+                <label>Jelszó</label>
+                <input type="password" id="adminPasswordInput" placeholder="••••••••">
+            </div>
+            <button class="btn-submit" onclick="performLogin()">BELÉPÉS</button>
+            <button style="background: none; border: none; color: var(--text-muted); margin-top: 15px; cursor: pointer;"
+                onclick="toggleModal('loginModal', false)">Bezárás</button>
         </div>
     </div>
 
-    <main class="main-content">
-        <section id="registration-form" class="registration-section">
-            <h3 class="event-subtitle">Magyar Viztúra bajnokság</h3>
-            <h1 class="event-title">DunakesziFutam 2026</h1>
-            <div class="title-separator"></div>
-
-            <h2 class="section-title">Online Nevezés és Fizetés</h2>
-            <form id="nevezesForm" class="nevezes-form">
-                <label for="kategoria">Hajóegység / Kategória</label>
-                <select id="kategoria" required onchange="raceManager.updateMemberFields()">
-                    <option value="" disabled selected>Válassz kategóriát...</option>
-                    <optgroup label="Kajak (Egyéni)">
-                        <option value="versenykajak_noi_1">Versenykajak női-1 (38 cm)</option>
-                        <option value="versenykajak_ferfi_1">Versenykajak férfi-1 (38 cm)</option>
-                        <option value="turakajak_noi_1">Túrakajak női 1 (42-44-46-48-51 cm)</option>
-                        <option value="turakajak_ferfi_1">Túrakajak férfi-1 (42-44-46-48-51 cm)</option>
-                        <option value="tengeri_kajak_noi_1">Tengeri kajak női 1 (51cm>)</option>
-                        <option value="tengeri_kajak_ferfi_1">Tengeri kajak férfi 1 (51cm>)</option>
-                        <option value="surfski_noi">Surfski női kajak</option>
-                        <option value="surfski_ferfi">Surfski férfi kajak</option>
-                    </optgroup>
-                    <optgroup label="Kenu (Egyéni / Páros)">
-                        <option value="kenu_noi_1">Kenu női-1</option>
-                        <option value="kenu_ferfi_1">Kenu férfi-1</option>
-                        <option value="outrigger_noi_1">Outrigger női-1 (kenu)</option>
-                        <option value="outrigger_ferfi_1">Outrigger férfi-1 (kenu)</option>
-                        <option value="turakajak_2_nyitott">Túrakajak 2 (nyitott) - 2 fő</option>
-                        <option value="kenu_2_ferfi">Kenu 2 férfi - 2 fő</option>
-                        <option value="kenu_2_vegyes">Kenu 2 vegyes - 2 fő</option>
-                        <option value="outrigger_2_nyitott">Outrigger 2 (nyitott) - 2 fő</option>
-                    </optgroup>
-                    <optgroup label="Csapathajók (3-4 fő)">
-                        <option value="kenu_3_nyitott">Kenu 3 (nyitott) - 3 fő</option>
-                        <option value="kenu_4_nyitott">Kenu 4 (nyitott) - 4 fő</option>
-                        <option value="sarkanyhajo_otproba">Sárkányhajó ötpróba - egyéni</option>
-                    </optgroup>
-                    <optgroup label="SUP (Egyéni)">
-                        <option value="sup_noi_1_merev_39_alatt">SUP női-1 merev (39 év alatt)</option>
-                        <option value="sup_noi_1_merev_39_felett">SUP női-1 merev (40 év felett)</option>
-                        <option value="sup_ferfi_1_merev_39_alatt">SUP férfi-1 merev (39 év alatt)</option>
-                        <option value="sup_ferfi_1_merev_39_felett">SUP férfi-1 merev (40 év felett)</option>
-                        <option value="sup_noi_1_felfujhato_39_alatt">SUP női-1 felfújható (39 év alatt)</option>
-                        <option value="sup_noi_1_felfujhato_39_felett">SUP női-1 felfújható (40 év felett)</option>
-                        <option value="sup_ferfi_1_felfujhato_39_alatt">SUP férfi-1 felfújható (39 év alatt)</option>
-                        <option value="sup_ferfi_1_felfujhato_39_felett">SUP férfi-1 felfújható (40 év felett)</option>
-                    </optgroup>
-                </select>
-
-                <div id="members-container">
-                    <!-- Dinamikusan generált mezők helye -->
-                    <div
-                        style="text-align: center; padding: 20px; color: #888; border: 1px dashed #444; border-radius: 8px; margin: 15px 0;">
-                        Válassz kategóriát a jelentkezési űrlap megjelenítéséhez.
-                    </div>
-                </div>
-
-                <label for="versenytav">Versenytáv</label>
-                <select id="versenytav" required>
-                    <option value="11km">11 km (Rövid táv)</option>
-                    <option value="22km">22 km (Hosszú táv)</option>
-                    <option value="4km">4 km (SUP)</option>
-                </select>
-
-                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 1rem;">Nevezés
-                    Beküldése</button>
-                <p
-                    style="margin-top: 1.5rem; color: var(--accent-primary); font-size: 0.95rem; font-style: italic; text-align: center;">
-                    * A nevezés a fizetés megtörténte után válik elfogadottá.
-                </p>
-            </form>
-        </section>
-
-        <section id="live-results" class="hidden">
-            <h2 class="section-title">⏱️ Élő Futamidők & Helyezések</h2>
-            <div id="category-timers"></div>
-            <div id="results-tables-container">
-                <!-- Ide kerülnek az eredménytáblázatok -->
-            </div>
-        </section>
-
-        <section id="admin-view" class="hidden">
-            <div id="admin-login-panel">
-                <h2>Admin Belépés</h2>
-                <input type="password" id="admin-pass" placeholder="Jelszó">
-                <button onclick="loginAdmin()">Belépés</button>
-            </div>
-            <div id="admin-dashboard-panel" class="hidden">
-                <div class="admin-top-bar">
-                    <h2 class="admin-title">Versenyirányító Központ</h2>
-                    <div class="admin-stats" id="admin-global-stats">
-                        <!-- Stats like total racers, finished, running will go here -->
-                    </div>
-                </div>
-
-                <div class="admin-grid">
-                    <!-- Bal oszlop: Futamindítások -->
-                    <div class="admin-card race-starts">
-                        <h3 class="card-title">🚀 Futamindítások</h3>
-                        <p class="card-desc">Indítsd el a kiválasztott hajóegység csoportok rajtját.</p>
-                        <div id="category-start-buttons" class="start-btn-grid">
-                            <div class="loading-text">Gombok betöltése...</div>
-                        </div>
-                    </div>
-
-                    <!-- Középső/Jobb oszlop: Élő órák és Beérkeztetés -->
-                    <div class="admin-card race-control">
-                        <h3 class="card-title">⏱️ Élő Futamok & Beérkeztetés</h3>
-
-                        <!-- Beérkeztetés panel felülre hozva az órák elé vagy mellé -->
-                        <div id="bib-stop-panel" class="bib-recorder">
-                            <label for="bib-input">Rajtszám beírása:</label>
-                            <div class="bib-input-wrapper">
-                                <input type="number" id="bib-input" placeholder="000" autofocus>
-                                <button onclick="window.stopRacer()" class="btn-stop-major">RÖGZÍTÉS</button>
-                            </div>
-                        </div>
-
-                        <div class="divider"></div>
-
-                        <h4 class="sub-card-title">Futó órák:</h4>
-                        <div id="admin-category-timers" class="admin-timer-grid">
-                            <div class="empty-text">Nincs aktív futam</div>
-                        </div>
-                    </div>
-
-                    <!-- Alsó/Oldalsó oszlop: Adatkezelés -->
-                    <div class="admin-card data-management">
-                        <h3 class="card-title">📂 Adatkezelés</h3>
-                        <div class="import-zone">
-                            <label for="csv-upload">Versenyzők importálása (CSV)</label>
-                            <input type="file" id="csv-upload" accept=".csv">
-                            <button onclick="uploadCsv()" class="btn-secondary">IMPORTÁLÁS</button>
-                        </div>
-                        <div class="danger-zone">
-                            <button onclick="raceManager.resetAll()" class="btn-danger">
-                                TELJES RENDSZERTÖRLÉS
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="admin-table-section">
-                    <h3 class="section-title">👥 Versenyzői Adatbázis (Szerkeszthető)</h3>
-                    <div class="table-responsive">
-                        <table id="admin-table">
-                            <thead>
-                                <tr>
-                                    <th>Rajtszám</th>
-                                    <th>Egység Tagjai</th>
-                                    <th>Ötpróba ID</th>
-                                    <th>Sorozat</th>
-                                    <th>Kategória</th>
-                                    <th>Táv</th>
-                                    <th>Státusz</th>
-                                    <th>Időeredmény</th>
-                                    <th>Művelet</th>
-                                </tr>
-                            </thead>
-                            <tbody id="admin-table-body"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <div id="toast-container"></div>
-
-    <script src="dragon.js"></script>
+    <script src="landing.js"></script>
 </body>
 
 </html>

@@ -1,27 +1,24 @@
-srsz.;Név 1;Név 2;Név 3;Név 4;Kategória;Születési dátum 1;Születési dátum 2;Születési dátum 3;Születési dátum 4;táv;5P 1;5P 2;5P 3;5P 4
-1;Bauer Márton;;;;Versenykajak nõi-1 (38 cm);2000.11.22;;;;11;123456;;;
-2;Kovács Csilla;;;;Versenykajak férfi-1 (38 cm);1990.01.23;;;;22;234567;;;
-3;Kiss Réka;;;;Túrakajak nõi 1 (42-44-46-48-51 cm);1989.03.04;;;;11;345678;;;
-4;Nagy Béla;;;;Túrakajak férfi-1 (42-44-46-48-51 cm);1975.08.11;;;;11;456789;;;
-5;Kovács Júlia;Nagy Dénes;;;Túrakajak 2 (nyitott) - 2 fõ;2000.11.22;1989.03.05;;;22;234123;123457;;
-6;Nagy Katalin;;;;Tengeri kajak nõi 1 (51cm>);1990.01.23;;;;11;123245;;;
-7;Szabó Béla;;;;Tengeri kajak férfi 1 (51cm>);1989.03.04;;;;4;345678;;;
-8;László Katalin;;;;Surfski nõi kajak;1975.08.11;;;;4;432145;;;
-9;Foki Norbert;;;;Surfski férfi kajak;2003.01.24;;;;11;567894;;;
-10;Magyar Kati;;;;Kenu nõi-1;2011.07.04;;;;22;452178;;;
-11;Próba Péter;;;;Kenu férfi-1;2011.07.05;;;;4;452179;;;
-12;Próba János;Teszt Elek;;;Kenu 2 férfi - 2 fõ;2011.07.06;1975.08.11;;;;452180;452181;;
-13;Jánosi Pál;Kiss Mari;;;Kenu 2 vegyes - 2 fõ;2011.07.07;1975.08.12;;;;452191;;;
-14;Kovács 1;Kovács 2;Kovács 3;;Kenu 3 (nyitott) - 3 fõ;2011.07.08;1975.08.13;1975.08.14;;;452192;444667;897689;
-15;Nagy 1;Nagy 2;Nagy 3;Nagy 4;Kenu 4 (nyitott) - 4 fõ;2011.07.09;1975.08.14;1975.08.15;1975.08.16;;452193;444668;897690;897691
-16;Vámos Bea;;;;Outrigger nõi-1 (kenu);2011.07.10;;;;;452194;;;
-17;Vámos Béla;;;;Outrigger férfi-1 (kenu);2011.07.11;;;;;452195;;;
-18;Németh 1;Németh 2;;;Outrigger 2 (nyitott) - 2 fõ;2011.07.12;2011.07.18;;;;452196;;;
-19;Csikós Kati;;;;SUP nõi-1 merev (39 év alatt / 40 év felett);2011.07.13;;;;4;452197;;;
-20;Balog Péter;;;;SUP férfi-1 merev (39 év alatt / 40 év felett);2011.07.14;;;;4;452198;;;
-21;Nagy Juli;;;;SUP nõi-1 felfújható (39 év alatt / 40 év felett);2011.07.15;;;;4;452199;;;
-22;Kiss Huba;;;;SUP férfi-1 felfújható (39 év alatt / 40 év felett);2011.07.16;;;;4;452200;;;
-23;Lékai Jani;;;;Sárkányhajó ötpróba - egyéni;2011.07.17;;;;4;452201;;;
-24;;;;;;;;;;;;;;
-25;;;;;;;;;;;;;;
-26;;;;;;;;;;;;;;
+srsz.;Név 1;Név 2;Név 3;Név 4;email;telefonszám;Kategória;Születési dátum 1;Születési dátum 2;Születési dátum 3;Születési dátum 4;táv;5P 1;5P 2;5P 3;5P 4
+1;Bauer Márton;;;;bauermarton@hotmail.com;06 (70)336-64-60;Versenykajak nõi-1 (38 cm);2000.11.22;;;;11 km;123456;;;
+2;Kovács Csilla;;;;bauermarton@hotmail.com;06 (70)336-64-61;Versenykajak férfi-1 (38 cm);1990.01.23;;;;22 km;234567;;;
+3;Kiss Réka;;;;bauermarton@hotmail.com;06 (70)336-64-62;Túrakajak nõi 1 (42-44-46-48-51 cm);1989.03.04;;;;11 km;345678;;;
+4;Nagy Béla;;;;bauermarton@hotmail.com;06 (70)336-64-63;Túrakajak férfi-1 (42-44-46-48-51 cm);1975.08.11;;;;11 km;456789;;;
+5;Kovács Júlia;Nagy Dénes;;;bauermarton@hotmail.com;06 (70)336-64-64;Túrakajak 2 (nyitott) - 2 fõ;2000.11.22;1989.03.05;;;22 km;234123;123457;;
+6;Nagy Katalin;;;;bauermarton@hotmail.com;06 (70)336-64-65;Tengeri kajak nõi 1 (51cm>);1990.01.23;;;;22 km;123245;;;
+7;Szabó Béla;;;;bauermarton@hotmail.com;06 (70)336-64-66;Tengeri kajak férfi 1 (51cm>);1989.03.04;;;;22 km;345678;;;
+8;László Katalin;;;;bauermarton@hotmail.com;06 (70)336-64-67;Surfski nõi kajak;1975.08.11;;;;22 km;432145;;;
+9;Foki Norbert;;;;bauermarton@hotmail.com;06 (70)336-64-68;Surfski férfi kajak;2003.01.24;;;;22 km;567894;;;
+10;Magyar Kati;;;;bauermarton@hotmail.com;06 (70)336-64-69;Kenu nõi-1;2011.07.04;;;;22 km;452178;;;
+11;Próba Péter;;;;bauermarton@hotmail.com;06 (70)336-64-70;Kenu férfi-1;2011.07.05;;;;22 km;452179;;;
+12;Próba János;Teszt Elek;;;bauermarton@hotmail.com;06 (70)336-64-71;Kenu 2 férfi - 2 fõ;2011.07.06;1975.08.11;;;22 km;452180;452181;;
+13;Jánosi Pál;Kiss Mari;;;bauermarton@hotmail.com;06 (70)336-64-72;Kenu 2 vegyes - 2 fõ;2011.07.07;1975.08.12;;;22 km;452191;;;
+14;Kovács 1;Kovács 2;Kovács 3;;bauermarton@hotmail.com;06 (70)336-64-73;Kenu 3 (nyitott) - 3 fõ;2011.07.08;1975.08.13;1975.08.14;;22 km;452192;444667;897689;
+15;Nagy 1;Nagy 2;Nagy 3;Nagy 4;bauermarton@hotmail.com;06 (70)336-64-74;Kenu 4 (nyitott) - 4 fõ;2011.07.09;1975.08.14;1975.08.15;1975.08.16;22 km;452193;444668;897690;897691
+16;Vámos Bea;;;;bauermarton@hotmail.com;06 (70)336-64-75;Outrigger nõi-1 (kenu);2011.07.10;;;;22 km;452194;;;
+17;Vámos Béla;;;;bauermarton@hotmail.com;06 (70)336-64-76;Outrigger férfi-1 (kenu);2011.07.11;;;;22 km;452195;;;
+18;Németh 1;Németh 2;;;bauermarton@hotmail.com;06 (70)336-64-77;Outrigger 2 (nyitott) - 2 fõ;2011.07.12;2011.07.18;;;22 km;452196;;;
+19;Csikós Kati;;;;bauermarton@hotmail.com;06 (70)336-64-78;SUP nõi-1 merev (39 év alatt / 40 év felett);2011.07.13;;;;4 km;452197;;;
+20;Balog Péter;;;;bauermarton@hotmail.com;06 (70)336-64-79;SUP férfi-1 merev (39 év alatt / 40 év felett);2011.07.14;;;;4 km;452198;;;
+21;Nagy Juli;;;;bauermarton@hotmail.com;06 (70)336-64-80;SUP nõi-1 felfújható (39 év alatt / 40 év felett);2011.07.15;;;;4 km;452199;;;
+22;Kiss Huba;;;;bauermarton@hotmail.com;06 (70)336-64-81;SUP férfi-1 felfújható (39 év alatt / 40 év felett);2011.07.16;;;;4 km;452200;;;
+23;Lékai Jani;;;;bauermarton@hotmail.com;06 (70)336-64-82;Sárkányhajó ötpróba - egyéni;2011.07.17;;;;11 km;452201;;;

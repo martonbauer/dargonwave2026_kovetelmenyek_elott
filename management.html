@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="hu">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DunakesziFutam | Versenyirányítás</title>
+    <link rel="stylesheet" href="drgon.css">
+ 
+</head>
+
+<body>
+    <header>
+        <div class="header-container">
+            <!-- Bal oldal: Pontos Idő és Dátum -->
+            <div id="local-time-container" class="hidden">
+                <span id="local-date-display"></span>
+                <span id="local-time-display">--:--:--</span>
+            </div>
+
+            <!-- Közép: Logó / Cím -->
+            <h1 class="logo-text-unified">
+                DUNAKESZI FUTAM 2026
+            </h1>
+
+            <!-- Jobb oldal: Navigáció -->
+            <nav id="main-nav">
+                <a href="index.html" class="nav-btn">Főoldal</a>
+                <button class="nav-btn" id="btn-regisztracio" onclick="switchTab('regisztracio')">Nevezés</button>
+                <button class="nav-btn" id="btn-eredmenyek" onclick="switchTab('eredmenyek')">Eredmények</button>
+                <a href="versenykiiras.html" class="nav-btn">Versenykiírás</a>
+                <button class="nav-btn" id="btn-admin" onclick="switchTab('admin')">Admin</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Kép Szekció -->
+    <div
+        style="width: 100%; max-height: 400px; overflow: hidden; position: relative; border-bottom: 2px solid var(--accent-primary); box-shadow: 0 5px 20px rgba(0, 145, 255, 0.2);">
+        <!-- Ezt a képet be kell másolnod a mappába 'foldal_1.png' néven -->
+        <img src="foldal_1.png" alt="DunakesziFutam Verseny" class="hero-img"
+            style="width: 100%; height: 100%; object-fit: cover; object-position: center 30%; filter: brightness(0.8);">
+        <div
+            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, transparent 60%, var(--bg-primary) 100%);">
+        </div>
+    </div>
+
+    <main class="main-content">
+        <section id="registration-form" class="registration-section">
+            <h3 class="event-subtitle">Magyar Viztúra bajnokság</h3>
+            <h1 class="event-title">DunakesziFutam 2026</h1>
+            <div class="title-separator"></div>
+
+            <h2 class="section-title">Online Nevezés és Fizetés</h2>
+            <form id="nevezesForm" class="nevezes-form">
+                <label for="kategoria">Hajóegység / Kategória</label>
+                <select id="kategoria" required onchange="raceManager.updateMemberFields()">
+                    <option value="" disabled selected>Válassz kategóriát...</option>
+                    <optgroup label="Kajak (Egyéni)">
+                        <option value="versenykajak_noi_1">Versenykajak női-1 (38 cm)</option>
+                        <option value="versenykajak_ferfi_1">Versenykajak férfi-1 (38 cm)</option>
+                        <option value="turakajak_noi_1">Túrakajak női 1 (42-44-46-48-51 cm)</option>
+                        <option value="turakajak_ferfi_1">Túrakajak férfi-1 (42-44-46-48-51 cm)</option>
+                        <option value="tengeri_kajak_noi_1">Tengeri kajak női 1 (51cm>)</option>
+                        <option value="tengeri_kajak_ferfi_1">Tengeri kajak férfi 1 (51cm>)</option>
+                        <option value="surfski_noi">Surfski női kajak</option>
+                        <option value="surfski_ferfi">Surfski férfi kajak</option>
+                    </optgroup>
+                    <optgroup label="Kenu (Egyéni / Páros)">
+                        <option value="kenu_noi_1">Kenu női-1</option>
+                        <option value="kenu_ferfi_1">Kenu férfi-1</option>
+                        <option value="outrigger_noi_1">Outrigger női-1 (kenu)</option>
+                        <option value="outrigger_ferfi_1">Outrigger férfi-1 (kenu)</option>
+                        <option value="turakajak_2_nyitott">Túrakajak 2 (nyitott) - 2 fő</option>
+                        <option value="kenu_2_ferfi">Kenu 2 férfi - 2 fő</option>
+                        <option value="kenu_2_vegyes">Kenu 2 vegyes - 2 fő</option>
+                        <option value="outrigger_2_nyitott">Outrigger 2 (nyitott) - 2 fő</option>
+                    </optgroup>
+                    <optgroup label="Csapathajók (3-4 fő)">
+                        <option value="kenu_3_nyitott">Kenu 3 (nyitott) - 3 fő</option>
+                        <option value="kenu_4_nyitott">Kenu 4 (nyitott) - 4 fő</option>
+                        <option value="sarkanyhajo_otproba">Sárkányhajó ötpróba - egyéni</option>
+                    </optgroup>
+                    <optgroup label="SUP (Egyéni)">
+                        <option value="sup_noi_1_merev_39_alatt">SUP női-1 merev (39 év alatt)</option>
+                        <option value="sup_noi_1_merev_39_felett">SUP női-1 merev (40 év felett)</option>
+                        <option value="sup_ferfi_1_merev_39_alatt">SUP férfi-1 merev (39 év alatt)</option>
+                        <option value="sup_ferfi_1_merev_39_felett">SUP férfi-1 merev (40 év felett)</option>
+                        <option value="sup_noi_1_felfujhato_39_alatt">SUP női-1 felfújható (39 év alatt)</option>
+                        <option value="sup_noi_1_felfujhato_39_felett">SUP női-1 felfújható (40 év felett)</option>
+                        <option value="sup_ferfi_1_felfujhato_39_alatt">SUP férfi-1 felfújható (39 év alatt)</option>
+                        <option value="sup_ferfi_1_felfujhato_39_felett">SUP férfi-1 felfújható (40 év felett)</option>
+                    </optgroup>
+                </select>
+
+                <div id="members-container">
+                    <!-- Dinamikusan generált mezők helye -->
+                    <div
+                        style="text-align: center; padding: 20px; color: #888; border: 1px dashed #444; border-radius: 8px; margin: 15px 0;">
+                        Válassz kategóriát a jelentkezési űrlap megjelenítéséhez.
+                    </div>
+                </div>
+
+                <!-- Kapcsolattartási adatok -->
+                <div class="contact-info-section" style="margin-top: 20px; padding: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <h4 style="margin-top:0; color:var(--accent-primary); font-size: 0.9rem; margin-bottom: 15px;">Kapcsolattartási adatok</h4>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                            <label>E-mail cím</label>
+                            <input type="email" id="reg-email" placeholder="pl. minta@gmail.com" required>
+                        </div>
+                        <div>
+                            <label>Telefonszám</label>
+                            <input type="tel" id="reg-phone" placeholder="pl. +36 30 123 4567" required>
+                        </div>
+                    </div>
+                </div>
+
+                <label for="versenytav">Versenytáv</label>
+                <select id="versenytav" required>
+                    <option value="11km">11 km (Rövid táv)</option>
+                    <option value="22km">22 km (Hosszú táv)</option>
+                    <option value="4km">4 km (SUP)</option>
+                </select>
+
+                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 1rem;">Nevezés
+                    Beküldése</button>
+                <p
+                    style="margin-top: 1.5rem; color: var(--accent-primary); font-size: 0.95rem; font-style: italic; text-align: center;">
+                    * A nevezés a fizetés megtörténte után válik elfogadottá.
+                </p>
+            </form>
+        </section>
+
+        <section id="live-results" class="hidden">
+            <h2 class="section-title">⏱️ Élő Futamidők & Helyezések</h2>
+            <div id="category-timers"></div>
+            <div id="results-tables-container">
+                <!-- Ide kerülnek az eredménytáblázatok -->
+            </div>
+        </section>
+
+        <section id="admin-view" class="hidden">
+            <div id="admin-login-panel">
+                <h2>Admin Belépés</h2>
+                <input type="password" id="admin-pass" placeholder="Jelszó">
+                <button onclick="loginAdmin()">Belépés</button>
+            </div>
+            <div id="admin-dashboard-panel" class="hidden">
+                <div class="admin-top-bar">
+                    <h2 class="admin-title">Versenyirányító Központ</h2>
+                    <div class="admin-stats" id="admin-global-stats">
+                        <!-- Stats like total racers, finished, running will go here -->
+                    </div>
+                </div>
+
+                <div class="admin-grid">
+                    <!-- Bal oszlop: Futamindítások -->
+                    <div class="admin-card race-starts">
+                        <h3 class="card-title">🚀 Futamindítások</h3>
+                        <p class="card-desc">Indítsd el a kiválasztott hajóegység csoportok rajtját.</p>
+                        <div id="category-start-buttons" class="start-btn-grid">
+                            <div class="loading-text">Gombok betöltése...</div>
+                        </div>
+                    </div>
+
+                    <!-- Középső/Jobb oszlop: Élő órák és Beérkeztetés -->
+                    <div class="admin-card race-control">
+                        <h3 class="card-title">⏱️ Élő Futamok & Beérkeztetés</h3>
+
+                        <!-- Beérkeztetés panel felülre hozva az órák elé vagy mellé -->
+                        <div id="bib-stop-panel" class="bib-recorder">
+                            <label for="bib-input">Rajtszám beírása:</label>
+                            <div class="bib-input-wrapper">
+                                <input type="number" id="bib-input" placeholder="000" autofocus>
+                                <button onclick="window.stopRacer()" class="btn-stop-major">RÖGZÍTÉS</button>
+                            </div>
+                            <div style="margin-top: 15px; text-align: center;">
+                                <a href="mobile_finish.html" target="_blank" class="btn-secondary" style="display: inline-block; width: 100%; text-decoration: none; padding: 12px; font-weight: bold; background-color: var(--accent-primary); color: #000; box-shadow: 0 5px 15px rgba(0, 145, 255, 0.2);">📱 Mobilos Beérkeztető Megnyitása</a>
+                            </div>
+                        </div>
+
+                        <div class="divider"></div>
+
+                        <h4 class="sub-card-title">Futó órák:</h4>
+                        <div id="admin-category-timers" class="admin-timer-grid">
+                            <div class="empty-text">Nincs aktív futam</div>
+                        </div>
+                    </div>
+
+                    <!-- Alsó/Oldalsó oszlop: Adatkezelés -->
+                    <div class="admin-card data-management">
+                        <h3 class="card-title">📂 Adatkezelés</h3>
+                        <div class="management-grid">
+                            <div class="import-zone">
+                                <label for="csv-upload">📊 IMPORTÁLÁS (CSV)</label>
+                                <p style="font-size: 0.73rem; color: var(--text-secondary); margin-bottom: 8px;">Excel (Win-1250) vagy UTF-8</p>
+                                <div style="display:flex; gap:10px;">
+                                    <input type="file" id="csv-upload" accept=".csv" style="margin-bottom:0; padding:10px;">
+                                    <button onclick="uploadCsv()" class="btn-secondary" style="white-space:nowrap;">IMPORTÁLÁS</button>
+                                </div>
+                            </div>
+                            
+                            <div class="export-zone">
+                                <label>📑 EXPORTS</label>
+                                <button onclick="exportResultsToExcel()" class="btn-primary"
+                                    style="width: 100%; height: 45px; padding: 0; background: #28a745; color: white;">
+                                    EXCEL EXPORT
+                                </button>
+                            </div>
+
+                            <div class="danger-zone">
+                                <label>⚠️ VESZÉLYZÓNA</label>
+                                <button onclick="raceManager.resetAll()" class="btn-danger" style="width: 100%; height: 45px;">
+                                    RENDSZERTÖRLÉS
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="admin-table-section">
+                    <h3 class="section-title">👥 Versenyzői Adatbázis (Szerkeszthető)</h3>
+                    <div class="table-responsive">
+                        <table id="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>Rajtszám</th>
+                                    <th>Egység Tagjai</th>
+                                    <th>Ötpróba ID</th>
+                                    <th>Sorozat</th>
+                                    <th>Kategória</th>
+                                    <th>Táv</th>
+                                    <th>Státusz</th>
+                                    <th>Időeredmény</th>
+                                    <th>Művelet</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-table-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="toast-container"></div>
+
+    <!-- Edit Racer Modal -->
+    <div id="editRacerModal" class="modal">
+        <div class="edit-card admin-card" style="max-width: 600px; width: 90%; margin: 50px auto;">
+            <h2 class="card-title">✏️ Versenyző Szerkesztése</h2>
+            <form id="editRacerForm" onsubmit="event.preventDefault(); window.raceManager.saveRacer()">
+                <input type="hidden" id="edit-id">
+                <h1 class="event-title" style="text-shadow: 0 0 20px rgba(0, 145, 255, 0.3);">DunakesziFutam 2026</h1>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <div>
+                        <label>Rajtszám</label>
+                        <input type="number" id="edit-bib">
+                    </div>
+                    <div>
+                        <label>Státusz</label>
+                        <select id="edit-status">
+                            <option value="registered">REGISTERED</option>
+                            <option value="running">RUNNING</option>
+                            <option value="finished">FINISHED</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <div>
+                        <label>Kategória</label>
+                        <input type="text" id="edit-category">
+                    </div>
+                    <div>
+                        <label>Táv</label>
+                        <select id="edit-distance">
+                            <option value="11km">11km</option>
+                            <option value="22km">22km</option>
+                            <option value="4km">4km</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <div>
+                        <label>E-mail</label>
+                        <input type="email" id="edit-email">
+                    </div>
+                    <div>
+                        <label>Telefon</label>
+                        <input type="tel" id="edit-phone">
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="edit-is_series">
+                        Kupa sorozatban indul?
+                    </label>
+                </div>
+
+                <div class="divider"></div>
+                <h4 class="sub-card-title">Egység tagjai</h4>
+                <div id="edit-members-container">
+                    <!-- Member fields will be injected here -->
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="submit" class="btn-primary" style="flex: 2;">MENTÉS</button>
+                    <button type="button" class="btn-secondary" style="flex: 1;" onclick="window.raceManager.closeEditModal()">MÉGSE</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <footer style="text-align: center; padding: 20px; color: var(--text-secondary); font-size: 0.8rem; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 40px;">
+        Az időmérési és regisztrációs rendszert a <strong>DragonWave</strong> biztosítja.
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="dragon.js"></script>
+</body>
+
+</html>
