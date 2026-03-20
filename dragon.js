@@ -6,7 +6,9 @@
 // API Configuration - Set this to your Render.com URL in production
 
 
-const API_URL = window.DRAGONWAVE_API_URL || 'http://localhost:3001/api';
+const API_URL = (window.location.hostname === 'localhost' || window.location.protocol === 'file:')
+    ? 'http://localhost:3001/api'
+    : '/api';
 const APP_VERSION = "2.2.1"; // Verziószám frissítése
 console.log(`DragonWave Időmérési Rendszer v${APP_VERSION} inicializálva.`);
 
