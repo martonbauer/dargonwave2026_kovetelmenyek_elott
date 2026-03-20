@@ -7,6 +7,54 @@ const supabase = require('./database'); // This is now the Supabase client
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// --- Overflow Protection: Rate Limiting ---
+const requestCounts = new Map();
+const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
+const MAX_REQUESTS = 200; // 200 requests per window
+
+function rateLimiter(req, res, next) {
+    const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const now = Date.now();
+    
+    if (!requestCounts.has(ip)) {
+        requestCounts.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+        return next();
+    }
+
+    const record = requestCounts.get(ip);
+    if (now > record.resetTime) {
+        record.count = 1;
+        record.resetTime = now + RATE_LIMIT_WINDOW;
+        return next();
+    }
+
+    record.count++;
+    if (record.count > MAX_REQUESTS) {
+        console.warn(`[RATE-LIMIT] Blokkolt IP: ${ip} (${record.count} kérés)`);
+        return res.status(429).json({ error: 'Túl sok kérés! Kérlek várj 15 percet.' });
+    }
+    next();
+}
+
+// --- Overflow Protection: Input Validation Helpers ---
+function validateRacerData(data) {
+    const { members, email, phone, category, distance } = data;
+    
+    if (email && email.length > 150) return "Az email cím túl hosszú!";
+    if (phone && phone.length > 30) return "A telefonszám túl hosszú!";
+    if (category && category.length > 100) return "A kategória név túl hosszú!";
+    if (distance && distance.length > 20) return "A táv megnevezése túl hosszú!";
+    
+    if (members && Array.isArray(members)) {
+        if (members.length > 20) return "Túl sok csapattag!";
+        for (const m of members) {
+            if (m.name && m.name.length > 100) return "A név túl hosszú (max 100 karakter)!";
+            if (m.otproba_id && m.otproba_id.length > 20) return "Az Ötpróba ID túl hosszú!";
+        }
+    }
+    return null;
+}
+
 // Middleware
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'dragon2026';
 
@@ -39,6 +87,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname)));
+app.use(rateLimiter); // Apply rate limiting to all requests
 
 // Auth Middleware
 function authenticateAdmin(req, res, next) {
@@ -220,6 +269,14 @@ app.post('/api/register', async (req, res) => {
     const { members, category: rawCategory, distance, is_series, email, phone } = req.body;
     const category = normalizeCategoryToSlug(rawCategory); // Ensure we save slug
     console.log("--- ÚJ REGISZTRÁCIÓ ---");
+    
+    // Validation
+    const validationError = validateRacerData(req.body);
+    if (validationError) {
+        console.warn(`[VALIDATION-ERROR] ${validationError}`);
+        return res.status(400).json({ error: validationError });
+    }
+
     console.log("Adatok:", { category, distance, is_series, email, phone, memberCount: members ? members.length : 0 });
 
     try {
@@ -513,6 +570,10 @@ app.put('/api/racer/:id', authenticateAdmin, async (req, res) => {
     const { bib, category, distance, is_series, status, email, phone, members } = req.body;
     console.log(`[UPDATE] Request for racer ID: ${id}`);
 
+    // Validation
+    const validationError = validateRacerData(req.body);
+    if (validationError) return res.status(400).json({ error: validationError });
+
     try {
         // 1. Update Racer Table
         const { error: rError } = await supabase
@@ -646,7 +707,15 @@ function normalizeCategoryToSlug(categoryName) {
 // 8. Upload CSV (Format: srsz;Név 1..4;Kategória;Szül.idő 1..4;Táv;Ötpróba 1..4)
 app.post('/api/upload-csv', authenticateAdmin, async (req, res) => {
     const { csvData } = req.body;
+    if (!csvData || csvData.length > 500000) { // ~500KB limit for CSV text
+        return res.status(400).json({ error: 'A CSV fájl túl nagy vagy üres!' });
+    }
+
     const lines = csvData.trim().split('\n');
+    if (lines.length > 500) {
+        return res.status(400).json({ error: 'Egyszerre maximum 500 sort tölthetsz fel!' });
+    }
+
     console.log(`[CSV-UPLOAD] Összes sor az adatokban: ${lines.length}`);
     let added = 0;
 

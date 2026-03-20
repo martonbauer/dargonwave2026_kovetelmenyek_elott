@@ -1,5 +1,6 @@
 node_modules/
 .env
+dev_tools/
 
 # Adatbázisok, kimentett, dinamikus adatok
 dragonwave.db

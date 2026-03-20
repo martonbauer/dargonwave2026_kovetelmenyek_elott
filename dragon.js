@@ -778,11 +778,9 @@ class RaceManager {
             memberDiv.className = 'member-entry';
             memberDiv.style = "margin-bottom: 25px; padding: 15px; border: 1px solid var(--glass-border); border-radius: 12px; background: rgba(255, 255, 255, 0.05);";
             memberDiv.innerHTML = `
-                <h4 style="margin-top:0; color:var(--accent-primary); font-size: 0.9rem; margin-bottom: 15px;">${size > 1 ? i + '. Versenyző adatai' : 'Versenyző adatai'}</h4>
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                     <div>
                         <label>Név</label>
-                        <input type="text" class="member-name" placeholder="Pl. Kiss János" required>
+                        <input type="text" class="member-name" placeholder="Pl. Kiss János" required maxlength="100">
                     </div>
                     <div>
                         <label>Születési Dátum</label>
