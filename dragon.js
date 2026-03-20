@@ -675,6 +675,29 @@ class RaceManager {
         }
     }
 
+    async resetTimes() {
+        if (confirm('BIZTOSAN NULLÁZOD AZ ÖSSZES IDŐT ÉS EREDMÉNYT?\nA versenyzők profiljai megmaradnak, de mindenki újra "Regisztrálva" státuszba kerül!')) {
+            try {
+                const response = await fetch(`${API_URL}/reset-times`, { 
+                    method: 'POST',
+                    headers: this.getAuthHeader()
+                });
+                if (response.ok) {
+                    await this.loadData();
+                    this.renderUI();
+                    showToast("Minden időeredmény sikeresen nullázva!", 'success');
+                    const timersContainer = document.getElementById('category-timers');
+                    if (timersContainer) timersContainer.innerHTML = '<div style="text-align:center; color: var(--text-secondary); width:100%;">Még nincs indított kategória</div>';
+                } else {
+                    const data = await response.json();
+                    showToast(`Hiba: ${data.error}`, 'error');
+                }
+            } catch (err) {
+                showToast("Hálózati hiba a nullázás során!", "error");
+            }
+        }
+    }
+
     // --- Helpers ---
 
     formatTime(ms) {

@@ -585,6 +585,30 @@ app.post('/api/reset', authenticateAdmin, async (req, res) => {
     }
 });
 
+// 8. Reset Times Only
+app.post('/api/reset-times', authenticateAdmin, async (req, res) => {
+    try {
+        // Reset all racers to 'registered' and clear total_time
+        const { error: rError } = await supabase
+            .from('racers')
+            .update({ status: 'registered', total_time: null })
+            .neq('id', '0');
+
+        // Clear all category start times
+        const { error: cError } = await supabase
+            .from('categories')
+            .delete()
+            .neq('key', '0');
+
+        if (rError || cError) throw new Error("Adatbázis hiba az idők törlésekor.");
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error("[RESET-TIMES] Error:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Helper for CSV normalization
 function normalizeCategoryToSlug(categoryName) {
     if (!categoryName) return '';
