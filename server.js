@@ -576,9 +576,9 @@ app.put('/api/racer/:id', authenticateAdmin, async (req, res) => {
 app.post('/api/reset', authenticateAdmin, async (req, res) => {
     try {
         // In Supabase, we delete all rows. Foreign keys handle memberships.
-        await supabase.from('members').delete().neq('id', 0);
-        await supabase.from('racers').delete().neq('id', '0');
-        await supabase.from('categories').delete().neq('key', '0');
+        await supabase.from('members').delete().not('id', 'is', null);
+        await supabase.from('racers').delete().not('id', 'is', null);
+        await supabase.from('categories').delete().not('key', 'is', null);
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -592,13 +592,13 @@ app.post('/api/reset-times', authenticateAdmin, async (req, res) => {
         const { error: rError } = await supabase
             .from('racers')
             .update({ status: 'registered', total_time: null })
-            .neq('id', '0');
+            .not('id', 'is', null);
 
         // Clear all category start times
         const { error: cError } = await supabase
             .from('categories')
             .delete()
-            .neq('key', '0');
+            .not('key', 'is', null);
 
         if (rError || cError) throw new Error("Adatbázis hiba az idők törlésekor.");
 
