@@ -86,10 +86,25 @@ header {
 /* Admin Dashboard Grid System */
 .admin-grid {
     display: grid;
-    grid-template-columns: 1fr 1.5fr;
+    grid-template-columns: repeat(3, 1fr);
     gap: 1.5rem;
     margin-bottom: 2rem;
 }
+
+
+@media (max-width: 1100px) {
+    .admin-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .admin-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+
 
 .admin-top-bar {
     display: flex;
@@ -125,13 +140,16 @@ header {
 .admin-card {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
-    padding: 1.8rem;
+    padding: 1.5rem; /* Slightly reduced padding to give more space for content */
     border-radius: 20px;
     display: flex;
     flex-direction: column;
     box-shadow: var(--glass-shadow);
     backdrop-filter: blur(15px);
     transition: transform var(--transition-speed);
+    min-width: 0; /* Important for grid items */
+    position: relative;
+    overflow: hidden;
 }
 
 .admin-card:hover {
@@ -140,13 +158,16 @@ header {
 
 .card-title {
     margin: 0 0 0.8rem 0;
-    font-size: 1.3rem;
+    font-size: 1.25rem;
     font-weight: 700;
     color: var(--text-primary);
     display: flex;
     align-items: center;
     gap: 12px;
+    flex-wrap: wrap; /* Allow wrapping of icon/text if squeezed */
+    word-break: break-word;
 }
+
 
 .card-desc {
     font-size: 0.9rem;
@@ -688,6 +709,87 @@ form select:focus {
     color: white;
 }
 
+/* Hamburger Menu */
+.mobile-menu-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 30px;
+    height: 21px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    z-index: 1100;
+}
+
+.mobile-menu-toggle span {
+    width: 100%;
+    height: 3px;
+    background: var(--accent-primary);
+    border-radius: 10px;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transform-origin: left center;
+}
+
+.mobile-menu-toggle.active span:nth-child(1) {
+    transform: rotate(45deg);
+}
+
+.mobile-menu-toggle.active span:nth-child(2) {
+    opacity: 0;
+    transform: translateX(20px);
+}
+
+.mobile-menu-toggle.active span:nth-child(3) {
+    transform: rotate(-45deg);
+}
+
+@media (max-width: 950px) {
+    .logo-text-unified {
+        font-size: 1.2rem;
+    }
+
+    .mobile-menu-toggle {
+        display: flex;
+    }
+
+    #main-nav {
+        position: fixed;
+        top: 0;
+        right: -100%;
+        width: 70%;
+        height: 100vh;
+        background: rgba(11, 25, 44, 0.98);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        z-index: 1050;
+        gap: 20px;
+        padding: 40px;
+        box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+    }
+
+    #main-nav.active {
+        right: 0;
+    }
+
+    .nav-btn {
+        width: 100%;
+        font-size: 1rem;
+        height: 50px;
+    }
+
+    .header-container {
+        flex-direction: row; /* Keep logo and toggle on same line */
+        justify-content: space-between;
+        padding: 0 1.5rem;
+    }
+}
+
 @media (max-width: 768px) {
     .admin-grid {
         grid-template-columns: 1fr;
@@ -698,15 +800,33 @@ form select:focus {
     .event-title {
         font-size: 2.2rem;
     }
-    .header-container {
+    
+    .admin-top-bar {
         flex-direction: column;
-        gap: 1.5rem;
+        gap: 15px;
+        text-align: center;
     }
-    #main-nav {
+
+    .admin-stats {
         flex-wrap: wrap;
         justify-content: center;
     }
+
+    .management-grid {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .import-zone, .export-zone, .danger-zone {
+        width: 100%;
+        text-align: center;
+    }
+
+    #admin-global-stats {
+        font-size: 0.75rem;
+    }
 }
+
 
 /* Modal Styles */
 .modal {
@@ -788,4 +908,49 @@ form select:focus {
     background: #ff6b6b;
     color: white;
     box-shadow: 0 0 15px rgba(255, 107, 107, 0.4);
+}
+
+/* New Start Control Styles */
+.start-types-container {
+    padding-top: 10px;
+}
+
+.start-section {
+    background: rgba(255, 255, 255, 0.02);
+    padding: 1.2rem;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.start-section:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.start-section h4 {
+    margin-top: 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+#individual-bib-input {
+    margin-bottom: 0px;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#individual-bib-input:focus {
+    background: rgba(0, 145, 255, 0.1);
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 20px rgba(0, 145, 255, 0.2);
+}
+
+/* Specific button overrides if needed */
+.mass-start .btn-primary {
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.mass-start .btn-primary:hover {
+    filter: brightness(1.1);
+    transform: scale(1.02);
 }

@@ -170,7 +170,18 @@ async function getNextBib(distance, category) {
 // --- Group Logic Helpers ---
 function getGroupQuery(query, batchKey) {
     console.log(`[getGroupQuery] batchKey: ${batchKey}`);
-    // 1. Predefined Groups
+    // 1. Tömegrajt
+    if (batchKey === 'MASS_START_ALL') return query;
+    
+    // 2. Távolság Rajt
+    if (batchKey.startsWith('DISTANCE_')) {
+        const dist = batchKey.split('_')[1];
+        return query.eq('distance', dist);
+    }
+
+
+
+    // 3. Predefined Groups
     if (batchKey === 'kajak_hosszu') return query.or('category.ilike.%kajak%,category.ilike.%surfski%').eq('distance', '22km');
     if (batchKey === 'kajak_rovid') return query.or('category.ilike.%kajak%,category.ilike.%surfski%').eq('distance', '11km');
     if (batchKey === 'kenu_hosszu') return query.or('category.ilike.%kenu%,category.ilike.%outrigger%').eq('distance', '22km');
@@ -178,7 +189,7 @@ function getGroupQuery(query, batchKey) {
     if (batchKey === 'sup_4km') return query.like('category', '%sup%').eq('distance', '4km');
     if (batchKey === 'sarkanyhajo_11km') return query.or('category.ilike.%sárkányhajó%,category.ilike.%sarkanyhajo%').eq('distance', '11km');
     
-    // 2. Individual Category/Distance Pair (Slug or Name based)
+    // 4. Individual Category/Distance Pair (Slug or Name based)
     if (batchKey.includes('_')) {
         const parts = batchKey.split('_');
         const distance = parts.pop();
@@ -186,6 +197,7 @@ function getGroupQuery(query, batchKey) {
         console.log(`[getGroupQuery] Split into categorySlug: ${categorySlug}, distance: ${distance}`);
         return query.eq('category', categorySlug).eq('distance', distance);
     }
+
     console.warn(`[getGroupQuery] No matching group for batchKey: ${batchKey}`);
     return query;
 }
@@ -345,10 +357,14 @@ app.post('/api/register', async (req, res) => {
 app.post('/api/start-category', authenticateAdmin, async (req, res) => {
     const { categoryName, distance, groupId } = req.body;
     const now = Date.now();
-    const startKey = groupId || `${categoryName}_${distance}`;
+    let startKey = groupId || `${categoryName}_${distance}`;
+    
+    // Safety: ensure it's ASCII if possible, but for categories we keep them as is
+    // as they come from the category list
+    console.log(`[START-CATEGORY] Req: ${categoryName}, ${distance}, ${groupId} -> Key: ${startKey}`);
 
     try {
-        // Check if already started
+        // ...
         const { data: existing } = await supabase
             .from('categories')
             .select('*')
@@ -378,23 +394,62 @@ app.post('/api/start-category', authenticateAdmin, async (req, res) => {
 
         const { data: updated, error: uError } = await query.select();
 
-        if (uError) {
-            console.error(`[START-CATEGORY] Hiba a versenyzők frissítésekor:`, uError);
-            throw uError;
-        }
-
-        console.log(`START: ${startKey} elindult, ${updated?.length || 0} versenyző érintett.`);
-        if (updated && updated.length > 0) {
-            console.log("Érintett rajtszámok:", updated.map(r => r.bib).join(', '));
-        } else {
-            console.warn(`[START-CATEGORY] FIGYELEM: Egyetlen versenyző sem került 'running' státuszba! (Feltétel: status='registered' és filter=${startKey})`);
-        }
+        if (uError) throw uError;
         res.json({ success: true, start_time: now, count: updated?.length || 0 });
     } catch (err) {
         console.error("Error in /api/start-category:", err);
         res.status(500).json({ error: err.message });
     }
 });
+
+// ... (start-individual omitted)
+
+// 3c. Start Mass (Everyone)
+app.post('/api/start-mass', authenticateAdmin, async (req, res) => {
+    const now = Date.now();
+    const startKey = 'MASS_START_ALL';
+
+    try {
+        await supabase.from('categories').upsert({ key: startKey, start_time: now });
+
+        const { data, error } = await supabase
+            .from('racers')
+            .update({ status: 'running', start_time: now })
+            .eq('status', 'registered')
+            .select();
+
+        if (error) throw error;
+        res.json({ success: true, start_time: now, count: data?.length || 0 });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// 3d. Start Distance (Specific Distance)
+app.post('/api/start-distance', authenticateAdmin, async (req, res) => {
+    const { distance } = req.body;
+    const now = Date.now();
+    const startKey = `DISTANCE_${distance}`;
+
+    if (!distance) return res.status(400).json({ error: 'Távolság megadása kötelező!' });
+
+    try {
+        await supabase.from('categories').upsert({ key: startKey, start_time: now });
+
+        const { data, error } = await supabase
+            .from('racers')
+            .update({ status: 'running', start_time: now })
+            .eq('status', 'registered')
+            .eq('distance', distance)
+            .select();
+
+        if (error) throw error;
+        res.json({ success: true, start_time: now, count: data?.length || 0, distance });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 
 // 4. Stop Category
 app.post('/api/stop-category', authenticateAdmin, async (req, res) => {
@@ -419,7 +474,7 @@ app.post('/api/stop-category', authenticateAdmin, async (req, res) => {
 
         let query = supabase
             .from('racers')
-            .select('id, start_time')
+            .select('*')
             .eq('status', 'running');
 
         if (groupId) {
@@ -433,14 +488,10 @@ app.post('/api/stop-category', authenticateAdmin, async (req, res) => {
 
         if (runningRacers && runningRacers.length > 0) {
             const updates = runningRacers.map(racer => ({
-                id: racer.id,
-                bib: racer.bib,
-                category: racer.category,
-                distance: racer.distance,
+                ...racer,
                 status: 'finished',
                 finish_time: now,
-                total_time: now - racer.start_time,
-                start_time: racer.start_time
+                total_time: now - racer.start_time
             }));
 
             const { error: uError } = await supabase
@@ -449,6 +500,7 @@ app.post('/api/stop-category', authenticateAdmin, async (req, res) => {
             
             if (uError) throw uError;
         }
+
 
         // Delete from categories
         await supabase.from('categories').delete().eq('key', startKey);

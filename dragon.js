@@ -521,6 +521,80 @@ class RaceManager {
         }
     }
 
+    async startIndividual(bib) {
+        if (!bib) {
+            showToast("Kérlek adj meg egy rajtszámot!", "error");
+            return;
+        }
+        try {
+            const response = await fetch(`${API_URL}/start-individual`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...this.getAuthHeader()
+                },
+                body: JSON.stringify({ bib })
+            });
+            const result = await response.json();
+            if (response.ok) {
+                await this.loadData();
+                this.renderUI();
+                showToast(`RAJT: #${bib} elindult!`, 'success');
+            } else {
+                showToast(result.error, 'error');
+            }
+        } catch (err) {
+            showToast("Hiba az egyéni indításkor!", "error");
+        }
+    }
+
+    async startMass() {
+        if (!confirm("BIZTOSAN ELINDÍTOD A TÖMEGRAJTOT?\nMinden 'Regisztrált' állapotú versenyző elindul az aktuális idővel!")) return;
+        try {
+            const response = await fetch(`${API_URL}/start-mass`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...this.getAuthHeader()
+                }
+            });
+            const result = await response.json();
+            if (response.ok) {
+                await this.loadData();
+                this.renderUI();
+                showToast(`TÖMEGRAJT: ${result.count} versenyző elindult!`, 'success');
+            } else {
+                showToast(result.error, 'error');
+            }
+        } catch (err) {
+            showToast("Hiba a tömegrajt indításakor!", "error");
+        }
+    }
+
+    async startDistance(distance) {
+        if (!confirm(`Elindítod a(z) ${distance} táv rajtját?`)) return;
+        try {
+            const response = await fetch(`${API_URL}/start-distance`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...this.getAuthHeader()
+                },
+                body: JSON.stringify({ distance })
+            });
+            const result = await response.json();
+            if (response.ok) {
+                await this.loadData();
+                this.renderUI();
+                showToast(`TÁV RAJT (${distance}): ${result.count} versenyző elindult!`, 'success');
+            } else {
+                showToast(result.error, 'error');
+            }
+        } catch (err) {
+            showToast("Hiba a táv szerinti indításkor!", "error");
+        }
+    }
+
     // --- Admin Functions ---
     async deleteRacer(id, bib) {
         if (!confirm(`Biztosan törlöd ezt a versenyzőt?${bib ? ' (Rajtszám: #' + bib + ')' : ''}`)) return;
@@ -714,18 +788,28 @@ class RaceManager {
 
     formatCategoryName(id) {
         if (!id) return 'Ismeretlen Kategória';
+        if (id === 'MASS_START_ALL') return '🚀 Tömegrajt - Mindenki';
+        if (id.startsWith('DISTANCE_')) {
+            const dist = id.replace('DISTANCE_', '');
+            const distName = dist === '11km' ? 'Rövid táv' : (dist === '22km' ? 'Hosszú táv' : '4 km-es táv');
+            return `📏 ${dist} - ${distName} (Összesített)`;
+        }
         if (this.groupMap[id]) return this.groupMap[id];
+        
         if (id.includes('_')) {
             const parts = id.split('_');
             const dist = parts[parts.length - 1];
             if (dist === '11km' || dist === '22km' || dist === '4km') {
                 const catId = id.substring(0, id.lastIndexOf('_'));
-                const distName = dist === '11km' ? 'rövid táv' : (dist === '22km' ? 'hosszú táv' : '4 km-es táv');
-                return (this.categoryMap[catId] || catId) + ` - ${distName} eredményei`;
+                const distName = dist === '11km' ? '11km' : (dist === '22km' ? '22km' : '4km');
+                const catName = this.categoryMap[catId] || catId;
+                // Remove the "(38 cm)" etc suffixes for cleaner timer labels if they are redundant
+                return `${catName} (${distName})`;
             }
         }
         return this.categoryMap[id] || id;
     }
+
 
     startTickLoop() {
         const tick = () => {
@@ -902,38 +986,144 @@ class RaceManager {
     }
 
     renderAdminControlButtons() {
-        const container = document.getElementById('category-start-buttons');
-        if (!container) return;
-
-        container.innerHTML = '';
-        Object.keys(this.groupMap).forEach(groupId => {
-            const name = this.groupMap[groupId];
-            const div = document.createElement('div');
-            div.style.display = 'flex';
-            div.style.gap = '10px';
-            div.style.marginBottom = '12px';
-            div.style.background = 'rgba(18, 43, 68, 0.9)';
-            div.style.border = '1px solid var(--glass-border)';
-            div.style.color = 'var(--text-primary)';
-            div.style.padding = '10px';
-            div.style.borderRadius = '12px';
-
-            const isRunning = !!this.data.categories[groupId];
-
-            div.innerHTML = `
-                <button onclick="window.startCategory(null, null, '${groupId}')" class="btn-start" style="flex:2; text-align:left; font-size:0.85rem; font-weight:bold; padding:10px; margin-bottom:0; opacity: ${isRunning ? 0.5 : 1}; cursor: ${isRunning ? 'default' : 'pointer'}" ${isRunning ? 'disabled' : ''}>
-                    ${name.replace('Összes ', '')} RAJT
+        // --- 1. Tömegrajt ---
+        const massContainer = document.getElementById('mass-start-ctrl');
+        if (massContainer) {
+            const isRunning = !!this.data.categories['MASS_START_ALL'];
+            massContainer.innerHTML = `
+                <button onclick="window.startMass()" class="btn-primary" style="width: 100%; height: 50px; background: linear-gradient(135deg, #ff4d4d, #f00); font-weight: 800; font-size: 1.1rem; box-shadow: 0 5px 15px rgba(255,0,0,0.3); border:none;" ${isRunning ? 'disabled' : ''}>
+                    🚀 ÖSSZES INDÍTÁSA
                 </button>
-                <button onclick="window.stopCategory(null, null, '${groupId}')" class="btn-stop" style="flex:1; padding:10px 5px; font-size: 0.8rem; margin-bottom:0; border-radius: 8px 0 0 8px; opacity: ${isRunning ? 1 : 0.3}; cursor: ${isRunning ? 'pointer' : 'default'}" ${isRunning ? '' : 'disabled'}>
-                    CÉL
-                </button>
-                <button onclick="window.resetCategory(null, null, '${groupId}')" class="btn-reset" style="flex:0.5; padding:10px 5px; font-size: 0.7rem; margin-bottom:0; border-radius: 0 8px 8px 0; background: rgba(255,255,255,0.1); color: #888; border: 1px solid rgba(255,255,255,0.2); opacity: ${isRunning ? 1 : 0.3}; cursor: ${isRunning ? 'pointer' : 'default'}" ${isRunning ? '' : 'disabled'}>
-                    ⏳❌
-                </button>
+                ${isRunning ? `
+                    <button onclick="window.stopCategory(null, null, 'MASS_START_ALL')" class="btn-stop" style="width: 100%; margin-top: 10px; height: 35px; font-size: 0.8rem;">
+                        🛑 STOP
+                    </button>
+                ` : ''}
             `;
-            container.appendChild(div);
-        });
+        }
+
+        // --- 2. Távolság Rajt ---
+        const distanceContainer = document.getElementById('distance-start-ctrl');
+        if (distanceContainer) {
+            distanceContainer.innerHTML = `
+                <div style="display: grid; grid-template-columns: 1fr; gap: 10px;">
+                    ${['4km', '11km', '22km'].map(dist => {
+                        const isRunning = !!this.data.categories[`DISTANCE_${dist}`];
+                        return `
+                            <div style="display: flex; gap: 8px; align-items: center; background: rgba(0,228,255,0.05); padding: 8px; border-radius: 8px; border: 1px solid rgba(0,228,255,0.1);">
+                                <button onclick="window.startDistance('${dist}')" class="btn-start" style="flex:2; height: 40px; font-size: 0.8rem; margin: 0; ${isRunning ? 'opacity:0.5; cursor:default;' : ''}" ${isRunning ? 'disabled' : ''}>
+                                    ${dist} RAJT
+                                </button>
+                                ${isRunning ? `<button onclick="window.stopCategory(null, null, 'DISTANCE_${dist}')" class="btn-stop" style="flex:1; height: 40px; font-size: 0.7rem; margin: 0;">STOP</button>` : ''}
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        // --- 3. Egyéni Rajt ---
+        const individualContainer = document.getElementById('individual-start-ctrl');
+        if (individualContainer) {
+            individualContainer.innerHTML = `
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="display: flex; gap: 10px;">
+                        <input type="number" id="individual-bib-input" placeholder="Rajtszám" style="flex: 2; height: 50px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); color: white; border-radius: 8px; text-align: center; font-size: 1.4rem; font-weight: bold; margin-bottom:0;">
+                        <button onclick="window.startIndividual(document.getElementById('individual-bib-input').value)" class="btn-primary" style="flex: 1; margin: 0; background: var(--accent-primary); border:none;">
+                            RAJT
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- 4. Kategória Rajt (Dinamikusan generált) ---
+        const groupContainer = document.getElementById('category-start-buttons');
+        if (groupContainer) {
+            groupContainer.innerHTML = '';
+            
+            // Összesítjük a megjelenítendő gombokat (Group-ok + Egyedi kategóriák)
+            const availableStarts = [];
+
+            // 1. Először a fix csoportok (ha van bennük regisztrált vagy épp futnak)
+            Object.keys(this.groupMap).forEach(groupId => {
+                const name = this.groupMap[groupId];
+                const isRunning = !!this.data.categories[groupId];
+                const hasRegistered = this.data.racers.some(r => r.status === 'registered' && this.belongsToGroup(r, groupId));
+                
+                if (isRunning || hasRegistered) {
+                    availableStarts.push({ id: groupId, name: name.replace('Összes ', ''), type: 'group', isRunning });
+                }
+            });
+
+            // 2. Másodszor az egyedi Kategória+Táv párosok (amik nem tartoznak a fenti csoportokba, de vannak benne emberek)
+            const catDistPairs = {};
+            this.data.racers.forEach(r => {
+                if (r.status === 'registered') {
+                    const key = `${r.category}_${r.distance}`;
+                    // Ellenőrizzük, hogy ez a kategória beletartozik-e már valamelyik fenti csoportba
+                    const alreadyInGroup = Object.keys(this.groupMap).some(groupId => this.belongsToGroup(r, groupId));
+                    if (!alreadyInGroup) {
+                        catDistPairs[key] = (catDistPairs[key] || 0) + 1;
+                    }
+                }
+            });
+
+            // Hozzáadjuk az egyedi kategóriákat a listához
+            Object.keys(catDistPairs).forEach(key => {
+                const isRunning = !!this.data.categories[key];
+                availableStarts.push({ id: key, name: this.formatCategoryName(key), type: 'category', isRunning });
+            });
+
+            // Hozzáadjuk azokat is, amik már futnak, de nem csoportok (pl. egyedi indítás utáni timer)
+            Object.keys(this.data.categories).forEach(catKey => {
+                if (!catKey.startsWith('MASS_START_') && !catKey.startsWith('DISTANCE_') && !this.groupMap[catKey] && !availableStarts.find(s => s.id === catKey)) {
+                    availableStarts.push({ id: catKey, name: this.formatCategoryName(catKey), type: 'category', isRunning: true });
+                }
+            });
+
+            if (availableStarts.length === 0) {
+                groupContainer.innerHTML = '<div class="empty-text" style="font-size: 0.8rem; text-align: center; color: var(--text-secondary); width: 100%;">Nincs indítható kategória</div>';
+            } else {
+                availableStarts.forEach(start => {
+                    const div = document.createElement('div');
+                    div.style.display = 'flex';
+                    div.style.gap = '10px';
+                    div.style.marginBottom = '12px';
+                    div.style.background = 'rgba(18, 43, 68, 0.9)';
+                    div.style.border = '1px solid var(--glass-border)';
+                    div.style.color = 'var(--text-primary)';
+                    div.style.padding = '10px';
+                    div.style.borderRadius = '12px';
+
+                    div.innerHTML = `
+                        <button onclick="window.startCategory(null, null, '${start.id}')" class="btn-start" style="flex:2; text-align:left; font-size:0.85rem; font-weight:bold; padding:10px; margin-bottom:0; opacity: ${start.isRunning ? 0.5 : 1}; cursor: ${start.isRunning ? 'default' : 'pointer'}" ${start.isRunning ? 'disabled' : ''}>
+                            ${start.name} RAJT
+                        </button>
+                        ${start.isRunning ? `
+                            <button onclick="window.stopCategory(null, null, '${start.id}')" class="btn-stop" style="flex:1; padding:10px 5px; font-size: 0.8rem; margin-bottom:0; border-radius: 8px;">
+                                STOP
+                            </button>
+                        ` : ''}
+                    `;
+                    groupContainer.appendChild(div);
+                });
+            }
+        }
     }
+
+    belongsToGroup(racer, groupId) {
+        const cat = racer.category.toLowerCase();
+        const dist = racer.distance;
+        if (groupId === 'kajak_hosszu') return (cat.includes('kajak') || cat.includes('surfski')) && dist === '22km';
+        if (groupId === 'kajak_rovid') return (cat.includes('kajak') || cat.includes('surfski')) && dist === '11km';
+        if (groupId === 'kenu_hosszu') return (cat.includes('kenu') || cat.includes('outrigger')) && dist === '22km';
+        if (groupId === 'kenu_rovid') return (cat.includes('kenu') || cat.includes('outrigger')) && dist === '11km';
+        if (groupId === 'sup_4km') return cat.includes('sup') && dist === '4km';
+        if (groupId === 'sarkanyhajo_11km') return (cat.includes('sárkányhajó') || cat.includes('sarkanyhajo')) && dist === '11km';
+        return false;
+    }
+
 
     renderRacersList() {
         const container = document.getElementById('results-tables-container');
@@ -1219,6 +1409,9 @@ document.getElementById('nevezesForm').addEventListener('submit', async function
 });
 
 window.startCategory = (cat, dist, group) => raceManager.startCategory(cat, dist, group);
+window.startIndividual = (bib) => raceManager.startIndividual(bib);
+window.startMass = () => raceManager.startMass();
+window.startDistance = (dist) => raceManager.startDistance(dist);
 window.stopCategory = (cat, dist, group) => raceManager.stopCategory(cat, dist, group);
 window.resetCategory = (cat, dist, group) => raceManager.resetCategory(cat, dist, group);
 window.stopRacer = () => {
@@ -1320,6 +1513,38 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // Mobile Menu Toggle
+    const menuToggle = document.getElementById('menuToggle');
+    const mainNav = document.getElementById('main-nav');
+
+    if (menuToggle && mainNav) {
+        menuToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            menuToggle.classList.toggle('active');
+            mainNav.classList.toggle('active');
+            document.body.style.overflow = mainNav.classList.contains('active') ? 'hidden' : 'auto';
+        });
+
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!mainNav.contains(e.target) && !menuToggle.contains(e.target)) {
+                menuToggle.classList.remove('active');
+                mainNav.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            }
+        });
+
+        // Close menu when clicking a link (button)
+        mainNav.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                menuToggle.classList.remove('active');
+                mainNav.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            });
+        });
+    }
 });
+
 
 

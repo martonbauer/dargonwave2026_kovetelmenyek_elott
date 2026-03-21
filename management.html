@@ -23,8 +23,15 @@
                 DUNAKESZI FUTAM 2026
             </h1>
 
+            <button class="mobile-menu-toggle" id="menuToggle" aria-label="Menü megnyitása">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+
             <!-- Jobb oldal: Navigáció -->
             <nav id="main-nav">
+
                 <a href="index.html" class="nav-btn">Főoldal</a>
                 <button class="nav-btn" id="btn-regisztracio" onclick="switchTab('regisztracio')">Nevezés</button>
                 <button class="nav-btn" id="btn-eredmenyek" onclick="switchTab('eredmenyek')">Eredmények</button>
@@ -152,28 +159,57 @@
                         <h2 class="admin-title" style="margin: 0;">Versenyirányító Központ</h2>
                         <button class="btn-secondary" style="background: rgba(255, 0, 0, 0.2); color: #ff4444; border: 1px solid #ff4444; padding: 5px 15px; border-radius: 4px; cursor: pointer;" onclick="logoutAdmin()">🚪 Kijelentkezés</button>
                     </div>
-                    <div class="admin-stats" id="admin-global-stats">
-                        <!-- Stats like total racers, finished, running will go here -->
-                    </div>
                 </div>
+
 
                 <div class="admin-grid">
                     <!-- Bal oszlop: Futamindítások -->
-                    <div class="admin-card race-starts">
-                        <h3 class="card-title">🚀 Futamindítások</h3>
-                        <p class="card-desc">Indítsd el a kiválasztott hajóegység csoportok rajtját.</p>
-                        <div id="category-start-buttons" class="start-btn-grid">
-                            <div class="loading-text">Gombok betöltése...</div>
+                    <div class="admin-card race-starts-container" style="grid-column: 1 / -1; background: transparent; border: none; padding: 0; box-shadow: none;">
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2rem; align-items: stretch;">
+                            
+                            <!-- 1. Tömegrajt Kártya -->
+                            <div class="admin-card" id="mass-start-card">
+                                <h3 class="card-title">🚀 Tömegrajt</h3>
+                                <p class="card-desc">Indítsd el az összes regisztrált versenyzőt egyszerre.</p>
+                                <div id="mass-start-ctrl"></div>
+                            </div>
+
+                            <!-- 2. Távolság Rajt Kártya -->
+                            <div class="admin-card" id="distance-start-card">
+                                <h3 class="card-title">📏 Távolság Rajt</h3>
+                                <p class="card-desc">Rajt a választott távolság alapján (4km, 11km, 22km).</p>
+                                <div id="distance-start-ctrl"></div>
+                            </div>
+
+                            <!-- 3. Egyéni Rajt Kártya -->
+                            <div class="admin-card" id="individual-start-card">
+                                <h3 class="card-title">👤 Egyéni Rajt</h3>
+                                <p class="card-desc">Egyedileg indított versenyző rajtszáma alapján.</p>
+                                <div id="individual-start-ctrl"></div>
+                            </div>
+
+                            <!-- 4. Kategória Rajt Kártya -->
+                            <div class="admin-card" id="category-start-card">
+                                <h3 class="card-title">🛶 Kategória Rajt</h3>
+                                <p class="card-desc">Csoportos indítás kategóriák szerint.</p>
+                                <div id="category-start-buttons" class="start-btn-grid">
+                                    <div class="loading-text">Betöltés...</div>
+                                </div>
+                            </div>
+
                         </div>
                     </div>
 
-                    <!-- Középső/Jobb oszlop: Élő órák és Beérkeztetés -->
-                    <div class="admin-card race-control">
-                        <h3 class="card-title">⏱️ Élő Futamok & Beérkeztetés</h3>
+                    <!-- Élő Kontrol (Beérkeztetés + Statisztika) és Futó órák -->
+                    <div class="admin-card" id="bib-recorder-card" style="grid-column: span 2;">
+                        <h3 class="card-title">🎯 Élő Kontrol & Beérkeztetés</h3>
+                        
+                        <div class="admin-stats" id="admin-global-stats" style="margin-bottom: 20px; background: rgba(0, 145, 255, 0.05); padding: 15px; border-radius: 12px; display: flex; flex-wrap: wrap; gap: 15px; justify-content: center;">
+                            <!-- Ide kerülnek a statisztikák -->
+                        </div>
 
-                        <!-- Beérkeztetés panel felülre hozva az órák elé vagy mellé -->
                         <div id="bib-stop-panel" class="bib-recorder">
-                            <label for="bib-input">Rajtszám beírása:</label>
+                            <label for="bib-input">Rajtszám beírása célba érkezéskor:</label>
                             <div class="bib-input-wrapper">
                                 <input type="number" id="bib-input" placeholder="000" autofocus>
                                 <button onclick="window.stopRacer()" class="btn-stop-major">RÖGZÍTÉS</button>
@@ -182,17 +218,20 @@
                                 <button onclick="window.open('mobile_finish.html', '_blank')" class="btn-secondary" style="display: block; width: 100%; padding: 12px; font-weight: bold; background-color: var(--accent-primary); color: #fff; border: none; border-radius: 8px; box-shadow: 0 5px 15px rgba(0, 145, 255, 0.2); cursor: pointer; font-size: 1rem;">📱 Mobilos Beérkeztető Megnyitása</button>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="divider"></div>
-
-                        <h4 class="sub-card-title">Futó órák:</h4>
+                    <div class="admin-card" id="timers-card" style="grid-column: span 1;">
+                        <h3 class="card-title">⏱️ Futó Órák</h3>
+                        
                         <div id="admin-category-timers" class="admin-timer-grid">
                             <div class="empty-text">Nincs aktív futam</div>
                         </div>
                     </div>
 
-                    <!-- Alsó/Oldalsó oszlop: Adatkezelés -->
-                    <div class="admin-card data-management">
+
+
+                    <!-- Alsó oszlop: Adatkezelés (Teljes szélességben) -->
+                    <div class="admin-card data-management" style="grid-column: 1 / -1;">
                         <h3 class="card-title">📂 Adatkezelés</h3>
                         <div class="management-grid">
                             <div class="import-zone">
@@ -205,17 +244,17 @@
                             </div>
                             
                             <div class="export-zone">
-                                <label>📑 EXPORTS</label>
+                                <label>📑 EXPORTÁLÁS</label>
                                 <button onclick="exportResultsToExcel()" class="btn-primary"
                                     style="width: 100%; height: 45px; padding: 0; background: #28a745; color: white;">
                                     EXCEL EXPORT
                                 </button>
                             </div>
-
+                            
                             <div class="danger-zone">
                                 <label>⚠️ VESZÉLYZÓNA</label>
                                 <button onclick="raceManager.resetTimes()" class="btn-secondary" style="width: 100%; height: 45px; background: rgba(255, 165, 0, 0.2); border-color: orange; color: orange; margin-bottom: 10px;">
-                                    EREDMÉNYEK NULLÁZÁSA
+                                    IDŐK NULLÁZÁSA
                                 </button>
                                 <button onclick="raceManager.resetAll()" class="btn-danger" style="width: 100%; height: 45px;">
                                     RENDSZERTÖRLÉS
