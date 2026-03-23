@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Versenykiírás | DunakesziFutam 2026</title>
     <link rel="stylesheet" href="drgon.css">
+    <link rel="stylesheet" href="landing.css">
     <style>
         .kiiras-container {
             max-width: 900px;
@@ -222,17 +223,17 @@
 </head>
 
 <body>
-    <header>
+    <header id="navbar">
         <div class="header-container">
-            <!-- Bal oldal: Pontos Idő és Dátum -->
-
-            <!-- Közép: Logó / Cím -->
             <h1 class="logo-text-unified">
                 DUNAKESZI FUTAM 2026
             </h1>
-
-            <!-- Jobb oldal: Navigáció -->
-            <nav id="main-nav">
+            <button class="mobile-menu-toggle" id="menuToggle" aria-label="Menü megnyitása">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <nav class="nav-links" id="main-nav">
                 <a href="index.html" class="nav-btn">Főoldal</a>
                 <a href="management.html?view=regisztracio" class="nav-btn">Nevezés</a>
                 <a href="management.html?view=eredmenyek" class="nav-btn">Eredmények</a>
@@ -570,6 +571,7 @@
 
     <div id="toast-container"></div>
 
+    <script src="landing.js"></script>
 </body>
 
 </html>
