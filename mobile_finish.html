@@ -2,21 +2,21 @@
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
-    <!-- Ensure mobile compatibility, prevent zooming for app-like feel -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>DragonWave Befutó Rögzítő</title>
-    <!-- Use the same font as the main site -->
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #00A3FF;
-            --primary-action: #00E4FF;
+            --primary: #00E4FF;
+            --primary-dark: #00A3FF;
             --bg: #0B192C;
             --text: #CDE2FF;
-            --card-bg: #102542;
+            --card-bg: rgba(16, 37, 66, 0.85);
             --error: #FF4D4D;
-            --success: #00D2FF;
-            --border: rgba(0, 163, 255, 0.25);
+            --success: #00FFC2;
+            --border: rgba(0, 228, 255, 0.25);
+            --accent: #5EB1FF;
+            --glass: rgba(255, 255, 255, 0.03);
         }
 
         * {
@@ -24,36 +24,43 @@
             margin: 0;
             padding: 0;
             font-family: 'Montserrat', sans-serif;
-            -webkit-tap-highlight-color: transparent; /* Remove tap blue highlight on mobile */
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
             background-color: var(--bg);
+            background: radial-gradient(circle at top right, #162a4a, #0b192c);
             color: var(--text);
             display: flex;
             flex-direction: column;
             min-height: 100vh;
             padding: 15px;
+            overflow-x: hidden;
         }
 
         header {
             text-align: center;
-            padding: 10px 0 20px 0;
-            border-bottom: 2px solid var(--border);
+            padding: 15px 0;
+            border-bottom: 1px solid var(--border);
             margin-bottom: 20px;
         }
 
         header h1 {
-            font-size: 1.5rem;
+            font-size: 1.8rem;
             font-weight: 800;
             color: var(--primary);
             text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 15px rgba(0, 228, 255, 0.3);
         }
         
         header p {
-            font-size: 0.85rem;
-            color: #666;
-            margin-top: 5px;
+            font-size: 0.75rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 4px;
+            font-weight: 600;
         }
 
         .container {
@@ -61,21 +68,21 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
             width: 100%;
-            max-width: 500px;
+            max-width: 450px;
             margin: 0 auto;
         }
 
-        /* --- View Containers --- */
         #login-view, #app-view {
             width: 100%;
             display: none;
             flex-direction: column;
             background: var(--card-bg);
+            backdrop-filter: blur(12px);
             padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
         }
 
         #login-view.active, #app-view.active {
@@ -83,121 +90,159 @@
         }
 
         h2 {
-            font-size: 1.25rem;
+            font-size: 1rem;
             margin-bottom: 20px;
             text-align: center;
-            font-weight: 600;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: white;
+            opacity: 0.9;
         }
 
-        /* --- Shared Form Elements --- */
         .input-group {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             width: 100%;
         }
 
         label {
             display: block;
             margin-bottom: 8px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            color: #555;
+            font-weight: 700;
+            font-size: 0.8rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         input {
             width: 100%;
-            padding: 15px;
-            font-size: 1.1rem;
-            border: 2px solid var(--border);
-            border-radius: 8px;
+            padding: 18px;
+            font-size: 1.2rem;
+            background: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            color: white;
             outline: none;
-            transition: border-color 0.2s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         input:focus {
             border-color: var(--primary);
+            background: rgba(0, 228, 255, 0.08);
+            box-shadow: 0 0 20px rgba(0, 228, 255, 0.15);
         }
 
-        /* Specifically for bib input - HUGE */
         #bib-input {
-            font-size: 3.5rem;
+            font-size: 2.8rem;
             text-align: center;
             font-weight: 800;
-            height: 100px;
-            letter-spacing: 2px;
-            padding: 10px;
+            height: 85px;
+            letter-spacing: 3px;
             color: var(--primary);
+            font-family: 'Space Mono', monospace;
+            cursor: default;
         }
 
-        /* Remove default number arrows */
-        input[type=number]::-webkit-inner-spin-button, 
-        input[type=number]::-webkit-outer-spin-button { 
-            -webkit-appearance: none; 
-            margin: 0; 
-        }
-
-        button {
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
             width: 100%;
-            padding: 16px;
-            font-size: 1.2rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: transform 0.1s, background-color 0.2s, box-shadow 0.2s;
+            margin-bottom: 20px;
+        }
+
+        .key-btn {
+            background: var(--glass);
             color: white;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
-        button:active {
-            transform: scale(0.97);
-        }
-
-        .btn-login {
-            background-color: var(--primary);
-        }
-
-        .btn-action {
-            background-color: var(--primary-action);
-            padding: 24px;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            height: 72px;
             font-size: 1.8rem;
-            margin-top: 10px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        
-        .btn-action:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-            transform: none;
+
+        .key-btn:active {
+            transform: scale(0.9);
+            background: var(--primary);
+            color: var(--bg);
+            border-color: transparent;
+            box-shadow: 0 0 20px rgba(0, 228, 255, 0.4);
+        }
+
+        .key-bulk {
+            font-size: 0.9rem;
+            background: rgba(0, 228, 255, 0.12);
+            border-color: var(--primary);
+            color: var(--primary);
+            letter-spacing: 1px;
+            font-weight: 800;
+        }
+
+        .key-del {
+            background: rgba(255, 77, 77, 0.1);
+            border-color: rgba(255, 77, 77, 0.3);
+            color: #ff6b6b;
+        }
+
+        .key-submit {
+            grid-column: span 3;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: var(--bg);
+            font-size: 1.5rem;
+            font-weight: 900;
+            height: 80px;
+            letter-spacing: 2px;
+            border: none;
+            border-radius: 20px;
+            margin-top: 5px;
+            box-shadow: 0 8px 25px rgba(0, 228, 255, 0.3);
+        }
+
+        .key-submit:active {
+            transform: scale(0.97);
+            filter: brightness(1.1);
+            box-shadow: 0 4px 15px rgba(0, 228, 255, 0.2);
         }
 
         .btn-logout {
             background-color: transparent;
-            color: var(--error);
-            border: 2px solid var(--error);
-            box-shadow: none;
-            margin-top: auto; /* Push to bottom */
-            padding: 12px;
-            font-size: 0.9rem;
+            color: #ff6b6b;
+            border: 1px solid rgba(255, 77, 77, 0.25);
+            border-radius: 12px;
+            padding: 14px 25px;
+            font-size: 0.85rem;
+            width: auto;
+            align-self: center;
+            margin: 25px auto;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1px;
         }
 
-        /* --- Feedback Toast --- */
         #toast {
             position: fixed;
-            top: 20px;
+            top: 25px;
             left: 50%;
             transform: translateX(-50%) translateY(-150%);
-            padding: 15px 25px;
-            border-radius: 8px;
-            font-weight: 600;
+            padding: 18px 30px;
+            border-radius: 20px;
+            font-weight: 700;
             color: white;
             z-index: 1000;
             opacity: 0;
-            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            width: 90%;
-            max-width: 400px;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.28);
+            width: 92%;
+            max-width: 420px;
             text-align: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            white-space: pre-line;
             font-size: 1rem;
+            line-height: 1.4;
         }
 
         #toast.show {
@@ -205,35 +250,36 @@
             opacity: 1;
         }
 
-        #toast.success { background-color: var(--success); }
-        #toast.error { background-color: var(--error); }
-        #toast.warning { background-color: #ff9800; }
+        #toast.success { background: linear-gradient(135deg, #00FFC2, #00D1FF); color: #0b192c; }
+        #toast.error { background: linear-gradient(135deg, #FF4D4D, #CC0000); }
+        #toast.warning { background: linear-gradient(135deg, #FFB800, #FF8A00); color: #0b192c; }
 
-        /* Keyboard pad hint for app view */
         .hint {
             text-align: center;
-            font-size: 0.85rem;
-            color: #888;
+            font-size: 0.8rem;
+            color: var(--accent);
             margin-top: 15px;
+            opacity: 0.8;
+            font-weight: 600;
         }
         
-        /* Loading overlay */
         .loading-overlay {
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(255,255,255,0.8);
+            background: rgba(11, 25, 44, 0.85);
+            backdrop-filter: blur(6px);
             display: flex;
             justify-content: center;
             align-items: center;
-            border-radius: 12px;
+            border-radius: 24px;
             z-index: 10;
             display: none;
         }
         
         .loading-spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid var(--border);
+            width: 45px;
+            height: 45px;
+            border: 4px solid rgba(0, 228, 255, 0.2);
             border-top: 4px solid var(--primary);
             border-radius: 50%;
             animation: spin 1s linear infinite;
@@ -242,55 +288,6 @@
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
-        }
-
-        /* --- Keypad Styles --- */
-        .keypad {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            width: 100%;
-            margin-top: 10px;
-        }
-
-        .key-btn {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            padding: 18px 0;
-            font-size: 1.8rem;
-            font-weight: 800;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: transform 0.1s, background-color 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .key-btn:active {
-            transform: scale(0.95);
-            background-color: #0077CC;
-        }
-
-        .key-del {
-            background-color: #6c757d;
-        }
-
-        .key-del:active {
-            background-color: #5a6268;
-        }
-
-        .key-submit {
-            background-color: var(--primary-action);
-            font-size: 1rem;
-            text-align: center;
-            line-height: 1.2;
-        }
-
-        .key-submit:active {
-            background-color: #00B1D4;
         }
 
     </style>
@@ -305,15 +302,14 @@
     <div id="toast">Message here</div>
 
     <div class="container">
-        
         <!-- LOGIN VIEW -->
         <div id="login-view">
             <h2>Admin Belépés</h2>
             <div class="input-group">
-                <label for="password-input">Jelszó</label>
-                <input type="password" id="password-input" placeholder="Ide írd a jelszót..." autocomplete="current-password">
+                <label>Vezérlő Jelszó</label>
+                <input type="password" id="password-input" placeholder="••••••••" autocomplete="current-password">
             </div>
-            <button class="btn-login" id="login-btn">Belépés</button>
+            <button class="key-submit" id="login-btn">Belépés</button>
             <div class="loading-overlay" id="login-loading">
                 <div class="loading-spinner"></div>
             </div>
@@ -323,9 +319,9 @@
         <div id="app-view">
             <h2>Kézi Beérkeztetés</h2>
             
-            <div class="input-group" style="margin-bottom: 10px;">
-                <label for="bib-input">Rajtszám</label>
-                <input type="number" id="bib-input" inputmode="none" pattern="[0-9]*" placeholder="---" autocomplete="off" readonly>
+            <div class="input-group" style="margin-bottom: 12px;">
+                <label>Rajtszám(ok)</label>
+                <input type="text" id="bib-input" inputmode="none" placeholder="---" autocomplete="off" readonly>
             </div>
             
             <div class="keypad">
@@ -341,61 +337,45 @@
                 <button class="key-btn" data-val="8">8</button>
                 <button class="key-btn" data-val="9">9</button>
                 
-                <button class="key-btn key-del" data-val="del">⌫</button>
-                <button class="key-btn key-submit" data-val="submit">BEVITEL</button>
+                <button class="key-btn key-bulk" data-val=" ">TÖMEGES</button>
                 <button class="key-btn" data-val="0">0</button>
+                <button class="key-btn key-del" data-val="del">⌫</button>
+
+                <button class="key-btn key-submit" data-val="submit">RÖGZÍTÉS</button>
             </div>
             
-            <button class="btn-action" id="submit-btn" style="display: none;">BEFUTTAT</button>
-            
-            <p class="hint">Írd be a rajtszámot, és nyomj a gombra vagy Entert!</p>
+            <p class="hint">Több befutó esetén használd a TÖMEGES gombot!</p>
             
             <div class="loading-overlay" id="app-loading">
                 <div class="loading-spinner"></div>
             </div>
         </div>
-
     </div>
     
-    <!-- Logout button at bottom -->
     <button class="btn-logout" id="logout-btn" style="display: none;">Kijelentkezés</button>
 
     <script>
-        // DOM Elements
         const loginView = document.getElementById('login-view');
         const appView = document.getElementById('app-view');
         const toastEl = document.getElementById('toast');
         const loginBtn = document.getElementById('login-btn');
         const logoutBtn = document.getElementById('logout-btn');
-        const submitBtn = document.getElementById('submit-btn');
         const passwordInput = document.getElementById('password-input');
         const bibInput = document.getElementById('bib-input');
         
-        // State
         let adminPassword = localStorage.getItem('dragonwave_admin_pwd') || '';
-
-        // API URL (Relative, so it works wherever it's hosted, assuming same origin as backend)
         const API_BASE = (window.location.hostname === 'localhost' || window.location.protocol === 'file:')
-            ? 'http://localhost:3001/api'
-            : '/api';
+            ? 'http://localhost:3001/api' : '/api';
 
-        // Initialize
         function init() {
-            if (adminPassword) {
-                // Optimistically show app view. If an API call fails with 401/403, we will kick them out.
-                showApp();
-            } else {
-                showLogin();
-            }
+            if (adminPassword) showApp();
+            else showLogin();
         }
 
-        // View Toggling
         function showLogin() {
             loginView.classList.add('active');
             appView.classList.remove('active');
             logoutBtn.style.display = 'none';
-            passwordInput.value = '';
-            passwordInput.focus();
         }
 
         function showApp() {
@@ -403,179 +383,114 @@
             appView.classList.add('active');
             logoutBtn.style.display = 'block';
             bibInput.value = '';
-            // Delay focus slightly so mobile keyboards don't act weird during transition
-            setTimeout(() => bibInput.focus(), 100); 
         }
 
-        // Toast Notification
         let toastTimeout;
         function showToast(message, type = 'success') {
             toastEl.textContent = message;
-            toastEl.className = ''; // Reset classes
+            toastEl.className = '';
             toastEl.classList.add('show', type);
-            
             clearTimeout(toastTimeout);
-            toastTimeout = setTimeout(() => {
-                toastEl.classList.remove('show');
-            }, 3000); // Hide after 3 seconds
+            toastTimeout = setTimeout(() => toastEl.classList.remove('show'), 5000);
         }
 
-        // Format milliseconds to M:SS.ms (similar to our display elsewhere)
-        function formatTime(ms) {
-            if (!ms) return "0:00";
-            let totalSec = Math.floor(ms / 1000);
-            let hours = Math.floor(totalSec / 3600);
-            let minutes = Math.floor((totalSec % 3600) / 60);
-            let seconds = totalSec % 60;
-
-            let timeStr = "";
-            if (hours > 0) {
-                timeStr += hours + ":" + (minutes < 10 ? "0" : "") + minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
-            } else {
-                timeStr += minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
-            }
-            return timeStr;
-        }
-
-        // --- Event Listeners ---
-
-        // Login Logic
         async function handleLogin() {
             const pwd = passwordInput.value.trim();
-            if (!pwd) {
-                showToast('Kérlek add meg a jelszót!', 'error');
-                return;
-            }
-
+            if (!pwd) return showToast('Jelszó megadása kötelező!', 'error');
             document.getElementById('login-loading').style.display = 'flex';
-            
             try {
-                // Verify password against backend
                 const response = await fetch(`${API_BASE}/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ password: pwd })
                 });
-
                 const data = await response.json();
-
                 if (response.ok && data.success) {
                     adminPassword = pwd;
-                    localStorage.setItem('dragonwave_admin_pwd', passwordInput.value);
+                    localStorage.setItem('dragonwave_admin_pwd', pwd);
                     showToast('Sikeres belépés!', 'success');
                     showApp();
-                } else {
-                    showToast(data.error || 'Hibás jelszó!', 'error');
-                }
+                } else showToast(data.error || 'Hibás jelszó!', 'error');
             } catch (err) {
-                console.error("Login error:", err);
-                showToast('Hiba történt a csatlakozáskor.', 'error');
+                showToast('Csatlakozási hiba.', 'error');
             } finally {
                 document.getElementById('login-loading').style.display = 'none';
             }
         }
 
         loginBtn.addEventListener('click', handleLogin);
-        passwordInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') handleLogin();
-        });
-
-        // Logout
+        passwordInput.addEventListener('keypress', (e) => e.key === 'Enter' && handleLogin());
         logoutBtn.addEventListener('click', () => {
             adminPassword = '';
             localStorage.removeItem('dragonwave_admin_pwd');
             showLogin();
         });
 
-        // Submit Logic (Stop Racer)
         async function handleSubmit() {
-            const bib = parseInt(bibInput.value);
-            
-            if (!bib || isNaN(bib)) {
-                showToast('Kérlek adj meg egy érvényes rajtszámot!', 'warning');
-                bibInput.focus();
+            const input = bibInput.value.trim();
+            if (!input) {
+                showToast('Adj meg legalább egy rajtszámot!', 'warning');
                 return;
             }
 
-            // Disable button and show loading
-            submitBtn.disabled = true;
+            const bibs = input.split(/\s+/).filter(b => b.length > 0);
             document.getElementById('app-loading').style.display = 'flex';
 
-            try {
-                const response = await fetch(`${API_BASE}/stop-racer`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${adminPassword}`
-                    },
-                    body: JSON.stringify({ bib })
-                });
+            let results = [];
+            let errors = [];
 
-                const data = await response.json();
-
-                if (response.ok && data.success) {
-                    // Success!
-                    const nameStr = data.racer?.name || 'Ismeretlen';
-                    const timeStr = formatTime(data.racer?.total_time);
-                    
-                    showToast(`Sikeres mentés!\n#${bib} - ${nameStr}\nIdő: ${timeStr} 🏁`, 'success');
-                    
-                    // Reset input for next person
-                    bibInput.value = '';
-                    
-                    // Force focus back (crucial for rapid entry)
-                    setTimeout(() => bibInput.focus(), 10);
-                } else {
-                    // Error (e.g., unauthorized, or racer not running)
-                    if (response.status === 401 || response.status === 403) {
-                        showToast('Lejárt a bejelentkezés.', 'error');
-                        logoutBtn.click(); // force logout
+            for (const bib of bibs) {
+                try {
+                    const response = await fetch(`${API_BASE}/stop-racer`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${adminPassword}`
+                        },
+                        body: JSON.stringify({ bib: parseInt(bib) })
+                    });
+                    const data = await response.json();
+                    if (response.ok && data.success) {
+                        results.push(`#${bib}`);
                     } else {
-                        showToast(`Hiba: ${data.error || 'Ismeretlen hiba történt'}`, 'error');
-                        // Don't clear input so they can fix a typo easily
-                        bibInput.focus();
-                        bibInput.select(); // Highlight existing input for easy overwrite
+                        errors.push(`#${bib}: ${data.error || 'Hiba'}`);
                     }
+                } catch (err) {
+                    errors.push(`#${bib}: Kapcsolat`);
                 }
-            } catch (err) {
-                console.error("Submit error:", err);
-                showToast('Hálózati hiba. Nincs internetkapcsolat?', 'error');
-            } finally {
-                submitBtn.disabled = false;
-                document.getElementById('app-loading').style.display = 'none';
+            }
+
+            document.getElementById('app-loading').style.display = 'none';
+            
+            if (results.length > 0) {
+                const msg = `Rögzítve: ${results.join(', ')}`;
+                showToast(msg + (errors.length > 0 ? `\n\nSikertelen (${errors.length} db):\n${errors.slice(0, 3).join('\n')}` : ''), 'success');
+                if (errors.length === 0) bibInput.value = '';
+                else bibInput.focus();
+            } else if (errors.length > 0) {
+                showToast(`Hiba történt:\n${errors[0]}`, 'error');
             }
         }
 
-        submitBtn.addEventListener('click', handleSubmit);
-        bibInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault(); // Prevent accidental form submissions if placed inside form
-                handleSubmit();
-            }
-        });
-
-        // Keypad Event Handlers
         document.querySelectorAll('.key-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const val = btn.getAttribute('data-val');
-                
                 if (val === 'del') {
+                    bibInput.value = bibInput.value.trimEnd(); // Remove space if last char
                     bibInput.value = bibInput.value.slice(0, -1);
                 } else if (val === 'submit') {
                     handleSubmit();
                 } else {
-                    // Only allow up to 4 digits for bib (sanity check)
-                    if (bibInput.value.length < 4) {
+                    if (bibInput.value.length < 50) {
+                        // Avoid consecutive spaces
+                        if (val === ' ' && bibInput.value.endsWith(' ')) return;
                         bibInput.value += val;
                     }
                 }
-                
-                // Trigger an input event just in case anything is listening
                 bibInput.dispatchEvent(new Event('input'));
             });
         });
 
-        // Start initialization
         init();
     </script>
 </body>
