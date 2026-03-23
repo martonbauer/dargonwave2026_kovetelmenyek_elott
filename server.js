@@ -740,6 +740,7 @@ function normalizeCategoryToSlug(categoryName) {
     if (name.includes('tengeri') && name.includes('férfi')) return 'tengeri_kajak_ferfi_1';
     if (name.includes('surfski') && name.includes('női')) return 'surfski_noi';
     if (name.includes('surfski') && name.includes('férfi')) return 'surfski_ferfi';
+    if (name.includes('rövid') && name.includes('kenu')) return 'rovid_kenu_11km';
     if (name.includes('kenu') && name.includes('női') && name.includes('1')) return 'kenu_noi_1';
     if (name.includes('kenu') && name.includes('férfi') && name.includes('1')) return 'kenu_ferfi_1';
     if (name.includes('kenu') && name.includes('2') && name.includes('férfi')) return 'kenu_2_ferfi';

@@ -250,6 +250,7 @@ class RaceManager {
             'kajak_1_nyitott_11km': 'Kajak-1 nyitott',
             'kajak_2_nyitott_11km': 'Kajak-2 nyitott',
             'kenu_nyitott_11km': 'Kenu nyitott',
+            'rovid_kenu_11km': 'Rövid kenu',
 
             // 22 km (Hosszú)
             'versenykajak_noi_1_22km': 'Versenykajak női-1 (38 cm)',
@@ -1445,7 +1446,8 @@ window.updateCategorySelect = () => {
         '11km': [
             { id: 'kajak_1_nyitott_11km', name: 'Kajak-1 nyitott' },
             { id: 'kajak_2_nyitott_11km', name: 'Kajak-2 nyitott' },
-            { id: 'kenu_nyitott_11km', name: 'Kenu nyitott' }
+            { id: 'kenu_nyitott_11km', name: 'Kenu nyitott' },
+            { id: 'rovid_kenu_11km', name: 'Rövid kenu' }
         ],
         '22km': [
             { id: 'versenykajak_noi_1_22km', name: 'Versenykajak női-1 (38 cm)' },
