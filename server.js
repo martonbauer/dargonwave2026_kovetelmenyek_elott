@@ -815,6 +815,52 @@ app.post('/api/upload-csv', authenticateAdmin, async (req, res) => {
                 if (!dist.endsWith('km')) dist += 'km';
 
                 let bib = parseInt(csvBib);
+
+                // --- DUPLICATION CHECK ---
+                let isDuplicate = false;
+                
+                // 1. Check by explicit BIB (if provided in CSV)
+                if (!isNaN(bib)) {
+                    const { data: existingBib } = await supabase
+                        .from('racers')
+                        .select('id')
+                        .eq('bib', bib)
+                        .maybeSingle();
+                        
+                    if (existingBib) {
+                        isDuplicate = true;
+                        console.log(`[CSV-UPLOAD] SOR ÁTUGORVA (Duplikáció, rajtszám már létezik): #${bib}`);
+                    }
+                }
+
+                // 2. Check by Name + Category + Distance
+                if (!isDuplicate && names[0]) {
+                    const { data: possibleRacers } = await supabase
+                        .from('racers')
+                        .select('id')
+                        .eq('category', category)
+                        .eq('distance', dist);
+                    
+                    if (possibleRacers && possibleRacers.length > 0) {
+                        const racerIds = possibleRacers.map(r => r.id);
+                        const { data: existingMembers } = await supabase
+                            .from('members')
+                            .select('racer_id, name')
+                            .in('racer_id', racerIds)
+                            .eq('name', names[0]);
+                            
+                        if (existingMembers && existingMembers.length > 0) {
+                            isDuplicate = true;
+                            console.log(`[CSV-UPLOAD] SOR ÁTUGORVA (Duplikáció, versenyző már létezik): ${names[0]} - ${category}`);
+                        }
+                    }
+                }
+
+                if (isDuplicate) {
+                    continue; // Skip insertion for this row
+                }
+                // --- END DUPLICATION CHECK ---
+
                 if (isNaN(bib)) {
                     bib = await getNextBib(dist, category);
                     console.log(`[CSV-UPLOAD] Rajtszám generálva: ${bib}`);
