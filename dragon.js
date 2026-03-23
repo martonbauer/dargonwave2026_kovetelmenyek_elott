@@ -246,32 +246,42 @@ class RaceManager {
         this.serverTimeOffset = 0;
         this.adminPassword = sessionStorage.getItem('dragonAdminPassword') || '';
         this.categoryMap = {
-            'versenykajak_noi_1': 'Versenykajak női-1 (38 cm)',
-            'versenykajak_ferfi_1': 'Versenykajak férfi-1 (38 cm)',
-            'turakajak_noi_1': 'Túrakajak női 1 (42-44-46-48-51 cm)',
-            'turakajak_ferfi_1': 'Túrakajak férfi-1 (42-44-46-48-51 cm)',
-            'turakajak_2_nyitott': 'Túrakajak 2 (nyitott)',
-            'tengeri_kajak_noi_1': 'Tengeri kajak női 1 (51cm>)',
-            'tengeri_kajak_ferfi_1': 'Tengeri kajak férfi 1 (51cm>)',
-            'surfski_noi': 'Surfski női kajak',
-            'surfski_ferfi': 'Surfski férfi kajak',
-            'kenu_noi_1': 'Kenu női-1',
-            'kenu_ferfi_1': 'Kenu férfi-1',
-            'kenu_2_ferfi': 'Kenu 2 férfi',
-            'kenu_2_vegyes': 'Kenu 2 vegyes',
-            'kenu_3_nyitott': 'Kenu 3 (nyitott)',
-            'kenu_4_nyitott': 'Kenu 4 (nyitott)',
-            'outrigger_noi_1': 'Outrigger női-1',
-            'outrigger_ferfi_1': 'Outrigger férfi-1',
-            'outrigger_2_nyitott': 'Outrigger 2 (nyitott)',
-            'sup_noi_1_merev_39_alatt': 'SUP női-1 merev (39 év alatt)',
-            'sup_noi_1_merev_39_felett': 'SUP női-1 merev (40 év felett)',
-            'sup_ferfi_1_merev_39_alatt': 'SUP férfi-1 merev (39 év alatt)',
-            'sup_ferfi_1_merev_39_felett': 'SUP férfi-1 merev (40 év felett)',
-            'sup_noi_1_felfujhato_39_alatt': 'SUP női-1 felfújható (39 év alatt)',
-            'sup_noi_1_felfujhato_39_felett': 'SUP női-1 felfújható (40 év felett)',
-            'sup_ferfi_1_felfujhato_39_alatt': 'SUP férfi-1 felfújható (39 év alatt)',
-            'sup_ferfi_1_felfujhato_39_felett': 'SUP férfi-1 felfújható (40 év felett)',
+            // 11 km (Rövid)
+            'kajak_1_nyitott_11km': 'Kajak-1 nyitott',
+            'kajak_2_nyitott_11km': 'Kajak-2 nyitott',
+            'kenu_nyitott_11km': 'Kenu nyitott',
+
+            // 22 km (Hosszú)
+            'versenykajak_noi_1_22km': 'Versenykajak női-1 (38 cm)',
+            'versenykajak_ferfi_1_22km': 'Versenykajak férfi-1 (38 cm)',
+            'turakajak_noi_1_22km': 'Túrakajak női-1 (42–51 cm)',
+            'turakajak_ferfi_1_22km': 'Túrakajak férfi-1 (42–51 cm)',
+            'turakajak_2_nyitott_22km': 'Túrakajak 2 (nyitott)',
+            'tengeri_kajak_noi_1_22km': 'Tengeri kajak női-1 (51 cm>)',
+            'tengeri_kajak_ferfi_1_22km': 'Tengeri kajak férfi-1 (51 cm>)',
+            'mk_1_fiu_22km': 'MK-1 fiú',
+            'mk_1_leany_22km': 'MK-1 leány',
+            'outrigger_noi_1_22km': 'Outrigger női-1',
+            'outrigger_ferfi_1_22km': 'Outrigger férfi-1',
+            'outrigger_2_nyitott_22km': 'Outrigger-2 (nyitott)',
+            'kenu_2_ferfi_22km': 'Kenu-2 férfi',
+            'kenu_2_vegyes_22km': 'Kenu-2 vegyes',
+            'kenu_3_nyitott_22km': 'Kenu-3 (nyitott)',
+            'kenu_4_nyitott_22km': 'Kenu-4 (nyitott)',
+            'sup_noi_1_22km': 'SUP női-1',
+            'sup_ferfi_1_22km': 'SUP férfi-1',
+
+            // 4 km SUP
+            'sup_noi_1_merev_39_alatt_4km': 'SUP női-1- merev deszka 39 év alatt',
+            'sup_noi_1_merev_40_felett_4km': 'SUP női-1- merev deszka 40 év felett',
+            'sup_ferfi_1_merev_39_alatt_4km': 'SUP férfi-1- merev deszka 39 év alatt',
+            'sup_ferfi_1_merev_40_felett_4km': 'SUP férfi-1- merev deszka 40 év felett',
+            'sup_noi_1_felfujhato_39_alatt_4km': 'SUP női-1- felfújható deszka 39 év alatt',
+            'sup_noi_1_felfujhato_40_felett_4km': 'SUP női-1- felfújható deszka 40 év felett',
+            'sup_ferfi_1_felfujhato_39_alatt_4km': 'SUP férfi-1- felfújható deszka 39 év alatt',
+            'sup_ferfi_1_felfujhato_40_felett_4km': 'SUP férfi-1- felfújható deszka 40 év felett',
+            
+            // Legacy / Admin support
             'sarkanyhajo_otproba': 'Sárkányhajó ötpróba'
         };
         this.groupMap = {
@@ -346,13 +356,26 @@ class RaceManager {
     // --- Core Logic (API) ---
 
     // 1. Registration
-    async registerRacer(members, category, distance, is_series, email, phone) {
+    async registerRacer(members, category, distance, is_series, email, phone, contactName) {
         try {
-            // ... (formatting stays same)
+            const formattedMembers = members.map(m => ({
+                name: m.name,
+                birth_date: m.birth_date,
+                otproba_id: m.otproba_id
+            }));
+
             const response = await fetch(`${API_URL}/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ members: formattedMembers, category, distance, is_series, email, phone })
+                body: JSON.stringify({ 
+                    members: formattedMembers, 
+                    category, 
+                    distance, 
+                    is_series, 
+                    email, 
+                    phone,
+                    contact_name: contactName // Added contact_name
+                })
             });
 
             if (response.status === 401 || response.status === 403) {
@@ -843,11 +866,13 @@ class RaceManager {
     getTeamSize(catId) {
         if (!catId) return 1;
         if (catId.includes('_2_')) return 2;
-        if (catId === 'turakajak_2_nyitott') return 2;
-        if (catId === 'kenu_2_ferfi' || catId === 'kenu_2_vegyes' || catId === 'outrigger_2_nyitott') return 2;
-        if (catId === 'kenu_3_nyitott') return 3;
-        if (catId === 'kenu_4_nyitott') return 4;
-        if (catId === 'sarkanyhajo_otproba') return 1;
+        if (catId.includes('_3_')) return 3;
+        if (catId.includes('_4_')) return 4;
+        if (catId.includes('turakajak_2_nyitott')) return 2;
+        if (catId.includes('outrigger_2_nyitott')) return 2;
+        if (catId.includes('kenu_2_ferfi') || catId.includes('kenu_2_vegyes')) return 2;
+        if (catId.includes('kenu_3_nyitott')) return 3;
+        if (catId.includes('kenu_4_nyitott')) return 4;
         return 1;
     }
 
@@ -1362,9 +1387,10 @@ document.getElementById('nevezesForm').addEventListener('submit', async function
 
     const email = document.getElementById('reg-email').value.trim();
     const phone = document.getElementById('reg-phone').value.trim();
+    const contactName = document.getElementById('reg-name').value.trim();
 
-    if (!email || !phone) {
-        showToast("Kérjük adja meg az e-mail címét és telefonszámát!", "error");
+    if (!email || !phone || !contactName) {
+        showToast("Kérjük adja meg a kapcsolattartó nevét, e-mail címét és telefonszámát!", "error");
         return;
     }
 
@@ -1378,7 +1404,6 @@ document.getElementById('nevezesForm').addEventListener('submit', async function
         const otproba_id = otprobaInp.disabled ? "Nincs" : otprobaInp.value;
 
         if (!name || !birth_date) {
-            // Instead of throw new Error, use showToast and return
             showToast(`Kérjük adja meg a(z) ${idx + 1}. versenyző minden adatát!`, "error");
             throw new Error("Validation failed"); 
         }
@@ -1388,7 +1413,7 @@ document.getElementById('nevezesForm').addEventListener('submit', async function
     });
 
     try {
-        await raceManager.registerRacer(members, kategoria, tav, false, email, phone);
+        await raceManager.registerRacer(members, kategoria, tav, false, email, phone, contactName);
     } catch (err) {
         if (err.message !== "Validation failed") {
             showToast(err.message, "error");
@@ -1397,16 +1422,79 @@ document.getElementById('nevezesForm').addEventListener('submit', async function
     }
 
     // Form reset
-    document.getElementById('kategoria').value = '';
+    document.getElementById('reg-name').value = '';
     document.getElementById('reg-email').value = '';
     document.getElementById('reg-phone').value = '';
+    document.getElementById('versenytav').value = '';
+    document.getElementById('kategoria').innerHTML = '<option value="" disabled selected>Előbb válassz távot...</option>';
     document.getElementById('members-container').innerHTML = `
         <div style="text-align: center; padding: 20px; color: #888; border: 1px dashed #444; border-radius: 8px; margin: 15px 0;">
             Válassz kategóriát a jelentkezési űrlap megjelenítéséhez.
         </div>
     `;
-    document.getElementById('kategoria').focus();
+    document.getElementById('reg-name').focus();
 });
+
+// Dynamic Category Population
+window.updateCategorySelect = () => {
+    const dist = document.getElementById('versenytav').value;
+    const catSelect = document.getElementById('kategoria');
+    catSelect.innerHTML = '<option value="" disabled selected>Válassz kategóriát...</option>';
+
+    const categories = {
+        '11km': [
+            { id: 'kajak_1_nyitott_11km', name: 'Kajak-1 nyitott' },
+            { id: 'kajak_2_nyitott_11km', name: 'Kajak-2 nyitott' },
+            { id: 'kenu_nyitott_11km', name: 'Kenu nyitott' }
+        ],
+        '22km': [
+            { id: 'versenykajak_noi_1_22km', name: 'Versenykajak női-1 (38 cm)' },
+            { id: 'versenykajak_ferfi_1_22km', name: 'Versenykajak férfi-1 (38 cm)' },
+            { id: 'turakajak_noi_1_22km', name: 'Túrakajak női-1 (42–51 cm)' },
+            { id: 'turakajak_ferfi_1_22km', name: 'Túrakajak férfi-1 (42–51 cm)' },
+            { id: 'turakajak_2_nyitott_22km', name: 'Túrakajak 2 (nyitott)' },
+            { id: 'tengeri_kajak_noi_1_22km', name: 'Tengeri kajak női-1 (51 cm>)' },
+            { id: 'tengeri_kajak_ferfi_1_22km', name: 'Tengeri kajak férfi-1 (51 cm>)' },
+            { id: 'mk_1_fiu_22km', name: 'MK-1 fiú' },
+            { id: 'mk_1_leany_22km', name: 'MK-1 leány' },
+            { id: 'outrigger_noi_1_22km', name: 'Outrigger női-1' },
+            { id: 'outrigger_ferfi_1_22km', name: 'Outrigger férfi-1' },
+            { id: 'outrigger_2_nyitott_22km', name: 'Outrigger-2 (nyitott)' },
+            { id: 'kenu_2_ferfi_22km', name: 'Kenu-2 férfi' },
+            { id: 'kenu_2_vegyes_22km', name: 'Kenu-2 vegyes' },
+            { id: 'kenu_3_nyitott_22km', name: 'Kenu-3 (nyitott)' },
+            { id: 'kenu_4_nyitott_22km', name: 'Kenu-4 (nyitott)' },
+            { id: 'sup_noi_1_22km', name: 'SUP női-1' },
+            { id: 'sup_ferfi_1_22km', name: 'SUP férfi-1' }
+        ],
+        '4km': [
+            { id: 'sup_noi_1_merev_39_alatt_4km', name: 'SUP női-1- merev deszka 39 év alatt' },
+            { id: 'sup_noi_1_merev_40_felett_4km', name: 'SUP női-1- merev deszka 40 év felett' },
+            { id: 'sup_ferfi_1_merev_39_alatt_4km', name: 'SUP férfi-1- merev deszka 39 év alatt' },
+            { id: 'sup_ferfi_1_merev_40_felett_4km', name: 'SUP férfi-1- merev deszka 40 év felett' },
+            { id: 'sup_noi_1_felfujhato_39_alatt_4km', name: 'SUP női-1- felfújható deszka 39 év alatt' },
+            { id: 'sup_noi_1_felfujhato_40_felett_4km', name: 'SUP női-1- felfújható deszka 40 év felett' },
+            { id: 'sup_ferfi_1_felfujhato_39_alatt_4km', name: 'SUP férfi-1- felfújható deszka 39 év alatt' },
+            { id: 'sup_ferfi_1_felfujhato_40_felett_4km', name: 'SUP férfi-1- felfújható deszka 40 év felett' }
+        ]
+    };
+
+    if (categories[dist]) {
+        categories[dist].forEach(cat => {
+            const opt = document.createElement('option');
+            opt.value = cat.id;
+            opt.textContent = cat.name;
+            catSelect.appendChild(opt);
+        });
+    }
+    
+    // Reset members
+    document.getElementById('members-container').innerHTML = `
+        <div style="text-align: center; padding: 20px; color: #888; border: 1px dashed #444; border-radius: 8px; margin: 15px 0;">
+            Válassz kategóriát a jelentkezési űrlap megjelenítéséhez.
+        </div>
+    `;
+};
 
 window.startCategory = (cat, dist, group) => raceManager.startCategory(cat, dist, group);
 window.startIndividual = (bib) => raceManager.startIndividual(bib);
@@ -1490,29 +1578,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const categorySelect = document.getElementById('kategoria');
-    const distanceSelect = document.getElementById('versenytav');
-
-    if (categorySelect && distanceSelect) {
-        categorySelect.addEventListener('change', () => {
-            if (categorySelect.value.startsWith('sup_')) {
-                distanceSelect.value = '4km';
-                Array.from(distanceSelect.options).forEach(opt => {
-                    opt.disabled = (opt.value !== '4km');
-                });
-            } else if (categorySelect.value === 'sarkanyhajo_otproba') {
-                distanceSelect.value = '11km';
-                Array.from(distanceSelect.options).forEach(opt => {
-                    opt.disabled = (opt.value !== '11km');
-                });
-            } else {
-                Array.from(distanceSelect.options).forEach(opt => {
-                    opt.disabled = false;
-                });
-                if (distanceSelect.value === '4km') distanceSelect.value = '11km';
-            }
-        });
-    }
+    // Legacy category/distance interdependency removed in favor of new updateCategorySelect logic
 
     // Mobile Menu Toggle
     const menuToggle = document.getElementById('menuToggle');
