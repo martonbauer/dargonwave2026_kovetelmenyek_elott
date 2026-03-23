@@ -811,25 +811,141 @@ form select:focus {
 }
 
 @media (max-width: 768px) {
+    header {
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        background: var(--bg-primary); /* Ensure solid background on mobile */
+        border-bottom: 2px solid var(--accent-primary);
+    }
+
+    .header-container {
+        flex-direction: column;
+        height: auto;
+        padding: 0.8rem;
+        gap: 8px;
+        text-align: center;
+    }
+    
+    .header-left {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+    }
+
+    /* Fix to prevent content from being hidden behind sticky header */
+    .admin-card, .admin-table-section {
+        scroll-margin-top: 120px;
+    }
+
     .admin-grid {
         grid-template-columns: 1fr;
+        gap: 1.2rem;
+    }
+    .admin-card {
+        grid-column: auto !important;
+    }
+    .main-content {
+        padding: 0 0.8rem;
     }
     .registration-section {
-        padding: 1.5rem;
+        padding: 1.2rem;
+    }
+    .admin-card {
+        padding: 1.2rem;
+        border-radius: 12px;
     }
     .event-title {
         font-size: 2.2rem;
     }
     
     .admin-top-bar {
-        flex-direction: column;
+        flex-direction: column !important;
         gap: 15px;
         text-align: center;
+    }
+
+    .admin-top-bar > div {
+        flex-direction: column !important;
+        gap: 10px;
     }
 
     .admin-stats {
         flex-wrap: wrap;
         justify-content: center;
+        gap: 10px;
+    }
+
+    .stat-item {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 8px 12px;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        min-width: 120px;
+        text-align: center;
+    }
+
+    /* Responsive Table to Cards */
+    table#admin-table, 
+    .results-table {
+        display: block;
+        width: 100%;
+    }
+
+    table#admin-table thead,
+    .results-table thead {
+        display: none;
+    }
+
+    table#admin-table tbody,
+    table#admin-table tr,
+    table#admin-table td,
+    .results-table tbody,
+    .results-table tr,
+    .results-table td {
+        display: block;
+        width: 100%;
+    }
+
+    table#admin-table tr,
+    .results-table tr {
+        margin-bottom: 20px;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+        padding: 5px;
+        overflow: hidden;
+    }
+
+    table#admin-table td,
+    .results-table td {
+        text-align: right;
+        padding: 10px 15px;
+        position: relative;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    table#admin-table td:last-child,
+    .results-table td:last-child {
+        border-bottom: none;
+        background: rgba(0, 163, 255, 0.05);
+        text-align: center;
+    }
+
+    table#admin-table td::before,
+    .results-table td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 15px;
+        width: 45%;
+        text-align: left;
+        font-weight: 700;
+        color: var(--text-secondary);
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        top: 50%;
+        transform: translateY(-50%);
     }
 
     .management-grid {
@@ -842,8 +958,62 @@ form select:focus {
         text-align: center;
     }
 
-    #admin-global-stats {
-        font-size: 0.75rem;
+    .bib-input-wrapper {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .bib-input-wrapper > input {
+        width: 100% !important;
+        height: 70px !important;
+        font-size: 2.2rem !important;
+        margin-bottom: 5px;
+    }
+    
+    .bib-input-wrapper .button-group {
+        display: flex;
+        gap: 10px;
+        width: 100% !important;
+    }
+
+    .bib-input-wrapper .button-group button {
+        flex: 1;
+        height: 60px !important;
+        min-width: 0 !important;
+    }
+
+    #bib-input {
+        font-size: 2.2rem;
+    }
+
+    .btn-stop-major {
+        padding: 15px;
+        font-size: 1.5rem;
+    }
+
+    /* Bulk Arrival Button Styling */
+    .bulk-btn-mobile {
+        background: rgba(0, 228, 255, 0.1) !important;
+        border: 2px dashed var(--accent-primary) !important;
+        color: var(--accent-primary) !important;
+        font-size: 1rem !important;
+        font-weight: 800 !important;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .bulk-btn-mobile:active {
+        background: rgba(0, 228, 255, 0.2) !important;
+        transform: scale(0.98);
+    }
+
+    .admin-title {
+        font-size: 1.6rem;
+        line-height: 1.2;
     }
 }
 
