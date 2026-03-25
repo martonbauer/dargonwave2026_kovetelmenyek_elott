@@ -955,14 +955,16 @@ class RaceManager {
         if (massContainer) {
             const isRunning = !!this.data.categories['MASS_START_ALL'];
             massContainer.innerHTML = `
-                <button onclick="window.startMass()" class="btn-primary" style="width: 100%; min-height: 54px; background: linear-gradient(135deg, #ff4d4d, #f00); font-weight: 800; font-size: clamp(0.7rem, 2.5vw, 1rem); box-shadow: 0 5px 15px rgba(255,0,0,0.3); border:none; padding: 10px 8px; white-space: normal; line-height: 1.3;" ${isRunning ? 'disabled' : ''}>
-                    🚀 ÖSSZES INDÍTÁSA
-                </button>
-                ${isRunning ? `
-                    <button onclick="window.stopCategory(null, null, 'MASS_START_ALL')" class="btn-stop" style="width: 100%; margin-top: 10px; height: 35px; font-size: 0.8rem;">
-                        🛑 STOP
+                <div style="display: flex; flex-direction: column; gap: 8px; align-items: center; background: rgba(255, 77, 77, 0.05); padding: 12px; border-radius: 12px; border: 1px solid rgba(255, 77, 77, 0.15);">
+                    <button onclick="window.startMass()" class="btn-primary" style="width: 100%; min-height: 54px; background: linear-gradient(135deg, #ff4d4d, #f00); font-weight: 800; font-size: clamp(0.75rem, 2.5vw, 1.05rem); box-shadow: 0 5px 15px rgba(255,0,0,0.3); border:none; padding: 10px 8px; white-space: normal; line-height: 1.2; margin: 0;" ${isRunning ? 'disabled' : ''}>
+                        🚀 ÖSSZES INDÍTÁSA
                     </button>
-                ` : ''}
+                    ${isRunning ? `
+                        <button onclick="window.stopCategory(null, null, 'MASS_START_ALL')" class="btn-stop" style="width: 100%; margin: 0; height: 40px; font-size: 0.8rem; border-radius: 8px;">
+                            🛑 STOP
+                        </button>
+                    ` : ''}
+                </div>
             `;
         }
 
