@@ -410,7 +410,20 @@ app.post('/api/start-mass', authenticateAdmin, async (req, res) => {
     const startKey = 'MASS_START_ALL';
 
     try {
-        await supabase.from('categories').upsert({ key: startKey, start_time: now });
+        // Check if already started
+        const { data: existing } = await supabase
+            .from('categories')
+            .select('key')
+            .eq('key', startKey)
+            .maybeSingle();
+
+        if (existing) return res.status(400).json({ error: 'Már elindult a tömegrajt!' });
+
+        const { error: cError } = await supabase
+            .from('categories')
+            .insert({ key: startKey, start_time: now });
+
+        if (cError) throw cError;
 
         const { data, error } = await supabase
             .from('racers')
@@ -434,7 +447,20 @@ app.post('/api/start-distance', authenticateAdmin, async (req, res) => {
     if (!distance) return res.status(400).json({ error: 'Távolság megadása kötelező!' });
 
     try {
-        await supabase.from('categories').upsert({ key: startKey, start_time: now });
+        // Check if already started
+        const { data: existing } = await supabase
+            .from('categories')
+            .select('key')
+            .eq('key', startKey)
+            .maybeSingle();
+
+        if (existing) return res.status(400).json({ error: `Már elindult a(z) ${distance} táv!` });
+
+        const { error: cError } = await supabase
+            .from('categories')
+            .insert({ key: startKey, start_time: now });
+
+        if (cError) throw cError;
 
         const { data, error } = await supabase
             .from('racers')
@@ -446,6 +472,41 @@ app.post('/api/start-distance', authenticateAdmin, async (req, res) => {
         if (error) throw error;
         res.json({ success: true, start_time: now, count: data?.length || 0, distance });
     } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
+// 3e. Start Individual Racer (by bib)
+app.post('/api/start-individual', authenticateAdmin, async (req, res) => {
+    const { bib } = req.body;
+    const now = Date.now();
+
+    if (!bib) return res.status(400).json({ error: 'Rajtszám megadása kötelező!' });
+
+    try {
+        const { data: racer, error: fError } = await supabase
+            .from('racers')
+            .select('*')
+            .eq('bib', bib)
+            .maybeSingle();
+
+        if (fError) throw fError;
+        if (!racer) return res.status(404).json({ error: 'Nincs ilyen rajtszámú versenyző!' });
+        if (racer.status === 'running') return res.status(400).json({ error: 'Ez a versenyző már rajtolt!' });
+        if (racer.status === 'finished') return res.status(400).json({ error: 'Ez a versenyző már célba ért!' });
+
+        const { error: uError } = await supabase
+            .from('racers')
+            .update({ status: 'running', start_time: now })
+            .eq('id', racer.id);
+
+        if (uError) throw uError;
+
+        console.log(`[START-INDIVIDUAL] #${bib} elindítva.`);
+        res.json({ success: true, bib, start_time: now });
+    } catch (err) {
+        console.error('Error in /api/start-individual:', err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -487,18 +548,21 @@ app.post('/api/stop-category', authenticateAdmin, async (req, res) => {
         if (fError) throw fError;
 
         if (runningRacers && runningRacers.length > 0) {
-            const updates = runningRacers.map(racer => ({
-                ...racer,
-                status: 'finished',
-                finish_time: now,
-                total_time: now - racer.start_time
-            }));
-
-            const { error: uError } = await supabase
-                .from('racers')
-                .upsert(updates);
-            
-            if (uError) throw uError;
+            // Update each racer individually using their ID to avoid upsert creating duplicates
+            for (const racer of runningRacers) {
+                const { error: uError } = await supabase
+                    .from('racers')
+                    .update({
+                        status: 'finished',
+                        finish_time: now,
+                        total_time: now - racer.start_time
+                    })
+                    .eq('id', racer.id);
+                if (uError) {
+                    console.error(`[STOP] Update error for racer ${racer.id}:`, uError);
+                    throw uError;
+                }
+            }
         }
 
 
@@ -693,10 +757,9 @@ app.put('/api/racer/:id', authenticateAdmin, async (req, res) => {
 // 7. Reset All Data
 app.post('/api/reset', authenticateAdmin, async (req, res) => {
     try {
-        // In Supabase, we delete all rows. Foreign keys handle memberships.
-        await supabase.from('members').delete().not('id', 'is', null);
-        await supabase.from('racers').delete().not('id', 'is', null);
-        await supabase.from('categories').delete().not('key', 'is', null);
+        await deleteAll('members');
+        await deleteAll('racers');
+        await deleteAll('categories', 'key');
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -706,20 +769,12 @@ app.post('/api/reset', authenticateAdmin, async (req, res) => {
 // 8. Reset Times Only
 app.post('/api/reset-times', authenticateAdmin, async (req, res) => {
     try {
-        // Reset all racers to 'registered' and clear total_time
         const { error: rError } = await supabase
             .from('racers')
             .update({ status: 'registered', total_time: null })
             .not('id', 'is', null);
-
-        // Clear all category start times
-        const { error: cError } = await supabase
-            .from('categories')
-            .delete()
-            .not('key', 'is', null);
-
-        if (rError || cError) throw new Error("Adatbázis hiba az idők törlésekor.");
-
+        const { error: cError } = await deleteAll('categories', 'key');
+        if (rError || cError) throw new Error('Adatbázis hiba az idők törlésekor.');
         res.json({ success: true });
     } catch (err) {
         console.error("[RESET-TIMES] Error:", err);
@@ -727,39 +782,49 @@ app.post('/api/reset-times', authenticateAdmin, async (req, res) => {
     }
 });
 
-// Helper for CSV normalization
+// Helper: egyetlen Supabase-törlés helper – korábban 3 helyen ismétlődő minta
+function deleteAll(table, col = 'id') {
+    return supabase.from(table).delete().not(col, 'is', null);
+}
+
+// Helper for CSV normalization – korábban 30 soros if-lánc, mostantól adatstruktúra
+const SLUG_MAP = [
+    { keys: ['versenykajak','női'],                           slug: 'versenykajak_noi_1' },
+    { keys: ['versenykajak','férfi'],                         slug: 'versenykajak_ferfi_1' },
+    { keys: ['túrakajak','női','1'],                          slug: 'turakajak_noi_1' },
+    { keys: ['túrakajak','férfi','1'],                        slug: 'turakajak_ferfi_1' },
+    { keys: ['túrakajak','2'],                                slug: 'turakajak_2_nyitott' },
+    { keys: ['tengeri','női'],                               slug: 'tengeri_kajak_noi_1' },
+    { keys: ['tengeri','férfi'],                             slug: 'tengeri_kajak_ferfi_1' },
+    { keys: ['surfski','női'],                               slug: 'surfski_noi' },
+    { keys: ['surfski','férfi'],                             slug: 'surfski_ferfi' },
+    { keys: ['rövid','kenu'],                                slug: 'rovid_kenu_11km' },
+    { keys: ['kenu','női','1'],                              slug: 'kenu_noi_1' },
+    { keys: ['kenu','férfi','1'],                            slug: 'kenu_ferfi_1' },
+    { keys: ['kenu','2','férfi'],                            slug: 'kenu_2_ferfi' },
+    { keys: ['kenu','2','vegyes'],                           slug: 'kenu_2_vegyes' },
+    { keys: ['kenu','3'],                                    slug: 'kenu_3_nyitott' },
+    { keys: ['kenu','4'],                                    slug: 'kenu_4_nyitott' },
+    { keys: ['outrigger','női'],                            slug: 'outrigger_noi_1' },
+    { keys: ['outrigger','férfi'],                          slug: 'outrigger_ferfi_1' },
+    { keys: ['outrigger','2'],                               slug: 'outrigger_2_nyitott' },
+    { keys: ['sup','női','merev','alatt'],                  slug: 'sup_noi_1_merev_39_alatt' },
+    { keys: ['sup','női','merev'],                          slug: 'sup_noi_1_merev_39_felett' },   // felett/fölött
+    { keys: ['sup','férfi','merev','alatt'],                slug: 'sup_ferfi_1_merev_39_alatt' },
+    { keys: ['sup','férfi','merev'],                        slug: 'sup_ferfi_1_merev_39_felett' },
+    { keys: ['sup','női','felfújható','alatt'],           slug: 'sup_noi_1_felfujhato_39_alatt' },
+    { keys: ['sup','női','felfújható'],                   slug: 'sup_noi_1_felfujhato_39_felett' },
+    { keys: ['sup','férfi','felfújható','alatt'],         slug: 'sup_ferfi_1_felfujhato_39_alatt' },
+    { keys: ['sup','férfi','felfújható'],               slug: 'sup_ferfi_1_felfujhato_39_felett' },
+    { keys: ['sárkányha'],                                  slug: 'sarkanyhajo_otproba' },  // sárkányha|sarkanyhaj
+    { keys: ['sarkanyhaj'],                                  slug: 'sarkanyhajo_otproba' },
+];
+
 function normalizeCategoryToSlug(categoryName) {
     if (!categoryName) return '';
-    const name = categoryName.toLowerCase();
-    if (name.includes('versenykajak') && name.includes('női')) return 'versenykajak_noi_1';
-    if (name.includes('versenykajak') && name.includes('férfi')) return 'versenykajak_ferfi_1';
-    if (name.includes('túrakajak') && name.includes('női') && name.includes('1')) return 'turakajak_noi_1';
-    if (name.includes('túrakajak') && name.includes('férfi') && name.includes('1')) return 'turakajak_ferfi_1';
-    if (name.includes('túrakajak') && name.includes('2')) return 'turakajak_2_nyitott';
-    if (name.includes('tengeri') && name.includes('női')) return 'tengeri_kajak_noi_1';
-    if (name.includes('tengeri') && name.includes('férfi')) return 'tengeri_kajak_ferfi_1';
-    if (name.includes('surfski') && name.includes('női')) return 'surfski_noi';
-    if (name.includes('surfski') && name.includes('férfi')) return 'surfski_ferfi';
-    if (name.includes('rövid') && name.includes('kenu')) return 'rovid_kenu_11km';
-    if (name.includes('kenu') && name.includes('női') && name.includes('1')) return 'kenu_noi_1';
-    if (name.includes('kenu') && name.includes('férfi') && name.includes('1')) return 'kenu_ferfi_1';
-    if (name.includes('kenu') && name.includes('2') && name.includes('férfi')) return 'kenu_2_ferfi';
-    if (name.includes('kenu') && name.includes('2') && name.includes('vegyes')) return 'kenu_2_vegyes';
-    if (name.includes('kenu') && name.includes('3')) return 'kenu_3_nyitott';
-    if (name.includes('kenu') && name.includes('4')) return 'kenu_4_nyitott';
-    if (name.includes('outrigger') && name.includes('női')) return 'outrigger_noi_1';
-    if (name.includes('outrigger') && name.includes('férfi')) return 'outrigger_ferfi_1';
-    if (name.includes('outrigger') && name.includes('2')) return 'outrigger_2_nyitott';
-    if (name.includes('sup') && name.includes('női') && name.includes('merev') && name.includes('alatt')) return 'sup_noi_1_merev_39_alatt';
-    if (name.includes('sup') && name.includes('női') && name.includes('merev') && (name.includes('felett') || name.includes('fölött'))) return 'sup_noi_1_merev_39_felett';
-    if (name.includes('sup') && name.includes('férfi') && name.includes('merev') && name.includes('alatt')) return 'sup_ferfi_1_merev_39_alatt';
-    if (name.includes('sup') && name.includes('férfi') && name.includes('merev') && (name.includes('felett') || name.includes('fölött'))) return 'sup_ferfi_1_merev_39_felett';
-    if (name.includes('sup') && name.includes('női') && name.includes('felfújható') && name.includes('alatt')) return 'sup_noi_1_felfujhato_39_alatt';
-    if (name.includes('sup') && name.includes('női') && name.includes('felfújható') && (name.includes('felett') || name.includes('fölött'))) return 'sup_noi_1_felfujhato_39_felett';
-    if (name.includes('sup') && name.includes('férfi') && name.includes('felfújható') && name.includes('alatt')) return 'sup_ferfi_1_felfujhato_39_alatt';
-    if (name.includes('sup') && name.includes('férfi') && name.includes('felfújható') && (name.includes('felett') || name.includes('fölött'))) return 'sup_ferfi_1_felfujhato_39_felett';
-    if (name.includes('sárkányhajó') || name.includes('sarkanyhajo')) return 'sarkanyhajo_otproba';
-    return categoryName; // Fallback
+    const n = categoryName.toLowerCase();
+    const match = SLUG_MAP.find(e => e.keys.every(k => n.includes(k)));
+    return match ? match.slug : categoryName;
 }
 
 // 8. Upload CSV (Format: srsz;Név 1..4;Kategória;Szül.idő 1..4;Táv;Ötpróba 1..4)

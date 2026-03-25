@@ -106,7 +106,7 @@ header {
 
 .starts-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 1.2rem;
     align-items: stretch;
 }
@@ -160,7 +160,7 @@ header {
 .admin-card {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
-    padding: 1.5rem; /* Slightly reduced padding to give more space for content */
+    padding: 1.2rem; /* Reduced padding to give more space for content */
     border-radius: 20px;
     display: flex;
     flex-direction: column;
@@ -178,21 +178,22 @@ header {
 
 .card-title {
     margin: 0 0 0.8rem 0;
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     font-weight: 700;
     color: var(--text-primary);
     display: flex;
     align-items: center;
-    gap: 12px;
-    flex-wrap: wrap; /* Allow wrapping of icon/text if squeezed */
-    word-break: break-word;
+    gap: 8px;
+    white-space: normal; /* Allow wrapping if needed */
+    line-height: 1.2;
 }
 
 
 .card-desc {
     font-size: 0.9rem;
     color: var(--text-secondary);
-    margin-bottom: 1.8rem;
+    margin-bottom: 1.2rem; /* Reduced margin */
+    line-height: 1.4;
 }
 
 /* Bib Recorder Section */

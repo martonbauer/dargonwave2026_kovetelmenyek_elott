@@ -325,6 +325,33 @@ class RaceManager {
         return { 'Authorization': `Bearer ${this.adminPassword}` };
     }
 
+    // --- Shared Helpers ---
+
+    /** Adatok újratöltése + UI frissítése – korábban ~12x ismételt 2 sor */
+    async refreshUI() {
+        await this.loadData();
+        this.renderUI();
+    }
+
+    /**
+     * Általános API-hívó helper: elvégzi a fetch-et, kezeli a 401/403-at.
+     * Visszatér a Response-szal, vagy null-lal ha auth-hiba volt.
+     */
+    async apiCall(path, method = 'GET', body = undefined) {
+        const opts = {
+            method,
+            headers: { 'Content-Type': 'application/json', ...this.getAuthHeader() }
+        };
+        if (body !== undefined) opts.body = JSON.stringify(body);
+        const response = await fetch(`${API_URL}/${path}`, opts);
+        if (response.status === 401 || response.status === 403) {
+            showToast("Nincs jogosultságod a művelethez! Jelentkezz be újra.", "error");
+            if (response.status === 403) sessionStorage.removeItem('dragonAdminPassword');
+            return null;
+        }
+        return response;
+    }
+
     // --- Database / Storage (API) ---
 
     async loadData() {
@@ -416,26 +443,12 @@ class RaceManager {
             showToast(`Ez a futam (${this.formatCategoryName(startKey)}) már elindult!`, 'error');
             return;
         }
-
         try {
-            const response = await fetch(`${API_URL}/start-category`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    ...this.getAuthHeader()
-                },
-                body: JSON.stringify({ categoryName, distance, groupId })
-            });
-            if (response.status === 401 || response.status === 403) {
-                showToast("Nincs jogosultságod a művelethez! Jelentkezz be újra.", "error");
-                return;
-            }
-
+            const response = await this.apiCall('start-category', 'POST', { categoryName, distance, groupId });
+            if (!response) return;
             const result = await response.json();
-
             if (response.ok) {
-                await this.loadData();
-                this.renderUI();
+                await this.refreshUI();
                 showToast(`START: ${this.formatCategoryName(startKey)} (${result.startedCount || result.count} versenyző)`, 'success');
                 console.log("StartCategory success:", result);
             } else {
@@ -453,29 +466,14 @@ class RaceManager {
             showToast(`Ez a futam még el sem indult!`, 'error');
             return;
         }
-
         if (confirm(`FIGYELEM! Leállítod a(z) ${this.formatCategoryName(startKey)} futamot?\nA még úton lévők automatikusan befejezik mostani idővel!`)) {
             try {
-                const response = await fetch(`${API_URL}/stop-category`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        ...this.getAuthHeader()
-                    },
-                    body: JSON.stringify({ categoryName, distance, groupId })
-                });
-                if (response.status === 401 || response.status === 403) {
-                    showToast("Nincs jogosultságod a művelethez! Jelentkezz be újra.", "error");
-                    return;
-                }
-
+                const response = await this.apiCall('stop-category', 'POST', { categoryName, distance, groupId });
+                if (!response) return;
                 const result = await response.json();
                 console.log("StopCategory response:", result);
-
-                await this.loadData();
-                this.renderUI();
+                await this.refreshUI();
                 this.updateLiveTimers();
-
                 showToast(`STOP: ${this.formatCategoryName(startKey)} leállítva. (${result.count} versenyző beérkezett)`, 'success');
                 console.log("StopCategory success:", result);
             } catch (err) {
@@ -489,17 +487,10 @@ class RaceManager {
         const startKey = groupId || `${categoryName}_${distance}`;
         if (confirm(`Biztosan törlöd a(z) ${this.formatCategoryName(startKey)} időmérőjét?\n(A futó óra leáll, de a versenyzők státusza nem változik!)`)) {
             try {
-                const response = await fetch(`${API_URL}/reset-category`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        ...this.getAuthHeader()
-                    },
-                    body: JSON.stringify({ categoryName, distance, groupId })
-                });
+                const response = await this.apiCall('reset-category', 'POST', { categoryName, distance, groupId });
+                if (!response) return;
                 if (response.ok) {
-                    await this.loadData();
-                    this.renderUI();
+                    await this.refreshUI();
                     showToast("Időmérő törölve.", "info");
                 }
             } catch (err) {
@@ -511,30 +502,16 @@ class RaceManager {
     // 3. Finish / Stop (Bib)
     async stopRacer(bibInput) {
         const bib = parseInt(bibInput, 10);
-
         try {
-            const response = await fetch(`${API_URL}/stop-racer`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    ...this.getAuthHeader()
-                },
-                body: JSON.stringify({ bib })
-            });
+            const response = await this.apiCall('stop-racer', 'POST', { bib });
+            if (!response) return;
             const result = await response.json();
-
             if (response.ok) {
-                await this.loadData();
-                this.renderUI();
+                await this.refreshUI();
                 showToast(`CÉL: #${bib} ${result.racer.name} - ${this.formatTime(result.racer.total_time)}`, 'success');
                 console.log("StopRacer success:", result);
-
-                // Focus vissza a beviteli mezőre a gyors rögzítéshez
                 const bibInputEl = document.getElementById('bib-input');
-                if (bibInputEl) {
-                    bibInputEl.value = '';
-                    bibInputEl.focus();
-                }
+                if (bibInputEl) { bibInputEl.value = ''; bibInputEl.focus(); }
             } else {
                 showToast(result.error, 'error');
                 console.warn("StopRacer error:", result.error);
@@ -546,23 +523,13 @@ class RaceManager {
     }
 
     async startIndividual(bib) {
-        if (!bib) {
-            showToast("Kérlek adj meg egy rajtszámot!", "error");
-            return;
-        }
+        if (!bib) { showToast("Kérlek adj meg egy rajtszámot!", "error"); return; }
         try {
-            const response = await fetch(`${API_URL}/start-individual`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    ...this.getAuthHeader()
-                },
-                body: JSON.stringify({ bib })
-            });
+            const response = await this.apiCall('start-individual', 'POST', { bib });
+            if (!response) return;
             const result = await response.json();
             if (response.ok) {
-                await this.loadData();
-                this.renderUI();
+                await this.refreshUI();
                 showToast(`RAJT: #${bib} elindult!`, 'success');
             } else {
                 showToast(result.error, 'error');
@@ -575,17 +542,11 @@ class RaceManager {
     async startMass() {
         if (!confirm("BIZTOSAN ELINDÍTOD A TÖMEGRAJTOT?\nMinden 'Regisztrált' állapotú versenyző elindul az aktuális idővel!")) return;
         try {
-            const response = await fetch(`${API_URL}/start-mass`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    ...this.getAuthHeader()
-                }
-            });
+            const response = await this.apiCall('start-mass', 'POST');
+            if (!response) return;
             const result = await response.json();
             if (response.ok) {
-                await this.loadData();
-                this.renderUI();
+                await this.refreshUI();
                 showToast(`TÖMEGRAJT: ${result.count} versenyző elindult!`, 'success');
             } else {
                 showToast(result.error, 'error');
@@ -598,18 +559,11 @@ class RaceManager {
     async startDistance(distance) {
         if (!confirm(`Elindítod a(z) ${distance} táv rajtját?`)) return;
         try {
-            const response = await fetch(`${API_URL}/start-distance`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    ...this.getAuthHeader()
-                },
-                body: JSON.stringify({ distance })
-            });
+            const response = await this.apiCall('start-distance', 'POST', { distance });
+            if (!response) return;
             const result = await response.json();
             if (response.ok) {
-                await this.loadData();
-                this.renderUI();
+                await this.refreshUI();
                 showToast(`TÁV RAJT (${distance}): ${result.count} versenyző elindult!`, 'success');
             } else {
                 showToast(result.error, 'error');
@@ -718,7 +672,6 @@ class RaceManager {
             birth_date: row.querySelector('.edit-m-birth').value,
             otproba_id: row.querySelector('.edit-m-otproba').value
         }));
-
         const data = {
             bib: document.getElementById('edit-bib').value ? parseInt(document.getElementById('edit-bib').value) : null,
             status: document.getElementById('edit-status').value,
@@ -729,22 +682,13 @@ class RaceManager {
             is_series: document.getElementById('edit-is_series').checked,
             members: members
         };
-
         try {
-            const response = await fetch(`${API_URL}/racer/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...this.getAuthHeader()
-                },
-                body: JSON.stringify(data)
-            });
-
+            const response = await this.apiCall(`racer/${id}`, 'PUT', data);
+            if (!response) return;
             if (response.ok) {
                 showToast("Sikeres mentés!", "success");
                 this.closeEditModal();
-                await this.loadData();
-                this.renderUI();
+                await this.refreshUI();
             } else {
                 const err = await response.json();
                 showToast(err.error || "Hiba a mentés során!", "error");
@@ -758,16 +702,13 @@ class RaceManager {
     async resetAll() {
         if (confirm('Biztosan törölsz MINDEN ADATOT?')) {
             try {
-                const response = await fetch(`${API_URL}/reset`, { 
-                    method: 'POST',
-                    headers: this.getAuthHeader()
-                });
+                const response = await this.apiCall('reset', 'POST');
+                if (!response) return;
                 if (response.ok) {
-                    await this.loadData();
-                    this.renderUI();
+                    await this.refreshUI();
                     showToast("Minden adat törölve!", 'error');
-                    const timersContainer = document.getElementById('category-timers');
-                    if (timersContainer) timersContainer.innerHTML = '<div style="text-align:center; color: var(--text-secondary); width:100%;">Még nincs indított kategória</div>';
+                    const t = document.getElementById('category-timers');
+                    if (t) t.innerHTML = '<div style="text-align:center; color: var(--text-secondary); width:100%;">Még nincs indított kategória</div>';
                 }
             } catch (err) {
                 showToast("Hiba a törlés során!", "error");
@@ -778,16 +719,13 @@ class RaceManager {
     async resetTimes() {
         if (confirm('BIZTOSAN NULLÁZOD AZ ÖSSZES IDŐT ÉS EREDMÉNYT?\nA versenyzők profiljai megmaradnak, de mindenki újra "Regisztrálva" státuszba kerül!')) {
             try {
-                const response = await fetch(`${API_URL}/reset-times`, { 
-                    method: 'POST',
-                    headers: this.getAuthHeader()
-                });
+                const response = await this.apiCall('reset-times', 'POST');
+                if (!response) return;
                 if (response.ok) {
-                    await this.loadData();
-                    this.renderUI();
+                    await this.refreshUI();
                     showToast("Minden időeredmény sikeresen nullázva!", 'success');
-                    const timersContainer = document.getElementById('category-timers');
-                    if (timersContainer) timersContainer.innerHTML = '<div style="text-align:center; color: var(--text-secondary); width:100%;">Még nincs indított kategória</div>';
+                    const t = document.getElementById('category-timers');
+                    if (t) t.innerHTML = '<div style="text-align:center; color: var(--text-secondary); width:100%;">Még nincs indított kategória</div>';
                 } else {
                     const data = await response.json();
                     showToast(`Hiba: ${data.error}`, 'error');
@@ -1017,7 +955,7 @@ class RaceManager {
         if (massContainer) {
             const isRunning = !!this.data.categories['MASS_START_ALL'];
             massContainer.innerHTML = `
-                <button onclick="window.startMass()" class="btn-primary" style="width: 100%; height: 50px; background: linear-gradient(135deg, #ff4d4d, #f00); font-weight: 800; font-size: 1.1rem; box-shadow: 0 5px 15px rgba(255,0,0,0.3); border:none;" ${isRunning ? 'disabled' : ''}>
+                <button onclick="window.startMass()" class="btn-primary" style="width: 100%; min-height: 54px; background: linear-gradient(135deg, #ff4d4d, #f00); font-weight: 800; font-size: clamp(0.7rem, 2.5vw, 1rem); box-shadow: 0 5px 15px rgba(255,0,0,0.3); border:none; padding: 10px 8px; white-space: normal; line-height: 1.3;" ${isRunning ? 'disabled' : ''}>
                     🚀 ÖSSZES INDÍTÁSA
                 </button>
                 ${isRunning ? `
@@ -1053,9 +991,9 @@ class RaceManager {
         if (individualContainer) {
             individualContainer.innerHTML = `
                 <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <div style="display: flex; gap: 10px;">
-                        <input type="number" id="individual-bib-input" placeholder="Rajtszám" style="flex: 2; height: 50px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); color: white; border-radius: 8px; text-align: center; font-size: 1.4rem; font-weight: bold; margin-bottom:0;">
-                        <button onclick="window.startIndividual(document.getElementById('individual-bib-input').value)" class="btn-primary" style="flex: 1; margin: 0; background: var(--accent-primary); border:none;">
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="number" id="individual-bib-input" placeholder="000" style="flex: 2; height: 50px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); color: white; border-radius: 8px; text-align: center; font-size: 1.8rem; font-weight: bold; margin-bottom:0; -moz-appearance: textfield; appearance: textfield;">
+                        <button onclick="window.startIndividual(document.getElementById('individual-bib-input').value)" class="btn-primary" style="flex: 1; margin: 0; height: 50px; background: var(--accent-primary); border:none;">
                             RAJT
                         </button>
                     </div>
