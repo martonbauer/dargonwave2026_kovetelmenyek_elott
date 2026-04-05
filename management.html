@@ -137,144 +137,150 @@
                 <button onclick="loginAdmin()">Belépés</button>
             </div>
             <div id="admin-dashboard-panel" class="hidden">
+                <!-- Top Bar (Always Visible) -->
                 <div class="admin-top-bar">
                     <h2 class="admin-title">Versenyirányító Központ</h2>
-                    <button class="btn-danger" style="padding: 8px 20px;" onclick="logoutAdmin()">🚪 Kijelentkezés</button>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <span id="admin-status-indicator" style="font-size: 0.75rem; color: var(--text-secondary); background: rgba(0, 228, 255, 0.1); padding: 5px 12px; border-radius: 100px; border: 1px solid var(--glass-border);">Központ Online</span>
+                        <button class="btn-danger" style="padding: 8px 20px;" onclick="logoutAdmin()">🚪 Kijelentkezés</button>
+                    </div>
                 </div>
 
+                <!-- Admin Landing View (Default) -->
+                <div id="admin-landing-view">
+                    <div class="admin-landing-grid">
+                        <div class="landing-card" onclick="window.showAdminSection('admin-section-starts')">
+                            <div class="icon">🚀</div>
+                            <h3>Rajt funkciók</h3>
+                            <p>Tömeges, távolság alapú, egyéni és kategória szerinti indítások kezelése.</p>
+                            <div class="btn-enter">Megnyitás</div>
+                        </div>
+                        <div class="landing-card" onclick="window.showAdminSection('admin-section-live')">
+                            <div class="icon">🎯</div>
+                            <h3>Élő kontroll</h3>
+                            <p>Beérkeztetés, rajtszám rögzítés és a futamok élő időmérése.</p>
+                            <div class="btn-enter">Megnyitás</div>
+                        </div>
+                        <div class="landing-card" onclick="window.showAdminSection('admin-section-data')">
+                            <div class="icon">📂</div>
+                            <h3>Adatkezelés</h3>
+                            <p>Import/Export funkciók és a versenyzői adatbázis szerkesztése.</p>
+                            <div class="btn-enter">Megnyitás</div>
+                        </div>
+                    </div>
+                </div>
 
-                <div class="admin-grid">
-                    <!-- Bal oszlop: Futamindítások -->
-                    <div class="admin-card race-starts-container" style="grid-column: 1 / -1; background: transparent; border: none; padding: 0; box-shadow: none;">
-                        <div class="starts-grid">
-                            
-                            <!-- 1. Tömegrajt Kártya -->
-
-                            <div class="admin-card" id="mass-start-card">
-                                <h3 class="card-title">🚀 Tömegrajt</h3>
-                                <p class="card-desc">Indítsd el az összes regisztrált versenyzőt egyszerre.</p>
-                                <div id="mass-start-ctrl"></div>
+                <!-- Section 1: Rajt Funkciók -->
+                <div id="admin-section-starts" class="admin-sub-section hidden">
+                    <div class="section-header">
+                        <h3 class="section-title" style="margin-bottom:0;">🚀 Rajt Vezérlőpult</h3>
+                        <button class="btn-back" onclick="window.showAdminLanding()">⬅️ Vissza a központba</button>
+                    </div>
+                    <div class="starts-grid">
+                        <div class="admin-card" id="mass-start-card">
+                            <h3 class="card-title">🚀 Tömegrajt</h3>
+                            <p class="card-desc">Indítsd el az összes regisztrált versenyzőt egyszerre.</p>
+                            <div id="mass-start-ctrl"></div>
+                        </div>
+                        <div class="admin-card" id="distance-start-card">
+                            <h3 class="card-title">📏 Távolság Rajt</h3>
+                            <p class="card-desc">Rajt a választott távolság alapján (4km, 11km, 22km).</p>
+                            <div id="distance-start-ctrl"></div>
+                        </div>
+                        <div class="admin-card" id="individual-start-card">
+                            <h3 class="card-title">👤 Egyéni Rajt</h3>
+                            <p class="card-desc">Egyedileg indított versenyző rajtszáma alapján.</p>
+                            <div id="individual-start-ctrl"></div>
+                        </div>
+                        <div class="admin-card" id="category-start-card">
+                            <h3 class="card-title">🛶 Kategória Rajt</h3>
+                            <p class="card-desc">Csoportos indítás kategóriák szerint.</p>
+                            <div id="category-start-buttons" class="start-btn-grid">
+                                <div class="loading-text">Betöltés...</div>
                             </div>
+                        </div>
+                    </div>
+                </div>
 
-                            <!-- 2. Távolság Rajt Kártya -->
-                            <div class="admin-card" id="distance-start-card">
-                                <h3 class="card-title">📏 Távolság Rajt</h3>
-                                <p class="card-desc">Rajt a választott távolság alapján (4km, 11km, 22km).</p>
-                                <div id="distance-start-ctrl"></div>
-                            </div>
-
-                            <!-- 3. Egyéni Rajt Kártya -->
-                            <div class="admin-card" id="individual-start-card">
-                                <h3 class="card-title">👤 Egyéni Rajt</h3>
-                                <p class="card-desc">Egyedileg indított versenyző rajtszáma alapján.</p>
-                                <div id="individual-start-ctrl"></div>
-                            </div>
-
-                            <!-- 4. Kategória Rajt Kártya -->
-                            <div class="admin-card" id="category-start-card">
-                                <h3 class="card-title">🛶 Kategória Rajt</h3>
-                                <p class="card-desc">Csoportos indítás kategóriák szerint.</p>
-                                <div id="category-start-buttons" class="start-btn-grid">
-                                    <div class="loading-text">Betöltés...</div>
+                <!-- Section 2: Élő Kontroll -->
+                <div id="admin-section-live" class="admin-sub-section hidden">
+                    <div class="section-header">
+                        <h3 class="section-title" style="margin-bottom:0;">🎯 Élő Kontroll & Időmérés</h3>
+                        <button class="btn-back" onclick="window.showAdminLanding()">⬅️ Vissza a központba</button>
+                    </div>
+                    <div class="admin-grid">
+                        <div class="admin-card" id="bib-recorder-card" style="grid-column: span 2;">
+                            <h3 class="card-title">🎯 Beérkeztetés</h3>
+                            <div class="admin-stats" id="admin-global-stats" style="margin-bottom: 20px; background: rgba(0, 145, 255, 0.05); padding: 15px; border-radius: 12px; display: flex; flex-wrap: wrap; gap: 15px; justify-content: center;"></div>
+                            <div id="bib-stop-panel" class="bib-recorder">
+                                <label for="bib-input">Rajtszám beírása célba érkezéskor:</label>
+                                <div class="bib-input-wrapper">
+                                    <input type="text" id="bib-input" placeholder="000" autofocus>
+                                    <div class="button-group" style="display: flex; gap: 10px;">
+                                        <button onclick="document.getElementById('bib-input').value += ' '; document.getElementById('bib-input').focus();" class="btn-secondary bulk-btn-mobile" style="flex: 1; height: 60px; font-weight: 700;">➕ TÖMEGES</button>
+                                        <button onclick="window.stopRacer()" class="btn-stop-major" style="flex: 2; height: 60px;">RÖGZÍTÉS</button>
+                                    </div>
                                 </div>
+                                <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 15px 0; text-align: center;">💡 Több rajtszám esetén használd a <strong>SPACE</strong> gombot.</p>
+                                <button onclick="window.open('mobile_finish.html', '_blank')" class="btn-secondary" style="width: 100%; background-color: var(--accent-primary); color: #000; border: none; font-weight: bold;">📱 Külön mobilos felület</button>
                             </div>
-
                         </div>
-                    </div>
-
-                    <!-- Élő Kontrol (Beérkeztetés + Statisztika) és Futó órák -->
-                    <div class="admin-card" id="bib-recorder-card" style="grid-column: span 2;">
-                        <h3 class="card-title">🎯 Élő Kontrol & Beérkeztetés</h3>
-                        
-                        <div class="admin-stats" id="admin-global-stats" style="margin-bottom: 20px; background: rgba(0, 145, 255, 0.05); padding: 15px; border-radius: 12px; display: flex; flex-wrap: wrap; gap: 15px; justify-content: center;">
-                            <!-- Ide kerülnek a statisztikák -->
-                        </div>
-
-                        <div id="bib-stop-panel" class="bib-recorder">
-                            <label for="bib-input" style="display: block; margin-bottom: 10px; font-weight: 600; color: var(--text-secondary);">Rajtszám beírása célba érkezéskor:</label>
-                            
-                            <div class="bib-input-wrapper">
-                                <input type="text" id="bib-input" placeholder="000" autofocus>
-                                
-                                <div class="button-group" style="display: flex; gap: 10px;">
-                                    <button onclick="document.getElementById('bib-input').value += ' '; document.getElementById('bib-input').focus();" class="btn-secondary bulk-btn-mobile" style="flex: 1; height: 60px; font-weight: 700;">➕ TÖMEGES</button>
-                                    <button onclick="window.stopRacer()" class="btn-stop-major" style="flex: 2; height: 60px;">RÖGZÍTÉS</button>
-                                </div>
-                            </div>
-
-                            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 15px; opacity: 0.9; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px;">
-                                💡 Több rajtszám esetén (pl. 001 002) használd a <strong>SPACE</strong> gombot.
-                            </p>
-                            
-                            <div style="text-align: center;">
-                                <button onclick="window.open('mobile_finish.html', '_blank')" class="btn-secondary" style="display: block; width: 100%; padding: 12px; font-weight: bold; background-color: var(--accent-primary); color: #000; border: none; border-radius: 8px; box-shadow: 0 5px 15px rgba(0, 145, 255, 0.2); cursor: pointer; font-size: 0.9rem;">📱 Külön mobilos felület megnyitása</button>
+                        <div class="admin-card" id="timers-card" style="grid-column: span 1;">
+                            <h3 class="card-title">⏱️ Futó Órák</h3>
+                            <div id="admin-category-timers" class="admin-timer-grid">
+                                <div class="empty-text">Nincs aktív futam</div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="admin-card" id="timers-card" style="grid-column: span 1;">
-                        <h3 class="card-title">⏱️ Futó Órák</h3>
-                        
-                        <div id="admin-category-timers" class="admin-timer-grid">
-                            <div class="empty-text">Nincs aktív futam</div>
-                        </div>
+                <!-- Section 3: Adatkezelés -->
+                <div id="admin-section-data" class="admin-sub-section hidden">
+                    <div class="section-header">
+                        <h3 class="section-title" style="margin-bottom:0;">📂 Adatkezelés & Adatbázis</h3>
+                        <button class="btn-back" onclick="window.showAdminLanding()">⬅️ Vissza a központba</button>
                     </div>
-
-
-
-                    <!-- Alsó oszlop: Adatkezelés (Teljes szélességben) -->
-                    <div class="admin-card data-management" style="grid-column: 1 / -1;">
-                        <h3 class="card-title">📂 Adatkezelés</h3>
+                    <div class="admin-card data-management" style="margin-bottom: 2rem;">
+                        <h3 class="card-title">📂 Funkciók</h3>
                         <div class="management-grid">
                             <div class="import-zone">
-                                <label for="csv-upload">📊 IMPORTÁLÁS (CSV)</label>
-                                <p style="font-size: 0.73rem; color: var(--text-secondary); margin-bottom: 8px;">Excel (Win-1250) vagy UTF-8</p>
+                                <label>📊 IMPORTÁLÁS (CSV)</label>
                                 <div style="display:flex; gap:10px;">
-                                    <input type="file" id="csv-upload" accept=".csv" style="margin-bottom:0; padding:10px;">
-                                    <button onclick="uploadCsv()" class="btn-secondary" style="white-space:nowrap;">IMPORTÁLÁS</button>
+                                    <input type="file" id="csv-upload" accept=".csv" style="padding:10px; margin-bottom:0;">
+                                    <button onclick="uploadCsv()" class="btn-secondary">IMPORT</button>
                                 </div>
                             </div>
-                            
                             <div class="export-zone">
-                                <label>📑 EXPORTÁLÁS</label>
-                                <button onclick="exportResultsToExcel()" class="btn-primary"
-                                    style="width: 100%; height: 45px; padding: 0; background: #28a745; color: white;">
-                                    EXCEL EXPORT
-                                </button>
+                                <label>📑 EXPORT</label>
+                                <button onclick="exportResultsToExcel()" class="btn-primary" style="width: 100%; height: 45px; background: #28a745;">EXCEL EXPORT</button>
                             </div>
-                            
                             <div class="danger-zone">
                                 <label>⚠️ VESZÉLYZÓNA</label>
-                                <button onclick="raceManager.resetTimes()" class="btn-secondary" style="width: 100%; height: 45px; background: rgba(255, 165, 0, 0.2); border-color: orange; color: orange; margin-bottom: 10px;">
-                                    IDŐK NULLÁZÁSA
-                                </button>
-                                <button onclick="raceManager.resetAll()" class="btn-danger" style="width: 100%; height: 45px;">
-                                    RENDSZERTÖRLÉS
-                                </button>
+                                <button onclick="raceManager.resetTimes()" class="btn-secondary" style="width: 100%; margin-bottom: 5px; color: orange;">IDŐK NULLÁZÁSA</button>
+                                <button onclick="raceManager.resetAll()" class="btn-danger" style="width: 100%;">RENDSZERTÖRLÉS</button>
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <div class="admin-table-section">
-                    <h3 class="section-title">👥 Versenyzői Adatbázis (Szerkeszthető)</h3>
-                    <div class="table-responsive">
-                        <table id="admin-table">
-                            <thead>
-                                <tr>
-                                    <th>Rajtszám</th>
-                                    <th>Egység Tagjai</th>
-                                    <th>Ötpróba ID</th>
-                                    <th>Sorozat</th>
-                                    <th>Kategória</th>
-                                    <th>Táv</th>
-                                    <th>Státusz</th>
-                                    <th>Időeredmény</th>
-                                    <th>Művelet</th>
-                                </tr>
-                            </thead>
-                            <tbody id="admin-table-body"></tbody>
-                        </table>
+                    <div class="admin-table-section">
+                        <h3 class="section-title">👥 Versenyzői Adatbázis (Szerkeszthető)</h3>
+                        <div class="table-responsive">
+                            <table id="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Rajtszám</th>
+                                        <th>Egység Tagjai</th>
+                                        <th>Ötpróba ID</th>
+                                        <th>Sorozat</th>
+                                        <th>Kategória</th>
+                                        <th>Táv</th>
+                                        <th>Státusz</th>
+                                        <th>Időeredmény</th>
+                                        <th>Művelet</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-table-body"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>

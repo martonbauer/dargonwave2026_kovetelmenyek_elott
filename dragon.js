@@ -34,6 +34,10 @@ window.loginAdmin = async () => {
             sessionStorage.setItem('dragonAdminPassword', password);
             document.getElementById('admin-login-panel').classList.add('hidden');
             document.getElementById('admin-dashboard-panel').classList.remove('hidden');
+            
+            // Alapértelmezett nézet beállítása
+            window.showAdminLanding();
+            
             window.renderAdminTable();
             window.raceManager.renderUI();
             showToast('Sikeres belépés!', 'success');
@@ -51,7 +55,38 @@ window.logoutAdmin = () => {
     document.getElementById('admin-login-panel').classList.remove('hidden');
     document.getElementById('admin-dashboard-panel').classList.add('hidden');
     document.getElementById('admin-pass').value = '';
+    
+    // Minden al-szekció elrejtése
+    document.querySelectorAll('.admin-sub-section').forEach(s => s.classList.add('hidden'));
+    document.getElementById('admin-landing-view').classList.remove('hidden');
+    
     showToast('Sikeres kijelentkezés', 'info');
+};
+
+// --- Admin Navigációs Logika ---
+window.showAdminSection = (sectionId) => {
+    // Elrejtjük a landing oldalt és az összes többi szekciót
+    document.getElementById('admin-landing-view').classList.add('hidden');
+    document.querySelectorAll('.admin-sub-section').forEach(s => s.classList.add('hidden'));
+    
+    // Megjelenítjük a kért szekciót
+    const target = document.getElementById(sectionId);
+    if (target) target.classList.remove('hidden');
+    
+    // Ha az adatkezelés szekcióba lépünk, frissítsük a táblázatot
+    if (sectionId === 'admin-section-data') {
+        window.renderAdminTable();
+    }
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+window.showAdminLanding = () => {
+    // Elrejtünk minden al-szekciót
+    document.querySelectorAll('.admin-sub-section').forEach(s => s.classList.add('hidden'));
+    // Megjelenítjük a landing view-t
+    document.getElementById('admin-landing-view').classList.remove('hidden');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
 // --- Eseménykezelő Wrapper-ek ---
