@@ -2,116 +2,34 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
-const supabase = require('./database'); // This is now the Supabase client
+const supabase = require('./database');
+
+// --- 1. STRUKTURÁLIS RÉTEGEK: MIDDLEWARE-EK IMPORTÁLÁSA ---
+const { rateLimiter } = require('./backend/middleware/rate-limiter');
+const { ADMIN_PASSWORD, authenticateAdmin } = require('./backend/middleware/auth');
+
+// --- 2. STRUKTURÁLIS RÉTEGEK: SZOLGÁLTATÁSOK (BUSINESS LOGIC) IMPORTÁLÁSA ---
+const { getNextBib } = require('./backend/services/bib-service');
+const { getGroupQuery, checkAndStopEmptyBatchTimers } = require('./backend/services/batch-service');
+
+// --- 3. STRUKTURÁLIS RÉTEGEK: SEGÉDFUNKCIÓK (UTILITIES) IMPORTÁLÁSA ---
+const { validateRacerData, normalizeCategoryToSlug } = require('./backend/utils/validation');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// --- Overflow Protection: Rate Limiting ---
-const requestCounts = new Map();
-const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
-const MAX_REQUESTS = 200; // 200 requests per window
-
-function rateLimiter(req, res, next) {
-    const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    const now = Date.now();
-
-    // Whitelist localhost for development/testing
-    if (ip === '::1' || ip === '127.0.0.1' || ip.includes('localhost')) {
-        return next();
-    }
-    
-    if (!requestCounts.has(ip)) {
-        requestCounts.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
-        return next();
-    }
-
-    const record = requestCounts.get(ip);
-    if (now > record.resetTime) {
-        record.count = 1;
-        record.resetTime = now + RATE_LIMIT_WINDOW;
-        return next();
-    }
-
-    record.count++;
-    if (record.count > MAX_REQUESTS) {
-        console.warn(`[RATE-LIMIT] Blokkolt IP: ${ip} (${record.count} kérés)`);
-        return res.status(429).json({ error: 'Túl sok kérés! Kérlek várj 15 percet.' });
-    }
-    next();
-}
-
-// --- Overflow Protection: Input Validation Helpers ---
-function validateRacerData(data) {
-    const { members, email, phone, category, distance } = data;
-    
-    if (email && email.length > 150) return "Az email cím túl hosszú!";
-    if (phone && phone.length > 30) return "A telefonszám túl hosszú!";
-    if (category && category.length > 100) return "A kategória név túl hosszú!";
-    if (distance && distance.length > 20) return "A táv megnevezése túl hosszú!";
-    
-    if (members && Array.isArray(members)) {
-        if (members.length > 20) return "Túl sok csapattag!";
-        for (const m of members) {
-            if (m.name && m.name.length > 100) return "A név túl hosszú (max 100 karakter)!";
-            if (m.otproba_id && m.otproba_id.length > 20) return "Az Ötpróba ID túl hosszú!";
-        }
-    }
-    return null;
-}
-
-// Middleware
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'dragon2026';
-
-const CATEGORY_GROUPS = {
-    'kajak': [
-        'versenykajak_noi_1', 'versenykajak_ferfi_1', 
-        'turakajak_noi_1', 'turakajak_ferfi_1', 'turakajak_2_nyitott',
-        'tengeri_kajak_noi_1', 'tengeri_kajak_ferfi_1',
-        'surfski_noi', 'surfski_ferfi'
-    ],
-    'kenu': [
-        'kenu_noi_1', 'kenu_ferfi_1', 'kenu_2_ferfi', 'kenu_2_vegyes',
-        'kenu_3_nyitott', 'kenu_4_nyitott',
-        'outrigger_noi_1', 'outrigger_ferfi_1', 'outrigger_2_nyitott'
-    ],
-    'sup': [
-        'sup_noi_1_merev_39_alatt', 'sup_noi_1_merev_39_felett',
-        'sup_ferfi_1_merev_39_alatt', 'sup_ferfi_1_merev_39_felett',
-        'sup_noi_1_felfujhato_39_alatt', 'sup_noi_1_felfujhato_39_felett',
-        'sup_ferfi_1_felfujhato_39_alatt', 'sup_ferfi_1_felfujhato_39_felett'
-    ],
-    'sarkanyhajo': ['sarkanyhajo_otproba']
-};
-
+// --- 4. ALAPVETŐ SZERVER KONFIGURÁCIÓK ÉS MIDDLEWARE-EK ---
 const corsOptions = {
-    origin: '*', // In production, replace with your frontend URL
-    methods: ['GET', 'POST', 'DELETE'],
+    origin: '*',
+    methods: ['GET', 'POST', 'DELETE', 'PUT'],
     allowedHeaders: ['Content-Type', 'Authorization']
 };
 app.use(cors(corsOptions));
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname)));
-app.use(rateLimiter); // Apply rate limiting to all requests
+app.use(rateLimiter);
 
-// Auth Middleware
-function authenticateAdmin(req, res, next) {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-        console.warn(`UNAUTHORIZED: Nincs hitelesítés az endpointon: ${req.method} ${req.url}`);
-        return res.status(401).json({ error: 'Nincs hitelesítés!' });
-    }
-    
-    const password = authHeader.replace('Bearer ', '');
-    if (password === ADMIN_PASSWORD) {
-        next();
-    } else {
-        console.warn(`FORBIDDEN: Hibás admin jelszó próbálkozás: ${req.method} ${req.url}`);
-        res.status(403).json({ error: 'Hibás admin jelszó!' });
-    }
-}
-
-// --- Authentication ---
+// --- 5. HITELESÍTÉS (AUTHENTICATION) ---
 app.post('/api/login', (req, res) => {
     const { password } = req.body;
     if (password === ADMIN_PASSWORD) {
@@ -121,885 +39,297 @@ app.post('/api/login', (req, res) => {
     }
 });
 
-// --- Health Check ---
+// --- 6. RENDSZERÁLLAPOT ELLENŐRZÉS (HEALTH CHECK) ---
 app.get('/api/health', async (req, res) => {
     try {
         const { data, error } = await supabase.from('racers').select('id').limit(1);
         if (error) throw error;
         res.json({ status: 'ok', database: 'connected' });
     } catch (err) {
-        console.error("Health check failed:", err);
         res.status(500).json({ status: 'error', database: 'disconnected', error: err.message });
     }
 });
 
-// --- Bib Logic ---
-async function getNextBib(distance, category) {
-    let min = 1, max = 999;
-    const cat = category.toLowerCase();
-
-    if (cat.includes('kajak') || cat.includes('surfski')) {
-        min = 1; max = 49;
-    } else if (cat.includes('kenu') || cat.includes('outrigger')) {
-        min = 50; max = 99;
-    } else if (cat.includes('sup')) {
-        min = 100; max = 199;
-    } else if (cat.includes('sarkanyhajo')) {
-        min = 200; max = 999;
-    }
-
-    const { data: results, error } = await supabase
-        .from('racers')
-        .select('bib')
-        .gte('bib', min)
-        .lte('bib', max);
-
-    if (error) {
-        console.error("Hiba a rajtszám lekérésekor:", error);
-        throw error;
-    }
-
-    const usedBibs = (results || []).map(r => r.bib);
-    let bib = min;
-    while (usedBibs.includes(bib) && bib <= max) {
-        bib++;
-    }
-    return bib <= max ? bib : null;
-}
-
-// --- Group Logic Helpers ---
-function getGroupQuery(query, batchKey) {
-    console.log(`[getGroupQuery] batchKey: ${batchKey}`);
-    // 1. Tömegrajt
-    if (batchKey === 'MASS_START_ALL') return query;
-    
-    // 2. Távolság Rajt
-    if (batchKey.startsWith('DISTANCE_')) {
-        const dist = batchKey.split('_')[1];
-        return query.eq('distance', dist);
-    }
-
-
-
-    // 3. Predefined Groups
-    if (batchKey === 'kajak_hosszu') return query.or('category.ilike.%kajak%,category.ilike.%surfski%').eq('distance', '22km');
-    if (batchKey === 'kajak_rovid') return query.or('category.ilike.%kajak%,category.ilike.%surfski%').eq('distance', '11km');
-    if (batchKey === 'kenu_hosszu') return query.or('category.ilike.%kenu%,category.ilike.%outrigger%').eq('distance', '22km');
-    if (batchKey === 'kenu_rovid') return query.or('category.ilike.%kenu%,category.ilike.%outrigger%').eq('distance', '11km');
-    if (batchKey === 'sup_4km') return query.like('category', '%sup%').eq('distance', '4km');
-    if (batchKey === 'sarkanyhajo_11km') return query.or('category.ilike.%sárkányhajó%,category.ilike.%sarkanyhajo%').eq('distance', '11km');
-    
-    // 4. Individual Category/Distance Pair (Slug or Name based)
-    if (batchKey.includes('_')) {
-        const parts = batchKey.split('_');
-        const distance = parts.pop();
-        const categorySlug = parts.join('_');
-        console.log(`[getGroupQuery] Split into categorySlug: ${categorySlug}, distance: ${distance}`);
-        return query.eq('category', categorySlug).eq('distance', distance);
-    }
-
-    console.warn(`[getGroupQuery] No matching group for batchKey: ${batchKey}`);
-    return query;
-}
-async function checkAndStopEmptyBatchTimers() {
-    try {
-        const { data: activeTimers, error: tError } = await supabase.from('categories').select('*');
-        if (tError) throw tError;
-        if (!activeTimers || activeTimers.length === 0) return;
-
-        console.log(`[TimerCheck] Aktív futamok: ${activeTimers.map(t => t.key).join(', ')}`);
-
-        for (const timer of activeTimers) {
-            const batchKey = timer.key;
-            console.log(`[TimerCheck] Ellenőrzés: ${batchKey}`);
-            
-            // Build query to find ANY racer in this batch that is STILL RUNNING or REGISTERED
-            let query = supabase
-                .from('racers')
-                .select('id, status', { count: 'exact' });
-            
-            query = getGroupQuery(query, batchKey);
-
-            const { data: participants, count, error: qError } = await query;
-            
-            if (qError) {
-                console.error(`[TimerCheck] Hiba a(z) ${batchKey} lekérdezésekor:`, qError);
-                continue;
-            }
-
-            const runningCount = (participants || []).filter(p => p.status === 'running').length;
-            const registeredCount = (participants || []).filter(p => p.status === 'registered').length;
-            const finishedCount = (participants || []).filter(p => p.status === 'finished').length;
-
-            console.log(`[TimerCheck] Batch: ${batchKey} -> Összes: ${count}, Fut: ${runningCount}, Reg: ${registeredCount}, Beért: ${finishedCount}`);
-
-            // Stop if there are no more racers who need to finish (0 running AND 0 registered)
-            // AND there was at least someone in this batch who finished (finishedCount > 0)
-            if (runningCount === 0 && registeredCount === 0 && finishedCount > 0) {
-                console.log(`[AUTO-STOP] >>> LEÁLLÍTÁS: ${batchKey} (mindenki beért).`);
-                const { error: delError } = await supabase.from('categories').delete().eq('key', batchKey);
-                if (delError) console.error(`[AUTO-STOP] Törlési hiba (${batchKey}):`, delError);
-            } else if (count === 0) {
-                console.log(`[TimerCheck] ${batchKey} üres, nem állítjuk le.`);
-            }
-        }
-    } catch (err) {
-        console.error("[TimerCheck] Kritikus hiba:", err);
-    }
-}
-
-// --- API Routes ---
-
-// 1. Get All Data
+// --- 7. ADAT LEKÉRDEZÉSI VÉGPONT (DATA ACCESS) ---
 app.get('/api/data', async (req, res) => {
     try {
-        // Get racers with their members in one query!
-        const { data: racers, error: rError } = await supabase
-            .from('racers')
-            .select('*, members(*)');
-
+        const { data: racers, error: rError } = await supabase.from('racers').select('*, members(*)');
         if (rError) throw rError;
-
-        // Get categories
-        const { data: categories, error: cError } = await supabase
-            .from('categories')
-            .select('*');
-
+        const { data: categories, error: cError } = await supabase.from('categories').select('*');
         if (cError) throw cError;
 
         const categoriesObj = {};
         (categories || []).forEach(c => categoriesObj[c.key] = c.start_time);
 
-        res.json({ 
-            racers: racers || [], 
-            categories: categoriesObj,
-            serverNow: Date.now() 
-        });
+        res.json({ racers: racers || [], categories: categoriesObj, serverNow: Date.now() });
     } catch (err) {
-        console.error("Error in /api/data:", err);
         res.status(500).json({ error: err.message });
     }
 });
 
-// 2. Register Racer
+// --- 8. VERSENYZŐ REGISZTRÁCIÓ (REGISTRATION) ---
 app.post('/api/register', async (req, res) => {
     const { members, category: rawCategory, distance, is_series, email, phone } = req.body;
-    const category = normalizeCategoryToSlug(rawCategory); // Ensure we save slug
-    console.log("--- ÚJ REGISZTRÁCIÓ ---");
+    const category = normalizeCategoryToSlug(rawCategory);
     
-    // Validation
     const validationError = validateRacerData(req.body);
-    if (validationError) {
-        console.warn(`[VALIDATION-ERROR] ${validationError}`);
-        return res.status(400).json({ error: validationError });
-    }
-
-    console.log("Adatok:", { category, distance, is_series, email, phone, memberCount: members ? members.length : 0 });
+    if (validationError) return res.status(400).json({ error: validationError });
 
     try {
         const bib = await getNextBib(distance, category);
-        if (bib === null) {
-            console.error("Hiba: Nincs szabad rajtszám.");
-            return res.status(400).json({ error: 'Nincs több szabad rajtszám ebben a kategóriában!' });
-        }
-        console.log("Kiosztott rajtszám:", bib);
+        if (bib === null) return res.status(400).json({ error: 'Nincs több szabad rajtszám!' });
 
         const racerId = Date.now().toString();
-
-        // Manual Insert (racer + members)
-        const { error: rError } = await supabase
-            .from('racers')
-            .insert({
-                id: racerId,
-                bib: bib,
-                category: category,
-                distance: distance,
-                is_series: is_series ? 1 : 0,
-                email: email,
-                phone: phone,
-                status: 'registered'
-            });
-
-        if (rError) {
-            console.error("Supabase Racer Insertion Error:", rError);
-            if (rError.code === 'PGRST204') {
-                return res.status(500).json({ 
-                    error: 'Adatbázis séma hiba: Az email vagy phone oszlop hiányzik! Kérlek futtasd a SQL javítást.',
-                    details: rError.message 
-                });
-            }
-            throw rError;
-        }
+        const { error: rError } = await supabase.from('racers').insert({
+            id: racerId, bib, category, distance, 
+            is_series: is_series ? 1 : 0, 
+            email, phone, status: 'registered'
+        });
+        if (rError) throw rError;
 
         if (members && members.length > 0) {
             const membersToInsert = members.map(m => ({
-                racer_id: racerId,
-                name: m.name,
-                birth_date: m.birth_date,
-                otproba_id: m.otproba_id
+                racer_id: racerId, name: m.name, birth_date: m.birth_date, otproba_id: m.otproba_id
             }));
             const { error: mError } = await supabase.from('members').insert(membersToInsert);
             if (mError) {
-                console.error("Supabase Members Insertion Error:", mError);
+                // ROLLBACK: Töröljük a már beszúrt versenyzőt, ha a tagok felvétele sikertelen
+                await supabase.from('racers').delete().eq('id', racerId);
                 throw mError;
             }
         }
-
-        console.log(`SIKER: Versenyző regisztrálva: Rajtszám #${bib}`);
         res.json({ id: racerId, bib, category, distance, status: 'registered' });
     } catch (err) {
-        console.error("KRITIKUS HIBA a regisztráció során:", err);
-        res.status(500).json({ error: err.message || 'Szerveroldali hiba történt.' });
-    }
-});
-
-// 3. Start Category
-app.post('/api/start-category', authenticateAdmin, async (req, res) => {
-    const { categoryName, distance, groupId } = req.body;
-    const now = Date.now();
-    let startKey = groupId || `${categoryName}_${distance}`;
-    
-    // Safety: ensure it's ASCII if possible, but for categories we keep them as is
-    // as they come from the category list
-    console.log(`[START-CATEGORY] Req: ${categoryName}, ${distance}, ${groupId} -> Key: ${startKey}`);
-
-    try {
-        // ...
-        const { data: existing } = await supabase
-            .from('categories')
-            .select('*')
-            .eq('key', startKey)
-            .single();
-
-        if (existing) return res.status(400).json({ error: 'Már elindult ez a futam!' });
-
-        // Insert category
-        const { error: cError } = await supabase
-            .from('categories')
-            .insert({ key: startKey, start_time: now });
-
-        if (cError) throw cError;
-
-        // Build racer update query
-        let query = supabase
-            .from('racers')
-            .update({ status: 'running', start_time: now })
-            .eq('status', 'registered');
-
-        if (groupId) {
-            query = getGroupQuery(query, groupId);
-        } else {
-            query = query.eq('category', categoryName).eq('distance', distance);
-        }
-
-        const { data: updated, error: uError } = await query.select();
-
-        if (uError) throw uError;
-        res.json({ success: true, start_time: now, count: updated?.length || 0 });
-    } catch (err) {
-        console.error("Error in /api/start-category:", err);
         res.status(500).json({ error: err.message });
     }
 });
 
-// ... (start-individual omitted)
+// --- 9. VERSENY VEZÉRLÉS: RAJT (RACE CONTROL: START) ---
+app.post('/api/start-category', authenticateAdmin, async (req, res) => {
+    const { categoryName, distance, groupId } = req.body;
+    const now = Date.now();
+    const startKey = groupId || `${categoryName}_${distance}`;
 
-// 3c. Start Mass (Everyone)
+    try {
+        await supabase.from('categories').insert({ key: startKey, start_time: now });
+        let query = supabase.from('racers').update({ status: 'running', start_time: now }).eq('status', 'registered');
+        query = groupId ? getGroupQuery(query, groupId) : query.eq('category', categoryName).eq('distance', distance);
+        const { data: updated } = await query.select();
+        res.json({ success: true, start_time: now, count: updated?.length || 0 });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.post('/api/start-mass', authenticateAdmin, async (req, res) => {
     const now = Date.now();
     const startKey = 'MASS_START_ALL';
-
     try {
-        // Check if already started
-        const { data: existing } = await supabase
-            .from('categories')
-            .select('key')
-            .eq('key', startKey)
-            .maybeSingle();
-
-        if (existing) return res.status(400).json({ error: 'Már elindult a tömegrajt!' });
-
-        const { error: cError } = await supabase
-            .from('categories')
-            .insert({ key: startKey, start_time: now });
-
-        if (cError) throw cError;
-
-        const { data, error } = await supabase
-            .from('racers')
-            .update({ status: 'running', start_time: now })
-            .eq('status', 'registered')
-            .select();
-
-        if (error) throw error;
+        await supabase.from('categories').insert({ key: startKey, start_time: now });
+        const { data } = await supabase.from('racers').update({ status: 'running', start_time: now }).eq('status', 'registered').select();
         res.json({ success: true, start_time: now, count: data?.length || 0 });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// 3d. Start Distance (Specific Distance)
 app.post('/api/start-distance', authenticateAdmin, async (req, res) => {
     const { distance } = req.body;
     const now = Date.now();
     const startKey = `DISTANCE_${distance}`;
-
-    if (!distance) return res.status(400).json({ error: 'Távolság megadása kötelező!' });
-
     try {
-        // Check if already started
-        const { data: existing } = await supabase
-            .from('categories')
-            .select('key')
-            .eq('key', startKey)
-            .maybeSingle();
-
-        if (existing) return res.status(400).json({ error: `Már elindult a(z) ${distance} táv!` });
-
-        const { error: cError } = await supabase
-            .from('categories')
-            .insert({ key: startKey, start_time: now });
-
-        if (cError) throw cError;
-
-        const { data, error } = await supabase
-            .from('racers')
-            .update({ status: 'running', start_time: now })
-            .eq('status', 'registered')
-            .eq('distance', distance)
-            .select();
-
-        if (error) throw error;
-        res.json({ success: true, start_time: now, count: data?.length || 0, distance });
+        await supabase.from('categories').insert({ key: startKey, start_time: now });
+        const { data } = await supabase.from('racers').update({ status: 'running', start_time: now }).eq('status', 'registered').eq('distance', distance).select();
+        res.json({ success: true, start_time: now, count: data?.length || 0 });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-
-// 3e. Start Individual Racer (by bib)
 app.post('/api/start-individual', authenticateAdmin, async (req, res) => {
     const { bib } = req.body;
     const now = Date.now();
-
-    if (!bib) return res.status(400).json({ error: 'Rajtszám megadása kötelező!' });
-
     try {
-        const { data: racer, error: fError } = await supabase
-            .from('racers')
-            .select('*')
-            .eq('bib', bib)
-            .maybeSingle();
-
-        if (fError) throw fError;
-        if (!racer) return res.status(404).json({ error: 'Nincs ilyen rajtszámú versenyző!' });
-        if (racer.status === 'running') return res.status(400).json({ error: 'Ez a versenyző már rajtolt!' });
-        if (racer.status === 'finished') return res.status(400).json({ error: 'Ez a versenyző már célba ért!' });
-
-        const { error: uError } = await supabase
-            .from('racers')
-            .update({ status: 'running', start_time: now })
-            .eq('id', racer.id);
-
-        if (uError) throw uError;
-
-        console.log(`[START-INDIVIDUAL] #${bib} elindítva.`);
+        const { data: racer } = await supabase.from('racers').select('*').eq('bib', bib).maybeSingle();
+        if (!racer) return res.status(404).json({ error: 'Nincs ilyen rajtszám!' });
+        await supabase.from('racers').update({ status: 'running', start_time: now }).eq('id', racer.id);
         res.json({ success: true, bib, start_time: now });
     } catch (err) {
-        console.error('Error in /api/start-individual:', err);
         res.status(500).json({ error: err.message });
     }
 });
 
-
-// 4. Stop Category
+// --- 10. VERSENY VEZÉRLÉS: CÉL ÉS RESET (RACE CONTROL: STOP/RESET) ---
 app.post('/api/stop-category', authenticateAdmin, async (req, res) => {
     const { categoryName, distance, groupId } = req.body;
     const now = Date.now();
     const startKey = groupId || `${categoryName}_${distance}`;
-
     try {
-        const { data: activeBatch } = await supabase
-            .from('categories')
-            .select('*')
-            .eq('key', startKey)
-            .single();
-
-        if (!activeBatch) {
-            return res.status(400).json({ error: `Ez a futam (${startKey}) még nem indult el!` });
-        }
-
-        // We need to calculate totalTime. Since SQL update can't easily do (now - startTime) across rows without complex logic in Supabase JS, 
-        // we might need to fetch the racers first OR use an RPC. 
-        // For simplicity, let's fetch IDs and startTimes of running racers in this batch.
-
-        let query = supabase
-            .from('racers')
-            .select('*')
-            .eq('status', 'running');
-
-        if (groupId) {
-            query = getGroupQuery(query, groupId);
-        } else {
-            query = query.eq('category', categoryName).eq('distance', distance);
-        }
-
-        const { data: runningRacers, error: fError } = await query;
-        if (fError) throw fError;
-
+        let query = supabase.from('racers').select('*').eq('status', 'running');
+        query = groupId ? getGroupQuery(query, groupId) : query.eq('category', categoryName).eq('distance', distance);
+        const { data: runningRacers } = await query;
+        
         if (runningRacers && runningRacers.length > 0) {
-            // Update each racer individually using their ID to avoid upsert creating duplicates
-            for (const racer of runningRacers) {
-                const { error: uError } = await supabase
-                    .from('racers')
-                    .update({
-                        status: 'finished',
-                        finish_time: now,
-                        total_time: now - racer.start_time
-                    })
-                    .eq('id', racer.id);
-                if (uError) {
-                    console.error(`[STOP] Update error for racer ${racer.id}:`, uError);
-                    throw uError;
-                }
-            }
+            await Promise.all(runningRacers.map(r => 
+                supabase.from('racers').update({ 
+                    status: 'finished', 
+                    finish_time: now, 
+                    total_time: now - r.start_time 
+                }).eq('id', r.id)
+            ));
         }
-
-
-        // Delete from categories
         await supabase.from('categories').delete().eq('key', startKey);
-
-        const stopCount = runningRacers?.length || 0;
-        console.log(`STOP: ${startKey} leállítva, ${stopCount} versenyző érkezett be célba.`);
-        res.json({ success: true, finish_time: now, count: stopCount });
+        res.json({ success: true, count: runningRacers?.length || 0 });
     } catch (err) {
-        console.error("Error in /api/stop-category:", err);
         res.status(500).json({ error: err.message });
     }
 });
 
-// 4b. Reset Category (Delete timer without finishing racers)
 app.post('/api/reset-category', authenticateAdmin, async (req, res) => {
     const { categoryName, distance, groupId } = req.body;
     const startKey = groupId || `${categoryName}_${distance}`;
-
     try {
         await supabase.from('categories').delete().eq('key', startKey);
-        console.log(`RESET: ${startKey} időmérője törölve.`);
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// 5. Stop Racer (Manual Bib)
 app.post('/api/stop-racer', authenticateAdmin, async (req, res) => {
     const { bib } = req.body;
     const now = Date.now();
-
     try {
-        const { data: racer, error: fError } = await supabase
-            .from('racers')
-            .select('*')
-            .eq('bib', bib)
-            .single();
-
-        if (!racer) return res.status(404).json({ error: 'Nincs ilyen rajtszámú versenyző!' });
-        if (racer.status !== 'running') return res.status(400).json({ error: 'Ez a versenyző nincs versenyben!' });
-
+        const { data: racer } = await supabase.from('racers').select('*').eq('bib', bib).single();
+        if (!racer) return res.status(404).json({ error: 'Nincs ilyen rajtszám!' });
         const total_time = now - racer.start_time;
-        const { error: uError } = await supabase
-            .from('racers')
-            .update({ status: 'finished', finish_time: now, total_time })
-            .eq('bib', bib);
-
-        if (uError) throw uError;
-
-        const { data: members } = await supabase
-            .from('members')
-            .select('name')
-            .eq('racer_id', racer.id);
-
+        await supabase.from('racers').update({ status: 'finished', finish_time: now, total_time }).eq('bib', bib);
+        const { data: members } = await supabase.from('members').select('name').eq('racer_id', racer.id);
         const names = (members || []).map(m => m.name).join(', ');
-        
-        // Check if timers should be stopped
         await checkAndStopEmptyBatchTimers();
-        
         res.json({ success: true, racer: { name: names, total_time } });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// 6. Delete Racer (Robust Version)
+// --- 11. VERSENYZŐ KEZELÉS: CRUD (MANAGEMENT) ---
 app.delete('/api/racer/:idOrBib', authenticateAdmin, async (req, res) => {
     const param = req.params.idOrBib;
-    console.log(`[DELETE] Request for: ${param}`);
-    
     try {
-        // 1. Primary Attempt: Delete by TEXT ID
-        // We use select() to verify if it worked
-        const { data: idData, error: idError } = await supabase
-            .from('racers')
-            .delete()
-            .eq('id', String(param))
-            .select();
-
-        if (idError) {
-            console.warn("[DELETE] ID attempt failed:", idError.message);
-        } else if (idData && idData.length > 0) {
-            console.log(`[DELETE] Success by ID: ${param}`);
+        const { data: idData } = await supabase.from('racers').delete().eq('id', String(param)).select();
+        if (idData?.length > 0) {
             await checkAndStopEmptyBatchTimers();
-            return res.json({ success: true, method: 'id', count: idData.length });
+            return res.json({ success: true });
         }
-
-        // 2. Secondary Attempt: Delete by INTEGER Bib
-        // Only if numeric AND within Postgres INTEGER range (max ~2.1 billion)
         if (/^\d+$/.test(param)) {
-            const bibNum = parseInt(param, 10);
-            if (bibNum > 0 && bibNum < 2147483647) {
-                console.log(`[DELETE] ID not found, trying Bib: ${bibNum}`);
-                const { data: bibData, error: bibError } = await supabase
-                    .from('racers')
-                    .delete()
-                    .eq('bib', bibNum)
-                    .select();
-                
-                if (bibError) {
-                    console.error("[DELETE] Bib error:", bibError.message);
-                } else if (bibData && bibData.length > 0) {
-                    console.log(`[DELETE] Success by Bib: ${bibNum}`);
-                    await checkAndStopEmptyBatchTimers();
-                    return res.json({ success: true, method: 'bib', count: bibData.length });
-                }
+            const { data: bibData } = await supabase.from('racers').delete().eq('bib', parseInt(param)).select();
+            if (bibData?.length > 0) {
+                await checkAndStopEmptyBatchTimers();
+                return res.json({ success: true });
             }
         }
-
-        // 3. Not found anywhere
-        console.warn(`[DELETE] Not found: ${param}`);
-        res.status(404).json({ error: 'Versenyző nem található (Rajtszám/ID hiba).' });
-
+        res.status(404).json({ error: 'Nem található!' });
     } catch (err) {
-        console.error("[DELETE] Critical failure:", err);
         res.status(500).json({ error: err.message });
     }
 });
 
-// 7. Update Racer
 app.put('/api/racer/:id', authenticateAdmin, async (req, res) => {
     const id = req.params.id;
     const { bib, category, distance, is_series, status, email, phone, members } = req.body;
-    console.log(`[UPDATE] Request for racer ID: ${id}`);
-
-    // Validation
-    const validationError = validateRacerData(req.body);
-    if (validationError) return res.status(400).json({ error: validationError });
-
     try {
-        // 1. Update Racer Table
-        const { error: rError } = await supabase
-            .from('racers')
-            .update({
-                bib: bib,
-                category: category,
-                distance: distance,
-                is_series: is_series ? 1 : 0,
-                status: status,
-                email: email,
-                phone: phone
-            })
-            .eq('id', id);
-
-        if (rError) {
-            console.error("[UPDATE] Racer update error:", rError);
-            throw rError;
+        await supabase.from('racers').update({ bib, category, distance, is_series: is_series ? 1 : 0, status, email, phone }).eq('id', id);
+        if (members) {
+            await supabase.from('members').delete().eq('racer_id', id);
+            await supabase.from('members').insert(members.map(m => ({ racer_id: id, ...m })));
         }
-
-        // 2. Update Members (Delete & Re-insert is safest for variable team sizes)
-        if (members && Array.isArray(members)) {
-            // Delete existing
-            const { error: dError } = await supabase
-                .from('members')
-                .delete()
-                .eq('racer_id', id);
-            
-            if (dError) {
-                console.error("[UPDATE] Member deletion error:", dError);
-                throw dError;
-            }
-
-            // Insert new
-            const membersToInsert = members.map(m => ({
-                racer_id: id,
-                name: m.name,
-                birth_date: m.birth_date,
-                otproba_id: m.otproba_id
-            }));
-
-            if (membersToInsert.length > 0) {
-                const { error: iError } = await supabase.from('members').insert(membersToInsert);
-                if (iError) {
-                    console.error("[UPDATE] Member insertion error:", iError);
-                    throw iError;
-                }
-            }
-        }
-
-        console.log(`[UPDATE] Success for racer ID: ${id}`);
         await checkAndStopEmptyBatchTimers();
         res.json({ success: true });
     } catch (err) {
-        console.error("[UPDATE] Critical failure:", err);
         res.status(500).json({ error: err.message });
     }
 });
 
-// 7. Reset All Data
+// --- 12. ADATKARBANTARTÁS (MAINTENANCE) ---
 app.post('/api/reset', authenticateAdmin, async (req, res) => {
     try {
-        await deleteAll('members');
-        await deleteAll('racers');
-        await deleteAll('categories', 'key');
+        await supabase.from('members').delete().not('racer_id', 'is', null);
+        await supabase.from('racers').delete().not('id', 'is', null);
+        await supabase.from('categories').delete().not('key', 'is', null);
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-// 8. Reset Times Only
 app.post('/api/reset-times', authenticateAdmin, async (req, res) => {
     try {
-        const { error: rError } = await supabase
-            .from('racers')
-            .update({ status: 'registered', total_time: null })
-            .not('id', 'is', null);
-        const { error: cError } = await deleteAll('categories', 'key');
-        if (rError || cError) throw new Error('Adatbázis hiba az idők törlésekor.');
+        await supabase.from('racers').update({ status: 'registered', total_time: null, start_time: null, finish_time: null }).not('id', 'is', null);
+        await supabase.from('categories').delete().not('key', 'is', null);
         res.json({ success: true });
     } catch (err) {
-        console.error("[RESET-TIMES] Error:", err);
         res.status(500).json({ error: err.message });
     }
 });
 
-// Helper: egyetlen Supabase-törlés helper – korábban 3 helyen ismétlődő minta
-function deleteAll(table, col = 'id') {
-    return supabase.from(table).delete().not(col, 'is', null);
-}
-
-// Helper for CSV normalization – korábban 30 soros if-lánc, mostantól adatstruktúra
-const SLUG_MAP = [
-    { keys: ['versenykajak','női'],                           slug: 'versenykajak_noi_1' },
-    { keys: ['versenykajak','férfi'],                         slug: 'versenykajak_ferfi_1' },
-    { keys: ['túrakajak','női','1'],                          slug: 'turakajak_noi_1' },
-    { keys: ['túrakajak','férfi','1'],                        slug: 'turakajak_ferfi_1' },
-    { keys: ['túrakajak','2'],                                slug: 'turakajak_2_nyitott' },
-    { keys: ['tengeri','női'],                               slug: 'tengeri_kajak_noi_1' },
-    { keys: ['tengeri','férfi'],                             slug: 'tengeri_kajak_ferfi_1' },
-    { keys: ['surfski','női'],                               slug: 'surfski_noi' },
-    { keys: ['surfski','férfi'],                             slug: 'surfski_ferfi' },
-    { keys: ['rövid','kenu'],                                slug: 'rovid_kenu_11km' },
-    { keys: ['kenu','női','1'],                              slug: 'kenu_noi_1' },
-    { keys: ['kenu','férfi','1'],                            slug: 'kenu_ferfi_1' },
-    { keys: ['kenu','2','férfi'],                            slug: 'kenu_2_ferfi' },
-    { keys: ['kenu','2','vegyes'],                           slug: 'kenu_2_vegyes' },
-    { keys: ['kenu','3'],                                    slug: 'kenu_3_nyitott' },
-    { keys: ['kenu','4'],                                    slug: 'kenu_4_nyitott' },
-    { keys: ['outrigger','női'],                            slug: 'outrigger_noi_1' },
-    { keys: ['outrigger','férfi'],                          slug: 'outrigger_ferfi_1' },
-    { keys: ['outrigger','2'],                               slug: 'outrigger_2_nyitott' },
-    { keys: ['sup','női','merev','alatt'],                  slug: 'sup_noi_1_merev_39_alatt' },
-    { keys: ['sup','női','merev'],                          slug: 'sup_noi_1_merev_39_felett' },   // felett/fölött
-    { keys: ['sup','férfi','merev','alatt'],                slug: 'sup_ferfi_1_merev_39_alatt' },
-    { keys: ['sup','férfi','merev'],                        slug: 'sup_ferfi_1_merev_39_felett' },
-    { keys: ['sup','női','felfújható','alatt'],           slug: 'sup_noi_1_felfujhato_39_alatt' },
-    { keys: ['sup','női','felfújható'],                   slug: 'sup_noi_1_felfujhato_39_felett' },
-    { keys: ['sup','férfi','felfújható','alatt'],         slug: 'sup_ferfi_1_felfujhato_39_alatt' },
-    { keys: ['sup','férfi','felfújható'],               slug: 'sup_ferfi_1_felfujhato_39_felett' },
-    { keys: ['sárkányha'],                                  slug: 'sarkanyhajo_otproba' },  // sárkányha|sarkanyhaj
-    { keys: ['sarkanyhaj'],                                  slug: 'sarkanyhajo_otproba' },
-];
-
-function normalizeCategoryToSlug(categoryName) {
-    if (!categoryName) return '';
-    const n = categoryName.toLowerCase();
-    const match = SLUG_MAP.find(e => e.keys.every(k => n.includes(k)));
-    return match ? match.slug : categoryName;
-}
-
-// 8. Upload CSV (Format: srsz;Név 1..4;Kategória;Szül.idő 1..4;Táv;Ötpróba 1..4)
+// --- 13. CSV IMPORTÁLÁS (DATA IMPORT) ---
 app.post('/api/upload-csv', authenticateAdmin, async (req, res) => {
     const { csvData } = req.body;
-    if (!csvData || csvData.length > 500000) { // ~500KB limit for CSV text
-        return res.status(400).json({ error: 'A CSV fájl túl nagy vagy üres!' });
-    }
-
     const lines = csvData.trim().split('\n');
-    if (lines.length > 500) {
-        return res.status(400).json({ error: 'Egyszerre maximum 500 sort tölthetsz fel!' });
-    }
-
-    console.log(`[CSV-UPLOAD] Összes sor az adatokban: ${lines.length}`);
     let added = 0;
-
     try {
-        for (let i = 1; i < lines.length; i++) {
-            const line = lines[i].trim();
-            if (!line) {
-                console.log(`[CSV-UPLOAD] Üres sor átugorva a(z) ${i}. sorban.`);
-                continue;
-            }
- 
+        // Párhuzamos feldolgozás indítása minden sorra (kivéve a fejlécet)
+        const importPromises = lines.slice(1).map(async (line) => {
             const fields = line.split(';').map(s => s.trim());
-            console.log(`[CSV-UPLOAD] ${i}. sor feldolgozása: ${fields.length} mező.`);
-
-            if (fields.length >= 8) { 
-                const csvBib = fields[0];
-                const rawCategory = fields[7] ? fields[7].trim() : '';
-                const category = normalizeCategoryToSlug(rawCategory);
-                const distanceField = fields[12] ? fields[12].trim() : '';
-                const emailField = fields[5] ? fields[5].trim() : 'csv@imported.hu';
-                const phoneField = fields[6] ? fields[6].trim() : '00000000';
- 
-                const names = [fields[1], fields[2], fields[3], fields[4]];
+            if (fields.length >= 8) {
+                const category = normalizeCategoryToSlug(fields[7]);
+                const dist = (fields[12] || '11km').replace(/\s+/g, '').toLowerCase();
+                let bib = parseInt(fields[0]);
+                if (isNaN(bib)) bib = await getNextBib(dist, category);
                 
-                if (!names[0] || names[0].trim() === '') {
-                    console.warn(`[CSV-UPLOAD] HIBA: Hiányzó név az ${i}. sorban: "${line}"`);
-                    continue;
-                }
-                
-                if (!category) {
-                    console.warn(`[CSV-UPLOAD] HIBA: Ismeretlen kategória az ${i}. sorban: "${rawCategory}"`);
-                    continue;
-                }
- 
-                const birth_dates = [fields[8], fields[9], fields[10], fields[11]];
-                const otproba_ids = [fields[13], fields[14], fields[15], fields[16]];
- 
-                let dist = (distanceField || '11km').replace(/\s+/g, '').toLowerCase();
-                if (!dist.endsWith('km')) dist += 'km';
-
-                let bib = parseInt(csvBib);
-
-                // --- DUPLICATION CHECK ---
-                let isDuplicate = false;
-                
-                // 1. Check by explicit BIB (if provided in CSV)
-                if (!isNaN(bib)) {
-                    const { data: existingBib } = await supabase
-                        .from('racers')
+                if (bib) {
+                    const { data: existing } = await supabase.from('racers')
                         .select('id')
                         .eq('bib', bib)
+                        .eq('distance', dist)
                         .maybeSingle();
-                        
-                    if (existingBib) {
-                        isDuplicate = true;
-                        console.log(`[CSV-UPLOAD] SOR ÁTUGORVA (Duplikáció, rajtszám már létezik): #${bib}`);
-                    }
-                }
 
-                // 2. Check by Name + Category + Distance
-                if (!isDuplicate && names[0]) {
-                    const { data: possibleRacers } = await supabase
-                        .from('racers')
-                        .select('id')
-                        .eq('category', category)
-                        .eq('distance', dist);
-                    
-                    if (possibleRacers && possibleRacers.length > 0) {
-                        const racerIds = possibleRacers.map(r => r.id);
-                        const { data: existingMembers } = await supabase
-                            .from('members')
-                            .select('racer_id, name')
-                            .in('racer_id', racerIds)
-                            .eq('name', names[0]);
-                            
-                        if (existingMembers && existingMembers.length > 0) {
-                            isDuplicate = true;
-                            console.log(`[CSV-UPLOAD] SOR ÁTUGORVA (Duplikáció, versenyző már létezik): ${names[0]} - ${category}`);
-                        }
-                    }
-                }
+                    if (existing) return 0;
 
-                if (isDuplicate) {
-                    continue; // Skip insertion for this row
-                }
-                // --- END DUPLICATION CHECK ---
-
-                if (isNaN(bib)) {
-                    bib = await getNextBib(dist, category);
-                    console.log(`[CSV-UPLOAD] Rajtszám generálva: ${bib}`);
-                }
- 
-                if (bib) {
                     const racerId = Date.now().toString() + "_" + Math.floor(Math.random() * 1000);
-                    const membersArr = [];
-                    for (let j = 0; j < 4; j++) {
-                        const name = names[j];
-                        if (name) {
-                            let oid = otproba_ids[j] ? otproba_ids[j].trim() : '';
-                            if (oid && /^\d{6}$/.test(oid)) oid = '5P' + oid;
-                            membersArr.push({
-                                name: name,
-                                birth_date: birth_dates[j] || '',
-                                otproba_id: oid
-                            });
-                        }
-                    }
-
-                    console.log(`[CSV-UPLOAD] Beszúrás: #${bib}, Név: ${membersArr[0].name}, Kategória: ${category}`);
-
-                    const { error: rError } = await supabase.from('racers').insert({
-                        id: racerId,
-                        bib: bib,
-                        category: category,
-                        distance: dist,
-                        is_series: 0,
-                        email: emailField,
-                        phone: phoneField,
-                        status: 'registered'
+                    const { error: rError } = await supabase.from('racers').insert({ 
+                        id: racerId, bib, category, distance: dist, 
+                        email: fields[5] || 'csv@imported.hu', 
+                        phone: fields[6] || '0000', 
+                        status: 'registered' 
                     });
-
-                    if (rError) {
-                        console.error(`[CSV-UPLOAD] HIBA a racers beszúrásakor (#${bib}):`, rError.message);
-                        if (rError.code === 'PGRST204') {
-                            return res.status(500).json({ 
-                                error: 'CSV Import hiba: Az email vagy phone oszlop hiányzik az adatbázisból!',
-                                details: rError.message 
-                            });
-                        }
-                        continue;
-                    }
-
-                    if (membersArr.length > 0) {
-                        const membersToInsert = membersArr.map(m => ({
-                            racer_id: racerId,
-                            name: m.name,
-                            birth_date: m.birth_date,
-                            otproba_id: m.otproba_id
-                        }));
-                        const { error: mError } = await supabase.from('members').insert(membersToInsert);
+                    
+                    if (!rError) {
+                        const members = [];
+                        for(let j=0; j<4; j++) if(fields[j+1]) members.push({ racer_id: racerId, name: fields[j+1], birth_date: fields[j+8] || '', otproba_id: fields[j+13] || '' });
+                        
+                        const { error: mError } = await supabase.from('members').insert(members);
                         if (mError) {
-                            console.error(`[CSV-UPLOAD] HIBA a tagok beszúrásakor (#${bib}):`, mError.message);
+                            await supabase.from('racers').delete().eq('id', racerId);
+                            return 0;
                         }
+                        return 1; // Sikerült hozzáadni
                     }
-
-                    added++;
-                } else {
-                    console.warn(`[CSV-UPLOAD] HIBA: Nem sikerült rajtszámot kiosztani az ${i}. sorhoz.`);
                 }
-            } else {
-                console.warn(`[CSV-UPLOAD] HIBA: Túl kevés mező (${fields.length}) az ${i}. sorban: "${line}"`);
             }
-        }
+            return 0;
+        });
+
+        const results = await Promise.all(importPromises);
+        const added = results.reduce((acc, curr) => acc + curr, 0);
         
         res.json({ success: true, importedCount: added });
     } catch (err) {
-        console.error("CSV Upload error:", err);
         res.status(500).json({ error: err.message });
     }
 });
 
 app.listen(PORT, () => {
-    console.log(`DragonWave Supabase Server running at http://localhost:${PORT}`);
+    console.log(`DragonWave Server running at http://localhost:${PORT}`);
 });

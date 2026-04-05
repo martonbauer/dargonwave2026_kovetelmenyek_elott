@@ -1,3 +1,7 @@
+/**
+ * --- ADATBÁZIS RÉTEG (DATA LAYER) ---
+ * Supabase kliens inicializálása és konfigurálása.
+ */
 require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
 

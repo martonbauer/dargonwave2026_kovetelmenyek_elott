@@ -1,3 +1,7 @@
+<!-- 
+     --- ALKALMAZÁS FELÜLETI RÉTEG (APPLICATION UI LAYER) ---
+     Ez a központi felület a regisztrációhoz, eredményekhez és az adminisztrációhoz.
+-->
 <!DOCTYPE html>
 <html lang="hu">
 
@@ -134,10 +138,8 @@
             </div>
             <div id="admin-dashboard-panel" class="hidden">
                 <div class="admin-top-bar">
-                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                        <h2 class="admin-title" style="margin: 0;">Versenyirányító Központ</h2>
-                        <button class="btn-secondary" style="background: rgba(255, 0, 0, 0.2); color: #ff4444; border: 1px solid #ff4444; padding: 5px 15px; border-radius: 4px; cursor: pointer;" onclick="logoutAdmin()">🚪 Kijelentkezés</button>
-                    </div>
+                    <h2 class="admin-title">Versenyirányító Központ</h2>
+                    <button class="btn-danger" style="padding: 8px 20px;" onclick="logoutAdmin()">🚪 Kijelentkezés</button>
                 </div>
 
 
@@ -191,12 +193,12 @@
                         <div id="bib-stop-panel" class="bib-recorder">
                             <label for="bib-input" style="display: block; margin-bottom: 10px; font-weight: 600; color: var(--text-secondary);">Rajtszám beírása célba érkezéskor:</label>
                             
-                            <div class="bib-input-wrapper" style="margin-bottom: 15px;">
-                                <input type="text" id="bib-input" placeholder="000 001" autofocus style="font-size: 2.2rem; height: 70px; text-align: center; font-family: 'Space Mono', monospace; border: 2px solid var(--accent-primary); background: rgba(0, 228, 255, 0.05); width: 100%;">
+                            <div class="bib-input-wrapper">
+                                <input type="text" id="bib-input" placeholder="000" autofocus>
                                 
-                                <div class="button-group">
-                                    <button onclick="document.getElementById('bib-input').value += ' '; document.getElementById('bib-input').focus();" class="btn-secondary bulk-btn-mobile">➕ TÖMEGES</button>
-                                    <button onclick="window.stopRacer()" class="btn-stop-major" style="font-weight: 900; background: linear-gradient(135deg, #ff4444, #cc0000); border: none; box-shadow: 0 4px 15px rgba(255, 0, 0, 0.3);">RÖGZÍTÉS</button>
+                                <div class="button-group" style="display: flex; gap: 10px;">
+                                    <button onclick="document.getElementById('bib-input').value += ' '; document.getElementById('bib-input').focus();" class="btn-secondary bulk-btn-mobile" style="flex: 1; height: 60px; font-weight: 700;">➕ TÖMEGES</button>
+                                    <button onclick="window.stopRacer()" class="btn-stop-major" style="flex: 2; height: 60px;">RÖGZÍTÉS</button>
                                 </div>
                             </div>
 
@@ -355,7 +357,7 @@
     </footer>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
-    <script src="dragon.js?v=1.0.2"></script>
+    <script type="module" src="dragon.js"></script>
 </body>
 
 </html>

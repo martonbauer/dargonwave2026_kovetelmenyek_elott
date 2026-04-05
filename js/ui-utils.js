@@ -1,0 +1,122 @@
+/**
+ * --- FELÜLETI SEGÉDFUNKCIÓK (UI HELPER LAYER) ---
+ * Általános megjelenítési segédfunkciók, formázás és navigáció.
+ */
+
+/**
+ * Toast üzenet megjelenítése
+ * @param {string} message - Az üzenet szövege
+ * @param {string} [type='info'] - Az üzenet típusa ('success', 'error', 'info')
+ */
+export function showToast(message, type = 'info') {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.style.position = 'fixed';
+        container.style.bottom = '20px';
+        container.style.right = '20px';
+        container.style.zIndex = '9999';
+        container.style.display = 'flex';
+        container.style.flexDirection = 'column';
+        container.style.gap = '10px';
+        document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    const bgColors = { 
+        'success': 'rgba(0, 255, 136, 0.9)', 
+        'error': 'rgba(255, 0, 60, 0.9)', 
+        'info': 'rgba(0, 240, 255, 0.9)' 
+    };
+    
+    toast.style.background = bgColors[type] || 'rgba(50,50,50,0.9)';
+    toast.style.color = (type === 'success' || type === 'info') ? '#000' : '#fff';
+    toast.style.padding = '12px 20px';
+    toast.style.borderRadius = '8px';
+    toast.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
+    toast.style.fontFamily = "'Space Mono', monospace";
+    toast.style.fontWeight = 'bold';
+    toast.style.transform = 'translateX(100%)';
+    toast.style.opacity = '0';
+    toast.style.transition = 'all 0.3s ease-out';
+    toast.textContent = message;
+    container.appendChild(toast);
+
+    setTimeout(() => { 
+        toast.style.transform = 'translateX(0)'; 
+        toast.style.opacity = '1'; 
+    }, 10);
+    
+    setTimeout(() => {
+        toast.style.transform = 'translateX(100%)';
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+}
+
+/**
+ * Tab váltás kezelése
+ * @param {string} tab - A kiválasztott tab neve
+ */
+export function switchTab(tab) {
+    console.log(`Switching tab to: ${tab}`);
+    const regForm = document.getElementById('registration-form');
+    const liveResults = document.getElementById('live-results');
+    const adminView = document.getElementById('admin-view');
+    const clockContainer = document.getElementById('local-time-container');
+    const btns = document.querySelectorAll('.nav-btn');
+    
+    btns.forEach(b => b.classList.remove('active'));
+
+    // Mindent elrejt
+    if (regForm) regForm.classList.add('hidden');
+    if (liveResults) liveResults.classList.add('hidden');
+    if (adminView) adminView.classList.add('hidden');
+    if (clockContainer) clockContainer.classList.add('hidden');
+
+    if (tab === 'regisztracio') {
+        if (regForm) regForm.classList.remove('hidden');
+        const btn = document.getElementById('btn-regisztracio');
+        if (btn) btn.classList.add('active');
+    } else if (tab === 'eredmenyek') {
+        if (liveResults) liveResults.classList.remove('hidden');
+        if (clockContainer) clockContainer.classList.remove('hidden');
+        const btn = document.getElementById('btn-eredmenyek');
+        if (btn) btn.classList.add('active');
+        if (window.raceManager) window.raceManager.updateLiveTimers();
+    } else if (tab === 'admin') {
+        if (adminView) adminView.classList.remove('hidden');
+        if (clockContainer) clockContainer.classList.remove('hidden');
+        const btn = document.getElementById('btn-admin');
+        if (btn) btn.classList.add('active');
+        
+        const loginPanel = document.getElementById('admin-login-panel');
+        const dashboardPanel = document.getElementById('admin-dashboard-panel');
+        
+        if (window.raceManager && window.raceManager.adminPassword) {
+            if (loginPanel) loginPanel.classList.add('hidden');
+            if (dashboardPanel) dashboardPanel.classList.remove('hidden');
+            if (typeof window.renderAdminTable === 'function') window.renderAdminTable();
+            window.raceManager.renderUI();
+        } else {
+            if (loginPanel) loginPanel.classList.remove('hidden');
+            if (dashboardPanel) dashboardPanel.classList.add('hidden');
+        }
+    }
+}
+
+/**
+ * Idő formázása (ms -> HH:mm:ss.SSS)
+ * @param {number} ms - Időtartam miliszekundumban
+ * @returns {string}
+ */
+export function formatTime(ms) {
+    if (ms < 0) ms = 0;
+    const hours = Math.floor(ms / 3600000);
+    const minutes = Math.floor((ms % 3600000) / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
+    const milliseconds = Math.floor(ms % 1000);
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
+}
