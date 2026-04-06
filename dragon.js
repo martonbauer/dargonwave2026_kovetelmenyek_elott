@@ -9,7 +9,14 @@ import { renderAdminTable, renderAdminControlButtons, exportResultsToExcel, expo
 import { API_URL, APP_VERSION } from './js/api.js';
 
 // --- Globális hatókör biztosítása a HTML onclick eseményekhez ---
-window.switchTab = switchTab;
+window.switchTab = (tabId) => {
+    // Ha az adminba váltunk, reseteljük a dashboardot a főoldalra
+    if (tabId === 'admin' && typeof window.showAdminLanding === 'function') {
+        window.showAdminLanding();
+    }
+    // Eredeti tab váltás hívása
+    switchTab(tabId);
+};
 window.showToast = showToast;
 window.formatTime = formatTime;
 window.showConfirmModal = showConfirmModal;
@@ -103,6 +110,25 @@ window.showAdminLanding = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
+// --- Segédfüggvény a fejléc frissítéséhez ---
+window.updateAdminDataHeader = (title, backAction = null, useLocalBack = false) => {
+    const mainTitle = document.getElementById('admin-data-main-title');
+    const backBtn = document.getElementById('btn-data-back-to-landing');
+    
+    if (mainTitle) mainTitle.textContent = title;
+    
+    if (backBtn) {
+        // Ha van megadva helyi vissza gomb a HTML-ben, elrejtjük a központi vissza gombot
+        if (useLocalBack || !backAction) {
+            backBtn.classList.add('hidden');
+        } else {
+            backBtn.classList.remove('hidden');
+            backBtn.onclick = backAction;
+            backBtn.textContent = '⬅️ Vissza az adatkezeléshez';
+        }
+    }
+};
+
 // --- Adatkezelés Al-navigáció ---
 window.showDataSubSection = (subId) => {
     // Elrejtjük a data landinget és minden más data al-szekciót
@@ -112,9 +138,17 @@ window.showDataSubSection = (subId) => {
     // Megjelenítjük a cél szekciót
     const target = document.getElementById(subId);
     if (target) target.classList.remove('hidden');
-    
-    // Mutatjuk a vissza gombot
-    document.getElementById('btn-data-back-to-landing').classList.remove('hidden');
+
+    const titles = {
+        'admin-data-section-import': '📥 Tömeges Nevezés / CSV Feltöltés',
+        'admin-data-section-nevezes': '📝 Adminisztrátori Nevezés',
+        'admin-data-section-table': '👥 Versenyzői Adatbázis',
+        'admin-data-section-export': '📊 Eredmények Listázása',
+        'admin-data-section-system': '⚙️ Rendszerkezelés',
+        'admin-data-section-bibs': '🔢 Rajtszámok Újraosztása'
+    };
+
+    window.updateAdminDataHeader(titles[subId] || '📂 Adatkezelés', window.showDataLanding);
 
     // Ha a regisztrációs űrlapot kérik az adminban
     if (subId === 'admin-data-section-nevezes') {
@@ -144,15 +178,21 @@ window.showDataLanding = () => {
         regForm.classList.add('hidden');
     }
 
-    // Elrejtünk minden data al-szekciót
+    // Elrejtünk minden data al-szekciót és megmutatjuk a fő data landinget
     document.querySelectorAll('.admin-data-sub').forEach(s => s.classList.add('hidden'));
-    // Megjelenítjük a data landinget
     document.getElementById('admin-data-landing-view').classList.remove('hidden');
-    // Elrejtjük a vissza gombot
-    document.getElementById('btn-data-back-to-landing').classList.add('hidden');
+
+    // Alaphelyzetbe állítjuk a címet és elrejtjük a vissza gombot
+    window.updateAdminDataHeader('📂 Adatkezelés & Adatbázis', null);
     
-    // Alaphelyzetbe állítjuk a táblázat nézetet is
-    window.showTableLanding();
+    // Csendes reset a táblázat és eredmény nézetek belső állapotához
+    document.getElementById('admin-table-content-view').classList.add('hidden');
+    document.getElementById('admin-table-category-list-view').classList.add('hidden');
+    document.getElementById('admin-table-landing-view').classList.remove('hidden');
+    
+    document.getElementById('admin-results-content-view').classList.add('hidden');
+    document.getElementById('admin-results-category-list-view').classList.add('hidden');
+    document.getElementById('admin-results-landing-view').classList.remove('hidden');
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
@@ -167,22 +207,26 @@ window.showTableSubSection = (mode) => {
     
     if (mode === 'category-list') {
         document.getElementById('admin-table-category-list-view').classList.remove('hidden');
-        window.backToCategorySelector(); // Alaphelyzetbe állítjuk a választó nézetet
+        window.updateAdminDataHeader('🏷️ Nevezettek Kategóriánként', window.showTableLanding);
+        window.backToCategorySelector(); 
+    } else if (mode === 'admin-data-section-bibs') {
+        document.getElementById('admin-data-section-bibs').classList.remove('hidden');
+        window.updateAdminDataHeader('🔢 Rajtszámok Újraosztása', window.showTableLanding);
+        window.renderBibManagementTable();
     } else {
         document.getElementById('admin-table-content-view').classList.remove('hidden');
-        const title = document.getElementById('admin-table-title');
         const filterCtrls = document.getElementById('admin-table-filter-ctrls');
         
         if (mode === 'all') {
             window.currentTableFilter = 'all';
-            title.textContent = '👥 Összes Versenyzői Adatbázis';
+            window.updateAdminDataHeader('👥 Összes Versenyző Listája', null, true);
             filterCtrls.classList.add('hidden');
             window.renderAdminTable('all');
         } else {
             window.currentTableFilter = '22km';
-            title.textContent = '🔍 Nevezettek Távonként';
+            window.updateAdminDataHeader('🔍 Nevezettek Távonként', null, true);
             filterCtrls.classList.remove('hidden');
-            window.renderAdminTable('22km'); // Alapértelmezett kezdő szűrő
+            window.filterAdminTable('22km'); 
         }
     }
     
@@ -196,6 +240,9 @@ window.showTableLanding = () => {
     document.getElementById('admin-data-section-bibs').classList.add('hidden');
     // Megjelenítjük a landinget
     document.getElementById('admin-table-landing-view').classList.remove('hidden');
+    
+    window.updateAdminDataHeader('👥 Versenyzői Adatbázis', window.showDataLanding);
+    
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
@@ -203,6 +250,7 @@ window.showTableLanding = () => {
 window.showCategoryDetail = (distId, catId) => {
     document.getElementById('admin-category-selector-view').classList.add('hidden');
     document.getElementById('admin-category-detail-view').classList.remove('hidden');
+    window.updateAdminDataHeader(window.raceManager.formatCategoryName(catId), null, true);
     renderAdminCategoryDetail(distId, catId);
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
@@ -211,6 +259,7 @@ window.showCategoryDetail = (distId, catId) => {
 window.backToCategorySelector = () => {
     document.getElementById('admin-category-detail-view').classList.add('hidden');
     document.getElementById('admin-category-selector-view').classList.remove('hidden');
+    window.updateAdminDataHeader('🏷️ Nevezettek Kategóriánként', null, true);
     renderAdminCategoryList();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
@@ -218,6 +267,20 @@ window.backToCategorySelector = () => {
 window.filterAdminTable = (type) => {
     window.currentTableFilter = type;
     window.renderAdminTable(type);
+    
+    // Frissítjük a szűrőgombok vizuális kiemelését (zöld szín)
+    const container = document.getElementById('admin-table-filter-ctrls');
+    if (container) {
+        const buttons = container.querySelectorAll('.btn-secondary');
+        buttons.forEach(btn => {
+            const clickAttr = btn.getAttribute('onclick') || '';
+            if (clickAttr.includes(`'${type}'`)) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+    }
 };
 
 window.exportFilteredTable = () => {
@@ -229,6 +292,98 @@ window.exportSpecificCategoryExcel = (distId, catId) => {
 };
 
 window.currentTableFilter = 'all';
+
+// --- Eredmények Al-navigáció ---
+window.showResultsLanding = () => {
+    document.getElementById('admin-results-landing-view').classList.remove('hidden');
+    document.getElementById('admin-results-content-view').classList.add('hidden');
+    document.getElementById('admin-results-category-list-view').classList.add('hidden');
+    
+    window.updateAdminDataHeader('🏆 Eredmények Listázása', window.showDataLanding);
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+window.showResultsSubSection = (mode) => {
+    document.getElementById('admin-results-landing-view').classList.add('hidden');
+    document.getElementById('admin-results-content-view').classList.add('hidden');
+    document.getElementById('admin-results-category-list-view').classList.add('hidden');
+    
+    if (mode === 'category-list') {
+        document.getElementById('admin-results-category-list-view').classList.remove('hidden');
+        window.updateAdminDataHeader('🥇 Kategória Eredmények', null, true);
+        window.backToResultsCategorySelector();
+    } else {
+        document.getElementById('admin-results-content-view').classList.remove('hidden');
+        const filterCtrls = document.getElementById('admin-results-filter-ctrls');
+        const allCtrls = document.getElementById('admin-results-all-ctrls');
+        
+        if (mode === 'all') {
+            window.currentResultsFilter = 'all';
+            window.updateAdminDataHeader('🏆 Összes Eredménylista', null, true);
+            filterCtrls.classList.add('hidden');
+            allCtrls.classList.remove('hidden');
+            window.renderResultsTable('all');
+        } else {
+            window.currentResultsFilter = '22km'; // Alapértelmezett táv
+            window.updateAdminDataHeader('📏 Távonkénti Összetett', null, true);
+            filterCtrls.classList.remove('hidden');
+            allCtrls.classList.add('hidden');
+            window.filterResultsTable('22km');
+        }
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+window.filterResultsTable = (type) => {
+    window.currentResultsFilter = type;
+    window.renderResultsTable(type);
+    
+    // Gomb kiemelés (zöld)
+    const container = document.getElementById('admin-results-filter-ctrls');
+    if (container) {
+        const buttons = container.querySelectorAll('.btn-secondary');
+        buttons.forEach(btn => {
+            if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(`'${type}'`)) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+    }
+};
+
+window.showResultsCategoryDetail = (distId, catId) => {
+    document.getElementById('admin-results-category-selector').classList.add('hidden');
+    document.getElementById('admin-results-category-detail').classList.remove('hidden');
+    window.currentResultsDistId = distId;
+    window.currentResultsCatId = catId;
+    window.updateAdminDataHeader(window.raceManager.formatCategoryName(catId), null, true);
+    renderResultsCategoryDetail(distId, catId);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+window.backToResultsCategorySelector = () => {
+    document.getElementById('admin-results-category-detail').classList.add('hidden');
+    document.getElementById('admin-results-category-selector').classList.remove('hidden');
+    window.updateAdminDataHeader('🥇 Kategória Eredmények', null, true);
+    renderResultsCategoryList();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+window.exportResultsExcelSub = () => {
+    if (window.currentResultsFilter === 'all') {
+        window.exportResultsToExcel();
+    } else {
+        window.exportFilteredTableToExcel(window.currentResultsFilter);
+    }
+};
+
+window.exportCategoryResultsExcel = () => {
+    exportFilteredTableToExcel(window.currentResultsDistId, window.currentResultsCatId);
+};
+
+window.currentResultsFilter = 'all';
 
 // --- Eseménykezelő Wrapper-ek ---
 window.startCategory = (cat, dist, group) => window.raceManager.startCategory(cat, dist, group);

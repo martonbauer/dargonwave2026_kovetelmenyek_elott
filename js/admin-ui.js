@@ -1,4 +1,4 @@
-import { showToast, showConfirmModal } from './ui-utils.js';
+import { showToast, showConfirmModal, formatTime } from './ui-utils.js';
 import { API_URL } from './api.js';
 
 /**
@@ -197,7 +197,7 @@ export function renderAdminControlButtons() {
 }
 
 /**
- * Eredmények exportálása Excel fájlba
+ * Eredmények exportálása Excel fájlba - Kategóriánként külön munkalapokra, távolság szerinti sorrendben
  */
 export function exportResultsToExcel() {
     const rm = window.raceManager;
@@ -206,65 +206,110 @@ export function exportResultsToExcel() {
         return;
     }
 
-    const allRacers = [...rm.data.racers].sort((a, b) => a.bib - b.bib);
     const wb = XLSX.utils.book_new();
 
-    const summaryRows = [["Rajtszám", "Név (Egység tagjai)", "Születési dátumok", "Ötpróba ID-k", "Kategória", "Táv", "Sorozat", "Státusz", "Időeredmény"]];
-    allRacers.forEach(r => {
-        summaryRows.push([
-            r.bib,
-            r.members ? r.members.map(m => m.name).join(', ') : (r.name || '-'),
-            r.members ? r.members.map(m => m.birth_date || '').filter(d => d).join(', ') : '-',
-            r.members ? r.members.map(m => m.otproba_id || '').filter(id => id).join(', ') : (r.otproba_id || '-'),
-            rm.formatCategoryName(r.category),
-            r.distance,
-            r.is_series ? 'Igen' : 'Nem',
-            r.status,
-            r.status === 'finished' ? formatTime(r.total_time) : (r.status === 'running' ? 'Folyamatban' : 'Regisztrálva')
-        ]);
+    // 1. Munkalapok létrehozása kategóriánként, Távolság szerinti sorrendben (22km, 11km, 4km)
+    const distancePriority = ['22km', '11km', '4km'];
+    
+    distancePriority.forEach(distId => {
+        // Keressük ki az összes kategóriát ebben a távban (kivéve sárkányhajó)
+        const categoriesInDist = [...new Set(
+            rm.data.racers
+                .filter(r => r.distance === distId && !(r.category || '').includes('sarkany'))
+                .map(r => r.category)
+        )].sort();
+
+        categoriesInDist.forEach(catId => {
+            const finishers = rm.data.racers.filter(r => r.category === catId && r.distance === distId);
+            if (finishers.length === 0) return;
+
+            // Rendezés: Célbaértek idő szerint, majd többiek rajtszám szerint
+            const sorted = finishers.sort((a, b) => {
+                if (a.status === 'finished' && b.status !== 'finished') return -1;
+                if (a.status !== 'finished' && b.status === 'finished') return 1;
+                if (a.status === 'finished' && b.status === 'finished') return (a.total_time || 0) - (b.total_time || 0);
+                return (a.bib || 0) - (b.bib || 0);
+            });
+
+            const rows = [[`KATEGÓRIA EREDMÉNYEK: ${rm.formatCategoryName(catId)} (${distId})`]];
+            rows.push(["Helyezés", "Rajtszám", "Név (Csapattagok)", "Ötpróba ID-k", "Táv", "Státusz", "Időeredmény"]);
+
+            let rank = 1;
+            sorted.forEach(r => {
+                rows.push([
+                    r.status === 'finished' ? rank++ : '-',
+                    r.bib,
+                    r.members ? r.members.map(m => m.name).join(', ') : (r.name || '-'),
+                    r.members ? r.members.map(m => m.otproba_id || '').filter(id => id).join(', ') : (r.otproba_id || '-'),
+                    r.distance,
+                    r.status,
+                    r.status === 'finished' ? formatTime(r.total_time) : (r.status === 'running' ? 'Folyamatban' : 'Regisztrálva')
+                ]);
+            });
+
+            // Munkalap név tisztítása és rövidítése (Excel limit 31 karakter)
+            // Megpróbáljuk a kategória nevét használni, ha túl hosszú, levágjuk
+            let rawBaseName = rm.formatCategoryName(catId).replace(/[\\/?*\[\]]/g, '');
+            let sheetName = rawBaseName.substring(0, 25) + `_${distId}`;
+            let finalSheetName = sheetName.substring(0, 31);
+            
+            let counter = 1;
+            while (wb.SheetNames.includes(finalSheetName)) {
+                finalSheetName = rawBaseName.substring(0, 20) + `_${distId}_${counter++}`;
+                finalSheetName = finalSheetName.substring(0, 31);
+            }
+
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), finalSheetName);
+        });
     });
 
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryRows), "Összesített_Lista");
+    // 2. Sárkányhajó munkalap(ok) a végére
+    const sarkanyCategories = [...new Set(
+        rm.data.racers
+            .filter(r => (r.category || '').includes('sarkany'))
+            .map(r => r.category)
+    )].sort();
 
-    const groups = {};
-    allRacers.forEach(r => {
-        if (!groups[r.category]) groups[r.category] = [];
-        groups[r.category].push(r);
-    });
+    sarkanyCategories.forEach(catId => {
+        const gamers = rm.data.racers.filter(r => r.category === catId);
+        if (gamers.length === 0) return;
 
-    Object.keys(groups).sort().forEach(cat => {
-        const sorted = groups[cat].sort((a, b) => {
+        const sortedS = gamers.sort((a, b) => {
             if (a.status === 'finished' && b.status !== 'finished') return -1;
             if (a.status !== 'finished' && b.status === 'finished') return 1;
-            if (a.status === 'finished' && b.status === 'finished') return a.total_time - b.total_time;
-            return a.bib - b.bib;
+            if (a.status === 'finished' && b.status === 'finished') return (a.total_time || 0) - (b.total_time || 0);
+            return (a.bib || 0) - (b.bib || 0);
         });
 
-        const catRows = [["Helyezés", "Rajtszám", "Név (Csapattagok)", "Születési dátumok", "Ötpróba ID-k", "Táv", "Sorozat", "Státusz", "Időeredmény"]];
-        let rank = 1;
-        sorted.forEach(r => {
-            catRows.push([
-                r.status === 'finished' ? rank++ : '-',
+        const sRows = [[`SÁRKÁNYHAJÓ EREDMÉNYEK: ${rm.formatCategoryName(catId)}`]];
+        sRows.push(["Helyezés", "Rajtszám", "Név / Egység", "Ötpróba ID-k", "Státusz", "Időeredmény"]);
+
+        let sRank = 1;
+        sortedS.forEach(r => {
+            sRows.push([
+                r.status === 'finished' ? sRank++ : '-',
                 r.bib,
                 r.members ? r.members.map(m => m.name).join(', ') : (r.name || '-'),
-                r.members ? r.members.map(m => m.birth_date || '').filter(d => d).join(', ') : '-',
                 r.members ? r.members.map(m => m.otproba_id || '').filter(id => id).join(', ') : (r.otproba_id || '-'),
-                r.distance, r.is_series ? 'Igen' : 'Nem', r.status,
+                r.status,
                 r.status === 'finished' ? formatTime(r.total_time) : (r.status === 'running' ? 'Folyamatban' : 'Regisztrálva')
             ]);
         });
 
-        let sheetName = rm.formatCategoryName(cat).replace(/[\\/?*\[\]]/g, '').substring(0, 31);
-        let finalSheetName = sheetName;
-        let counter = 1;
-        while (wb.SheetNames.includes(finalSheetName)) {
-            finalSheetName = sheetName.substring(0, 28) + `_${counter++}`;
+        let rawSarkanyName = rm.formatCategoryName(catId).replace(/[\\/?*\[\]]/g, '');
+        let sName = "S_Hajó_" + rawSarkanyName;
+        let finalSName = sName.substring(0, 31);
+        
+        let sCounter = 1;
+        while (wb.SheetNames.includes(finalSName)) {
+            finalSName = ("S_Hajó_" + rawSarkanyName).substring(0, 27) + `_${sCounter++}`;
         }
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(catRows), finalSheetName);
+        
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sRows), finalSName);
     });
 
-    XLSX.writeFile(wb, `Eredmenyek_DragonWave_${new Date().toISOString().slice(0, 10)}.xlsx`);
-    showToast('Excel sikeresen exportálva!', 'success');
+    XLSX.writeFile(wb, `DunakesziFutam_Eredmenyek_Kategoriankent_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    showToast('Excel sikeresen exportálva kategóriánkénti munkalapokkal!', 'success');
 }
 
 /**
@@ -768,3 +813,197 @@ export function clearBibHistory() {
     );
 }
 window.clearBibHistory = clearBibHistory;
+
+/**
+ * --- EREDMÉNYEK MEGJELENÍTÉSE ---
+ */
+
+/**
+ * Abszolút vagy távonkénti eredménylista renderelése
+ */
+export function renderResultsTable(filterType = 'all') {
+    const tbody = document.getElementById('admin-results-table-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const rm = window.raceManager;
+    if (!rm || !rm.data.racers) return;
+
+    // Csak a beérkezett (finished) versenyzőket mutatjuk eredményként
+    let racers = rm.data.racers.filter(r => r.status === 'finished');
+
+    if (filterType !== 'all') {
+        if (filterType === 'sarkany') {
+            racers = racers.filter(r => (r.category || '').includes('sarkany'));
+        } else {
+            racers = racers.filter(r => r.distance === filterType && !(r.category || '').includes('sarkany'));
+        }
+    }
+
+    // Rendezés időeredmény szerint (növekvő)
+    racers.sort((a, b) => (a.total_time || 0) - (b.total_time || 0));
+
+    if (racers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px; color: var(--text-secondary); font-style: italic;">Nincs beérkezett eredmény a szűrésnek megfelelően</td></tr>';
+        return;
+    }
+
+    racers.forEach((r, idx) => {
+        const tr = document.createElement('tr');
+        const memberList = r.members ? r.members.map(m => m.name).join(', ') : (r.name || '-');
+        const rank = idx + 1;
+        const rankDecor = rank <= 3 ? `font-weight: 800; color: ${rank === 1 ? '#FFD700' : rank === 2 ? '#C0C0C0' : '#CD7F32'}` : '';
+
+        tr.innerHTML = `
+            <td style="${rankDecor}">${rank}.</td>
+            <td><strong>#${(r.bib || 0).toString().padStart(3, '0')}</strong></td>
+            <td>${memberList}</td>
+            <td>${rm.formatCategoryName(r.category)}</td>
+            <td>${r.distance || '-'}</td>
+            <td style="font-family:'Space Mono'; font-weight:bold; color:var(--accent-primary);">${formatTime(r.total_time || 0)}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+window.renderResultsTable = renderResultsTable;
+
+/**
+ * Kategória eredmény választó lista renderelése
+ */
+export function renderResultsCategoryList() {
+    const container = document.getElementById('admin-results-category-list-container');
+    if (!container) return;
+    container.innerHTML = '';
+
+    const rm = window.raceManager;
+    if (!rm) return;
+
+    const distances = ['22km', '11km', '4km'];
+    distances.forEach(dist => {
+        const distSection = document.createElement('div');
+        distSection.style = 'margin-bottom: 2.5rem;';
+        distSection.innerHTML = `
+            <h4 style="color:var(--accent-secondary); margin-bottom:1.2rem; border-left:4px solid var(--accent-secondary); padding-left:12px; font-size:1.1rem; text-transform:uppercase; letter-spacing:1px;">
+                ${dist === '4km' ? '🛶 4 km (SUP)' : dist === '11km' ? '📐 11 km (Rövid)' : '📏 22 km (Hosszú)'}
+            </h4>
+        `;
+
+        const grid = document.createElement('div');
+        grid.className = 'admin-landing-grid';
+        grid.style = 'grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin:0;';
+
+        // Egyedi kategóriák gyűjtése ehhez a távhoz
+        const relevantCats = new Set();
+        rm.data.racers.filter(r => r.distance === dist).forEach(r => relevantCats.add(r.category));
+
+        const sortedCats = Array.from(relevantCats).sort();
+
+        sortedCats.forEach(catId => {
+            const finishers = rm.data.racers.filter(r => r.category === catId && r.distance === dist && r.status === 'finished');
+            
+            const card = document.createElement('div');
+            card.className = 'landing-card';
+            card.style = 'padding: 20px; text-align: left; align-items: flex-start; cursor: pointer; min-height: auto; transition: all 0.2s;';
+            card.onclick = () => window.showResultsCategoryDetail(dist, catId);
+
+            const badgeColor = finishers.length > 0 ? 'var(--accent-primary)' : 'rgba(255,255,255,0.3)';
+            const badgeBg = finishers.length > 0 ? 'rgba(0, 228, 255, 0.1)' : 'rgba(255,255,255,0.05)';
+
+            card.innerHTML = `
+                <div style="font-size: 0.65rem; color: ${badgeColor}; background: ${badgeBg}; padding: 3px 10px; border-radius: 10px; margin-bottom: 12px; font-weight:800; border: 1px solid ${finishers.length > 0 ? 'rgba(0,228,255,0.2)' : 'transparent'};">
+                    ${finishers.length} BEÉRKEZETT
+                </div>
+                <div style="font-weight: 700; color: white; line-height:1.4;">${rm.formatCategoryName(catId)}</div>
+                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 8px; display:flex; align-items:center; gap:5px;">
+                    Megnyitás a rangsorért <span style="font-size:1rem;">➔</span>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+        
+        if (grid.children.length > 0) {
+            distSection.appendChild(grid);
+            container.appendChild(distSection);
+        }
+    });
+
+    // Sárkányhajó külön szekció
+    const finishersSarkany = rm.data.racers.filter(r => (r.category || '').includes('sarkany') && r.status === 'finished');
+    if (finishersSarkany.length >= 0) {
+        const sarkanySection = document.createElement('div');
+        sarkanySection.style = 'margin-bottom: 2.5rem;';
+        sarkanySection.innerHTML = `<h4 style="color:#FFD700; margin-bottom:1.2rem; border-left:4px solid #FFD700; padding-left:12px; font-size:1.1rem; text-transform:uppercase; letter-spacing:1px;">🐉 Sárkányhajó</h4>`;
+        
+        const grid = document.createElement('div');
+        grid.className = 'admin-landing-grid';
+        grid.style = 'grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin:0;';
+        
+        const card = document.createElement('div');
+        card.className = 'landing-card';
+        card.style = 'padding: 20px; text-align: left; align-items: flex-start; cursor: pointer; min-height: auto;';
+        card.onclick = () => window.showResultsCategoryDetail('11km', 'sarkany');
+
+        card.innerHTML = `
+            <div style="font-size: 0.65rem; color: #FFD700; background: rgba(255, 215, 0, 0.1); padding: 3px 10px; border-radius: 10px; margin-bottom: 12px; font-weight:800; border: 1px solid rgba(255, 215, 0, 0.2);">
+                ${finishersSarkany.length} BEÉRKEZETT
+            </div>
+            <div style="font-weight: 700; color: white;">Sárkányhajó Open</div>
+            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 8px;">Megnyitás a rangsorért ➔</div>
+        `;
+        grid.appendChild(card);
+        sarkanySection.appendChild(grid);
+        container.appendChild(sarkanySection);
+    }
+}
+window.renderResultsCategoryList = renderResultsCategoryList;
+
+/**
+ * Kategória rangsor részleteinek renderelése
+ */
+export function renderResultsCategoryDetail(distId, catId) {
+    const tbody = document.getElementById('admin-results-category-table-body');
+    const titleEl = document.getElementById('admin-results-category-title');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const rm = window.raceManager;
+    if (!rm) return;
+
+    if (titleEl) titleEl.textContent = `🥇 ${rm.formatCategoryName(catId)} - Rangsor (${distId})`;
+
+    // Szűrés kategória és táv szerint
+    let finishers = [];
+    if (catId === 'sarkany') {
+        finishers = rm.data.racers.filter(r => (r.category || '').includes('sarkany') && r.status === 'finished');
+    } else {
+        const baseCatId = catId.replace(/_(11km|22km|4km)$/, '');
+        finishers = rm.data.racers.filter(r => {
+            const rBaseCat = (r.category || '').replace(/_(11km|22km|4km)$/, '');
+            return (r.category === catId || rBaseCat === baseCatId) && r.distance === distId && r.status === 'finished';
+        });
+    }
+
+    // Rendezés időeredmény szerint
+    finishers.sort((a, b) => (a.total_time || 0) - (b.total_time || 0));
+
+    if (finishers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 40px; color: var(--text-secondary); font-style: italic;">Még nincs beérkezett eredmény ebben a kategóriában.</td></tr>';
+        return;
+    }
+
+    finishers.forEach((r, idx) => {
+        const tr = document.createElement('tr');
+        const memberList = r.members ? r.members.map(m => m.name).join(', ') : (r.name || '-');
+        const rank = idx + 1;
+        const rankDecor = rank <= 3 ? `font-weight: 800; color: ${rank === 1 ? '#FFD700' : rank === 2 ? '#C0C0C0' : '#CD7F32'}` : '';
+
+        tr.innerHTML = `
+            <td style="${rankDecor}">${rank}.</td>
+            <td><strong>#${(r.bib || 0).toString().padStart(3, '0')}</strong></td>
+            <td>${memberList}</td>
+            <td style="font-family:'Space Mono'; font-weight:bold; color:var(--accent-primary);">${formatTime(r.total_time || 0)}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+window.renderResultsCategoryDetail = renderResultsCategoryDetail;

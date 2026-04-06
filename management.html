@@ -256,7 +256,7 @@
                 <!-- Section 3: Adatkezelés -->
                 <div id="admin-section-data" class="admin-sub-section hidden">
                     <div class="section-header">
-                        <h3 class="section-title" style="margin-bottom:0;">📂 Adatkezelés & Adatbázis</h3>
+                        <h3 id="admin-data-main-title" class="section-title" style="margin-bottom:0;">📂 Adatkezelés & Adatbázis</h3>
                         <div style="display: flex; gap: 10px;">
                             <button id="btn-data-back-to-landing" class="btn-back hidden" onclick="window.showDataLanding()">⬅️ Vissza az adatkezeléshez</button>
                             <button class="btn-back" onclick="window.showAdminLanding()">🏠 Vissza a központba</button>
@@ -355,7 +355,7 @@
                         <!-- Table Content View -->
                         <div id="admin-table-content-view" class="hidden">
                             <div class="section-header" style="margin-bottom: 2rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem;">
-                                <h3 id="admin-table-title" class="section-title" style="margin-bottom:0;">👥 Versenyzői Adatbázis</h3>
+                                <h3 id="admin-table-title" class="section-title hidden" style="margin-bottom:0;">👥 Versenyzői Adatbázis</h3>
                                 <button class="btn-back" onclick="window.showTableLanding()">⬅️ Vissza a választóhoz</button>
                             </div>
 
@@ -392,12 +392,11 @@
                             </div>
                         </div>
 
-                        <!-- Category List View (Selector + Detail) -->
                         <div id="admin-table-category-list-view" class="hidden">
                             <!-- Selector: Cards for each category -->
                             <div id="admin-category-selector-view">
                                 <div class="section-header" style="margin-bottom: 2rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem;">
-                                    <h3 class="section-title" style="margin-bottom:0;">🏷️ Válassz kategóriát</h3>
+                                    <h3 class="section-title hidden" style="margin-bottom:0;">🏷️ Válassz kategóriát</h3>
                                     <button class="btn-back" onclick="window.showTableLanding()">⬅️ Vissza a választóhoz</button>
                                 </div>
                                 <div id="admin-category-cards-container">
@@ -407,7 +406,7 @@
                             <!-- Detail: List of entrants for one category -->
                             <div id="admin-category-detail-view" class="hidden">
                                 <div class="section-header" style="margin-bottom: 2rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem;">
-                                    <h3 id="admin-category-detail-title" class="section-title" style="margin-bottom:0;">🏷️ Kategória Részletek</h3>
+                                    <h3 id="admin-category-detail-title" class="section-title hidden" style="margin-bottom:0;">🏷️ Kategória Részletek</h3>
                                     <button class="btn-back" onclick="window.backToCategorySelector()">⬅️ Vissza a kategóriákhoz</button>
                                 </div>
                                 <div id="admin-category-detail-content"></div>
@@ -418,7 +417,7 @@
                     <!-- Sub-section 6: Bib Reassignment (Moved back to top-level for visibility) -->
                     <div id="admin-data-section-bibs" class="admin-data-sub hidden">
                         <div class="section-header" style="margin-bottom: 2rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem;">
-                            <h3 class="section-title" style="margin-bottom:0;">🔢 Rajtszámok Újraosztása</h3>
+                            <h3 class="section-title hidden" style="margin-bottom:0;">🔢 Rajtszámok Újraosztása</h3>
                             <button class="btn-back" onclick="window.showTableLanding()">⬅️ Vissza a választóhoz</button>
                         </div>
                         
@@ -467,12 +466,103 @@
                         </div>
                     </div>
 
-                    <!-- Sub-section 4: Export -->
+                    <!-- Sub-section 4: Results (Refactored to 3 Cards) -->
                     <div id="admin-data-section-export" class="admin-data-sub hidden">
-                        <div class="admin-card" style="max-width: 600px; margin: 0 auto;">
-                            <h3 class="card-title">📑 Excel Export</h3>
-                            <p class="card-desc">Töltse le az aktuális eredményeket és versenyzői listát.</p>
-                            <button onclick="exportResultsToExcel()" class="btn-primary" style="width: 100%; height: 55px; background: #28a745;">🚀 EXCEL EXPORT LETÖLTÉSE</button>
+                        <!-- Results Landing View -->
+                        <div id="admin-results-landing-view">
+                            <div class="admin-landing-grid" style="grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                                <div class="landing-card" onclick="window.showResultsSubSection('all')">
+                                    <div class="icon">🏆</div>
+                                    <h3>összes eredménylista</h3>
+                                    <p>Minden célba ért versenyző abszolút sorrendben.</p>
+                                    <div class="btn-enter">Megnyitás</div>
+                                </div>
+                                <div class="landing-card" onclick="window.showResultsSubSection('filtered')">
+                                    <div class="icon">📏</div>
+                                    <h3>távonkénti összetett</h3>
+                                    <p>Eredmények távok szerinti szűréssel.</p>
+                                    <div class="btn-enter">Megnyitás</div>
+                                </div>
+                                <div class="landing-card" onclick="window.showResultsSubSection('category-list')">
+                                    <div class="icon">🥇</div>
+                                    <h3>kategória eredmények</h3>
+                                    <p>Kategóriánkénti rangsorok és helyezések.</p>
+                                    <div class="btn-enter">Megnyitás</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Results Content View (All & Filtered Distance) -->
+                        <div id="admin-results-content-view" class="hidden">
+                            <div class="section-header" style="margin-bottom: 2rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem;">
+                                <h3 id="admin-results-title" class="section-title hidden" style="margin-bottom:0;">🏆 Eredménylista</h3>
+                                <button class="btn-back" onclick="window.showResultsLanding()">⬅️ Vissza a választóhoz</button>
+                            </div>
+
+                            <div id="admin-results-filter-ctrls" class="hidden" style="margin-bottom: 2rem;">
+                                <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 15px;">
+                                    <button onclick="window.filterResultsTable('22km')" class="btn-secondary" style="flex: 1; min-width: 150px;">📏 22 km (Hosszú)</button>
+                                    <button onclick="window.filterResultsTable('11km')" class="btn-secondary" style="flex: 1; min-width: 150px;">📐 11 km (Rövid)</button>
+                                    <button onclick="window.filterResultsTable('4km')" class="btn-secondary" style="flex: 1; min-width: 150px;">🛶 4 km (SUP)</button>
+                                    <button onclick="window.filterResultsTable('sarkany')" class="btn-secondary" style="flex: 1; min-width: 150px;">🐉 Sárkányhajó</button>
+                                </div>
+                                <div style="text-align: center;">
+                                    <button id="btn-export-results" onclick="window.exportResultsExcelSub()" class="btn-primary" style="background: #28a745; width: auto; padding: 10px 30px;">📥 Aktuális eredménylista EXCEL</button>
+                                </div>
+                            </div>
+
+                            <!-- Single Export Button for 'All Results' mode -->
+                            <div id="admin-results-all-ctrls" class="hidden" style="text-align: center; margin-bottom: 2rem;">
+                                <button onclick="window.exportResultsExcelSub()" class="btn-primary" style="background: #28a745; width: auto; padding: 10px 30px;">📥 Teljes eredménylista EXCEL</button>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table id="admin-results-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Helyezés</th>
+                                            <th>Rajtszám</th>
+                                            <th>Egység Tagjai</th>
+                                            <th>Kategória</th>
+                                            <th>Táv</th>
+                                            <th>Időeredmény</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="admin-results-table-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Results Category View -->
+                        <div id="admin-results-category-list-view" class="hidden">
+                            <div id="admin-results-category-selector">
+                                <div id="admin-results-category-list-container">
+                                    <!-- Category cards for results -->
+                                </div>
+                            </div>
+
+                            <div id="admin-results-category-detail" class="hidden">
+                                <div class="section-header" style="margin-bottom: 2rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem;">
+                                    <h3 id="admin-results-category-title" class="section-title" style="margin-bottom:0; display:none;">Kategória Neve</h3>
+                                    <div style="display: flex; gap: 10px;">
+                                        <button onclick="window.exportCategoryResultsExcel()" class="btn-primary" style="background: #28a745; padding: 8px 15px; font-size: 0.8rem; margin:0; width:auto;">📥 Export</button>
+                                        <button class="btn-back" onclick="window.backToResultsCategorySelector()">⬅️ Vissza a listához</button>
+                                    </div>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="results-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Helyezés</th>
+                                                <th>Rajtszám</th>
+                                                <th>Egység Tagjai</th>
+                                                <th>Időeredmény</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="admin-results-category-table-body"></tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
