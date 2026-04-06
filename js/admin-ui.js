@@ -7,7 +7,7 @@
 /**
  * Adminisztrátori versenyzői táblázat kirajzolása
  */
-export function renderAdminTable() {
+export function renderAdminTable(filterType = 'all') {
     const tbody = document.getElementById('admin-table-body');
     if (!tbody) return;
     tbody.innerHTML = '';
@@ -17,7 +17,26 @@ export function renderAdminTable() {
         return;
     }
 
-    [...window.raceManager.data.racers].filter(r => r && r.status).sort((a, b) => (a.bib || 0) - (b.bib || 0)).forEach(r => {
+    let racers = [...window.raceManager.data.racers].filter(r => r && r.status);
+
+    // Alkalmazzuk a szűrőt
+    if (filterType === '22km') {
+        racers = racers.filter(r => r.distance === '22km');
+    } else if (filterType === '11km') {
+        // 11km-esek, kivéve a sárkányhajó kategóriát
+        racers = racers.filter(r => r.distance === '11km' && !r.category.includes('sarkany'));
+    } else if (filterType === '4km') {
+        racers = racers.filter(r => r.distance === '4km');
+    } else if (filterType === 'sarkany') {
+        racers = racers.filter(r => r.category.includes('sarkany'));
+    }
+
+    if (racers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Nincs a szűrésnek megfelelő adat</td></tr>';
+        return;
+    }
+
+    racers.sort((a, b) => (a.bib || 0) - (b.bib || 0)).forEach(r => {
         const tr = document.createElement('tr');
         let statusColor = "white";
         let dataStartAttr = "";
@@ -243,4 +262,284 @@ export function exportResultsToExcel() {
 
     XLSX.writeFile(wb, `Eredmenyek_DragonWave_${new Date().toISOString().slice(0, 10)}.xlsx`);
     showToast('Excel sikeresen exportálva!', 'success');
+}
+
+/**
+ * Szűrt lista exportálása Excelbe
+ */
+export function exportFilteredTableToExcel(filterType, specificCatId = null) {
+    const rm = window.raceManager;
+    if (!rm || !rm.data.racers || rm.data.racers.length === 0) {
+        showToast('Nincs menthető adat!', 'error');
+        return;
+    }
+
+    let racers = [...rm.data.racers].filter(r => r && r.status);
+    let titlePrefix = "Szurt_Lista";
+
+    if (specificCatId) {
+        racers = racers.filter(r => r.category === specificCatId && r.distance === filterType);
+        titlePrefix = `${rm.formatCategoryName(specificCatId)}_${filterType}`;
+    } else {
+        if (filterType === '22km') {
+            racers = racers.filter(r => r.distance === '22km');
+            titlePrefix = "22km_Nevezettek";
+        } else if (filterType === '11km') {
+            racers = racers.filter(r => r.distance === '11km' && !r.category.includes('sarkany'));
+            titlePrefix = "11km_Nevezettek";
+        } else if (filterType === '4km') {
+            racers = racers.filter(r => r.distance === '4km');
+            titlePrefix = "4km_Nevezettek";
+        } else if (filterType === 'sarkany') {
+            racers = racers.filter(r => r.category.includes('sarkany'));
+            titlePrefix = "Sarkanyhajo_Nevezettek";
+        }
+    }
+
+    const wb = XLSX.utils.book_new();
+    const rows = [["Rajtszám", "Név (Egység tagjai)", "Születési dátumok", "Ötpróba ID-k", "Kategória", "Táv", "Sorozat", "Státusz", "Időeredmény"]];
+    
+    racers.forEach(r => {
+        rows.push([
+            r.bib,
+            r.members ? r.members.map(m => m.name).join(', ') : (r.name || '-'),
+            r.members ? r.members.map(m => m.birth_date || '').filter(d => d).join(', ') : '-',
+            r.members ? r.members.map(m => m.otproba_id || '').filter(id => id).join(', ') : (r.otproba_id || '-'),
+            rm.formatCategoryName(r.category),
+            r.distance,
+            r.is_series ? 'Igen' : 'Nem',
+            r.status,
+            r.status === 'finished' ? formatTime(r.total_time) : (r.status === 'running' ? 'Folyamatban' : 'Regisztrálva')
+        ]);
+    });
+
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), "Nevezettek");
+    XLSX.writeFile(wb, `${titlePrefix}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    showToast('Szűrt Excel sikeresen exportálva!', 'success');
+}
+
+/**
+ * Nevezettek kategóriánkénti választófelülete (Kártyás elrendezés)
+ */
+export function renderAdminCategoryList() {
+    const rm = window.raceManager;
+    const container = document.getElementById('admin-category-cards-container');
+    if (!rm || !container) return;
+
+    container.innerHTML = '';
+
+    const distances = [
+        { id: '22km', title: '📏 Hosszú' },
+        { id: '11km', title: '📐 Rövid' },
+        { id: '4km', title: '🛶 SUP' }
+    ];
+
+    distances.forEach(dist => {
+        const distHeader = document.createElement('h2');
+        distHeader.className = 'section-title';
+        distHeader.style = 'margin-top: 30px; border-left: 5px solid var(--accent-primary); padding-left: 15px; background: rgba(0,228,255,0.05); padding: 10px 15px; border-radius: 4px;';
+        distHeader.textContent = dist.title;
+        container.appendChild(distHeader);
+
+        const grid = document.createElement('div');
+        grid.style = 'display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; margin-top: 15px;';
+        
+        const validCategories = Object.keys(rm.categoryMap).filter(catId => {
+            // Szigorú ellenőrzés: csak ha az ID a megfelelő távval végződik
+            if (catId.endsWith(`_${dist.id}`)) return true;
+            
+            // Kivételek (olyan kategóriák, amiknek nincs fix táv-suffixe az ID-ban)
+            if (dist.id === '11km' && catId === 'sarkanyhajo_otproba') return true;
+            
+            return false;
+        });
+
+        validCategories.forEach(catId => {
+            // Rugalmasabb keresés: alap ID + táv egyezés (pl. kajak_1_nyitott_11km vagy csak kajak_1_nyitott)
+            const baseCatId = catId.replace(/_(11km|22km|4km)$/, '');
+            const racers = rm.data.racers.filter(r => {
+                const rBaseCat = (r.category || '').replace(/_(11km|22km|4km)$/, '');
+                return (r.category === catId || rBaseCat === baseCatId) && r.distance === dist.id;
+            });
+
+            const card = document.createElement('div');
+            card.className = 'admin-card'; 
+            card.style = `
+                cursor: pointer; 
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+                padding: 18px; 
+                border-radius: 14px; 
+                border: 1px solid rgba(255,255,255,0.08); 
+                background: rgba(255,255,255,0.02); 
+                display: flex; 
+                flex-direction: column; 
+                justify-content: flex-start;
+                min-height: 150px;
+                position: relative;
+                overflow: hidden;
+            `;
+            card.onclick = () => window.showCategoryDetail(dist.id, catId);
+            
+            // Hover effects
+            card.onmouseenter = () => {
+                card.style.background = 'rgba(255,255,255,0.05)';
+                card.style.transform = 'translateY(-5px)';
+                card.style.borderColor = 'rgba(0, 228, 255, 0.3)';
+                card.style.boxShadow = '0 10px 30px rgba(0,0,0,0.3)';
+            };
+            card.onmouseleave = () => {
+                card.style.background = 'rgba(255,255,255,0.02)';
+                card.style.transform = 'translateY(0)';
+                card.style.borderColor = 'rgba(255,255,255,0.08)';
+                card.style.boxShadow = 'none';
+            };
+
+            const hasRacers = racers.length > 0;
+            const badgeColor = hasRacers ? 'var(--accent-primary)' : 'rgba(255,255,255,0.3)';
+            const badgeBg = hasRacers ? 'rgba(0, 228, 255, 0.1)' : 'rgba(255,255,255,0.05)';
+            
+            let namesListHtml = '';
+            if (hasRacers) {
+                const names = racers.slice(0, 3).map(r => {
+                    const name = r.members ? r.members.map(m => m.name).join(', ') : (r.name || '-');
+                    return `<div style="font-size: 0.72rem; color: #bbb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px;">• ${name}</div>`;
+                }).join('');
+                namesListHtml = `
+                    <div style="margin-top: auto; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.05);">
+                        ${names}
+                        ${racers.length > 3 ? `<div style="font-size: 0.65rem; color: #666; margin-top:4px;">+ további ${racers.length - 3} egység</div>` : ''}
+                    </div>`;
+            } else {
+                namesListHtml = `<div style="margin-top: auto; color: #555; font-size: 0.7rem; font-style: italic; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px;">Még nincs nevező</div>`;
+            }
+
+            card.innerHTML = `
+                <div style="
+                    display: inline-block;
+                    align-self: flex-start;
+                    font-size: 0.65rem; 
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                    font-weight: 800; 
+                    margin-bottom: 12px; 
+                    color: ${badgeColor};
+                    background: ${badgeBg};
+                    padding: 4px 10px;
+                    border-radius: 20px;
+                    border: 1px solid ${hasRacers ? 'rgba(0,228,255,0.2)' : 'transparent'};
+                ">${racers.length} NEVEZÉS</div>
+                <div style="font-weight: 600; color: white; line-height: 1.3; font-size: 0.95rem; margin-bottom: 10px;">${rm.formatCategoryName(catId)}</div>
+                ${namesListHtml}
+            `;
+            grid.appendChild(card);
+        });
+        container.appendChild(grid);
+    });
+}
+
+/**
+ * Egy konkrét kategória nevezettjeinek listázása
+ */
+export function renderAdminCategoryDetail(distId, catId) {
+    const rm = window.raceManager;
+    const titleEl = document.getElementById('admin-category-detail-title');
+    const contentEl = document.getElementById('admin-category-detail-content');
+    if (!rm || !contentEl) return;
+
+    if (titleEl) titleEl.textContent = `🏷️ ${rm.formatCategoryName(catId)} (${distId})`;
+    contentEl.innerHTML = '';
+
+    // Rugalmasabb keresés a részletes nézetben is
+    const baseCatId = catId.replace(/_(11km|22km|4km)$/, '');
+    const racers = rm.data.racers.filter(r => {
+        const rBaseCat = (r.category || '').replace(/_(11km|22km|4km)$/, '');
+        return (r.category === catId || rBaseCat === baseCatId) && r.distance === distId;
+    });
+
+    // Export gomb hozzáadása felülre
+    const headerBar = document.createElement('div');
+    headerBar.style = 'margin-bottom: 20px; display: flex; justify-content: flex-end;';
+    headerBar.innerHTML = `
+        <button onclick="window.exportSpecificCategoryExcel('${distId}', '${catId}')" class="btn-primary" style="background: #28a745; width: auto; font-size: 0.8rem; padding: 8px 20px;">
+            📥 EXCEL EXPORT (CSAK EZ A KATEGÓRIA)
+        </button>
+    `;
+    contentEl.appendChild(headerBar);
+
+    if (racers.length === 0) {
+        const noResults = document.createElement('div');
+        noResults.style = 'text-align: center; padding: 50px; background: rgba(255,255,255,0.02); border-radius: 15px; border: 1px dashed rgba(255,255,255,0.1);';
+        noResults.innerHTML = `
+            <div style="font-size: 3rem; margin-bottom: 15px;">🏜️</div>
+            <h3 style="color: #888;">Még nem érkezett nevezés ebben a kategóriában.</h3>
+        `;
+        contentEl.appendChild(noResults);
+        return;
+    }
+
+    const tableDiv = document.createElement('div');
+    tableDiv.className = 'table-responsive';
+    tableDiv.innerHTML = `
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th>Rajtszám</th>
+                    <th>Egység Tagjai</th>
+                    <th>Ötpróba ID</th>
+                    <th>Sorozat</th>
+                    <th>Kategória</th>
+                    <th>Táv</th>
+                    <th>Státusz</th>
+                    <th>Időeredmény</th>
+                    <th style="min-width: 180px; text-align: center;">Művelet</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    `;
+
+    const tbody = tableDiv.querySelector('tbody');
+    racers.sort((a,b) => (a.bib || 0) - (b.bib || 0)).forEach(r => {
+        const tr = document.createElement('tr');
+        let statusColor = "white";
+        let dataStartAttr = "";
+
+        if (r.status === 'running') {
+            statusColor = 'var(--accent-primary)';
+            tr.className = "status-running";
+            dataStartAttr = `data-start="${r.start_time || 0}"`;
+        }
+        if (r.status === 'finished') statusColor = '#00FFCC';
+
+        let timeStr = "00:00:00.000";
+        if (r.status === 'running') {
+            timeStr = formatTime(Date.now() + (rm.serverTimeOffset || 0) - (r.start_time || 0));
+        } else if (r.status === 'finished') {
+            timeStr = formatTime(r.total_time || 0);
+        }
+
+        const memberList = r.members ? r.members.map(m => `<div style="margin-bottom:2px;">${m.name || '?'} <span style="font-size:0.7rem; color:#888;">(${m.birth_date || '?'})</span></div>`).join('') : (r.name || '-');
+        const otprobaList = r.members ? r.members.map(m => `<div style="margin-bottom:2px;">${m.otproba_id || '-'}</div>`).join('') : (r.otproba_id || '-');
+        const isSeriesText = r.is_series ? '<span style="color:var(--accent-secondary); font-weight:bold;">IGEN</span>' : 'nem';
+
+        tr.innerHTML = `
+            <td><strong>#${(r.bib || 0).toString().padStart(3, '0')}</strong></td>
+            <td>${memberList}</td>
+            <td>${otprobaList}</td>
+            <td>${isSeriesText}</td>
+            <td>${rm.formatCategoryName(r.category)}</td>
+            <td>${r.distance || '-'}</td>
+            <td style="color:${statusColor}">${(r.status || 'registered').toUpperCase()}</td>
+            <td class="time" ${dataStartAttr}>${timeStr}</td>
+            <td style="white-space: nowrap; text-align: center;">
+                <div style="display: flex; gap: 8px; justify-content: center;">
+                    <button class="action-btn edit" style="margin:0; padding: 6px 12px; font-size: 0.75rem;" onclick="window.raceManager.openEditModal('${r.id}')">Szerkesztés</button>
+                    <button class="action-btn delete" style="margin:0; padding: 6px 12px; font-size: 0.75rem;" onclick="window.raceManager.deleteRacer('${r.id}', ${r.bib || 'null'})">Törlés</button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    contentEl.appendChild(tableDiv);
 }

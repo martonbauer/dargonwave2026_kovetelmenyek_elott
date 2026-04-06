@@ -4,14 +4,17 @@
  */
 
 import { RaceManager } from './js/RaceManager.js';
-import { switchTab, showToast, formatTime } from './js/ui-utils.js';
-import { renderAdminTable, renderAdminControlButtons, exportResultsToExcel } from './js/admin-ui.js';
+import { switchTab, showToast, formatTime, updateRegFormContext, showConfirmModal, closeConfirmModal, executeConfirmedAction } from './js/ui-utils.js';
+import { renderAdminTable, renderAdminControlButtons, exportResultsToExcel, exportFilteredTableToExcel, renderAdminCategoryList, renderAdminCategoryDetail } from './js/admin-ui.js';
 import { API_URL, APP_VERSION } from './js/api.js';
 
 // --- Globális hatókör biztosítása a HTML onclick eseményekhez ---
 window.switchTab = switchTab;
 window.showToast = showToast;
 window.formatTime = formatTime;
+window.showConfirmModal = showConfirmModal;
+window.closeConfirmModal = closeConfirmModal;
+window.executeConfirmedAction = executeConfirmedAction;
 window.renderAdminTable = renderAdminTable;
 window.renderAdminControlButtons = renderAdminControlButtons;
 window.exportResultsToExcel = exportResultsToExcel;
@@ -73,8 +76,9 @@ window.showAdminSection = (sectionId) => {
     const target = document.getElementById(sectionId);
     if (target) target.classList.remove('hidden');
     
-    // Ha az adatkezelés szekcióba lépünk, frissítsük a táblázatot
+    // Ha az adatkezelés szekcióba lépünk, frissítsük a táblázatot és mutassuk a landingjét
     if (sectionId === 'admin-section-data') {
+        window.showDataLanding();
         window.renderAdminTable();
     }
     
@@ -82,12 +86,142 @@ window.showAdminSection = (sectionId) => {
 };
 
 window.showAdminLanding = () => {
-    // Elrejtünk minden al-szekciót
+    // Visszahozzuk a regisztrációs űrlapot a helyére, ha épp kint volt
+    const regForm = document.getElementById('registration-form');
+    const regHome = document.getElementById('registration-form-home');
+    if (regForm && regHome) {
+        updateRegFormContext(false);
+        regHome.appendChild(regForm);
+        regForm.classList.add('hidden');
+    }
+
+    // Elrejtünk minden al-szekciót és data-al-szekciót
     document.querySelectorAll('.admin-sub-section').forEach(s => s.classList.add('hidden'));
+    document.querySelectorAll('.admin-data-sub').forEach(s => s.classList.add('hidden'));
     // Megjelenítjük a landing view-t
     document.getElementById('admin-landing-view').classList.remove('hidden');
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
+
+// --- Adatkezelés Al-navigáció ---
+window.showDataSubSection = (subId) => {
+    // Elrejtjük a data landinget és minden más data al-szekciót
+    document.getElementById('admin-data-landing-view').classList.add('hidden');
+    document.querySelectorAll('.admin-data-sub').forEach(s => s.classList.add('hidden'));
+    
+    // Megjelenítjük a cél szekciót
+    const target = document.getElementById(subId);
+    if (target) target.classList.remove('hidden');
+    
+    // Mutatjuk a vissza gombot
+    document.getElementById('btn-data-back-to-landing').classList.remove('hidden');
+
+    // Ha a regisztrációs űrlapot kérik az adminban
+    if (subId === 'admin-data-section-nevezes') {
+        const regForm = document.getElementById('registration-form');
+        if (regForm && target) {
+            updateRegFormContext(true);
+            target.appendChild(regForm);
+            regForm.classList.remove('hidden');
+        }
+    }
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+window.showDataLanding = () => {
+    // Visszahozzuk a regisztrációs űrlapot a helyére
+    const regForm = document.getElementById('registration-form');
+    const regHome = document.getElementById('registration-form-home');
+    if (regForm && regHome) {
+        updateRegFormContext(false);
+        regHome.appendChild(regForm);
+        regForm.classList.add('hidden');
+    }
+
+    // Elrejtünk minden data al-szekciót
+    document.querySelectorAll('.admin-data-sub').forEach(s => s.classList.add('hidden'));
+    // Megjelenítjük a data landinget
+    document.getElementById('admin-data-landing-view').classList.remove('hidden');
+    // Elrejtjük a vissza gombot
+    document.getElementById('btn-data-back-to-landing').classList.add('hidden');
+    
+    // Alaphelyzetbe állítjuk a táblázat nézetet is
+    window.showTableLanding();
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+// --- Versenyzői Adatbázis Al-navigáció ---
+window.showTableSubSection = (mode) => {
+    // Elrejtünk minden táblázattal kapcsolatos nézetet
+    document.getElementById('admin-table-landing-view').classList.add('hidden');
+    document.getElementById('admin-table-content-view').classList.add('hidden');
+    document.getElementById('admin-table-category-list-view').classList.add('hidden');
+    
+    if (mode === 'category-list') {
+        document.getElementById('admin-table-category-list-view').classList.remove('hidden');
+        window.backToCategorySelector(); // Alaphelyzetbe állítjuk a választó nézetet
+    } else {
+        document.getElementById('admin-table-content-view').classList.remove('hidden');
+        const title = document.getElementById('admin-table-title');
+        const filterCtrls = document.getElementById('admin-table-filter-ctrls');
+        
+        if (mode === 'all') {
+            window.currentTableFilter = 'all';
+            title.textContent = '👥 Összes Versenyzői Adatbázis';
+            filterCtrls.classList.add('hidden');
+            window.renderAdminTable('all');
+        } else {
+            window.currentTableFilter = '22km';
+            title.textContent = '🔍 Nevezettek Távonként';
+            filterCtrls.classList.remove('hidden');
+            window.renderAdminTable('22km'); // Alapértelmezett kezdő szűrő
+        }
+    }
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+window.showTableLanding = () => {
+    // Elrejtjük a tartalom nézeteket
+    document.getElementById('admin-table-content-view').classList.add('hidden');
+    document.getElementById('admin-table-category-list-view').classList.add('hidden');
+    // Megjelenítjük a landinget
+    document.getElementById('admin-table-landing-view').classList.remove('hidden');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+// Kategória részletek megjelenítése
+window.showCategoryDetail = (distId, catId) => {
+    document.getElementById('admin-category-selector-view').classList.add('hidden');
+    document.getElementById('admin-category-detail-view').classList.remove('hidden');
+    renderAdminCategoryDetail(distId, catId);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+// Visszalépés a kategória választóhoz
+window.backToCategorySelector = () => {
+    document.getElementById('admin-category-detail-view').classList.add('hidden');
+    document.getElementById('admin-category-selector-view').classList.remove('hidden');
+    renderAdminCategoryList();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+window.filterAdminTable = (type) => {
+    window.currentTableFilter = type;
+    window.renderAdminTable(type);
+};
+
+window.exportFilteredTable = () => {
+    exportFilteredTableToExcel(window.currentTableFilter || 'all');
+};
+
+window.exportSpecificCategoryExcel = (distId, catId) => {
+    exportFilteredTableToExcel(distId, catId);
+};
+
+window.currentTableFilter = 'all';
 
 // --- Eseménykezelő Wrapper-ek ---
 window.startCategory = (cat, dist, group) => window.raceManager.startCategory(cat, dist, group);

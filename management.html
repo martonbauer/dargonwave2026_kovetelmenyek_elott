@@ -46,10 +46,9 @@
     </header>
 
     <!-- Hero Kép Szekció -->
-    <div
+    <div id="main-hero-section"
         style="width: 100%; max-height: 400px; overflow: hidden; position: relative; border-bottom: 2px solid var(--accent-primary); box-shadow: 0 5px 20px rgba(0, 145, 255, 0.2);">
-        <!-- Ezt a képet be kell másolnod a mappába 'foldal_1.png' néven -->
-        <img src="foldal_1.png" alt="DunakesziFutam Verseny" class="hero-img"
+        <img src="foldal_1.png" alt="DunakesziFutam" class="hero-img"
             style="width: 100%; height: 100%; object-fit: cover; object-position: center 30%; filter: brightness(0.8);">
         <div
             style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, transparent 60%, var(--bg-primary) 100%);">
@@ -57,12 +56,14 @@
     </div>
 
     <main class="main-content">
-        <section id="registration-form" class="registration-section">
-            <h3 class="event-subtitle">Magyar Viztúra bajnokság</h3>
-            <h1 class="event-title">DunakesziFutam 2026</h1>
+        <!-- Marker for original registration form location -->
+        <div id="registration-form-home">
+            <section id="registration-form" class="registration-section">
+            <h3 id="reg-form-subtitle" class="event-subtitle">Magyar Viztúra bajnokság</h3>
+            <h1 id="reg-form-title" class="event-title">DunakesziFutam 2026</h1>
             <div class="title-separator"></div>
 
-            <h2 class="section-title">Online Nevezés és Fizetés</h2>
+            <h2 id="reg-form-section-title" class="section-title">Online Nevezés és Fizetés</h2>
             <form id="nevezesForm" class="nevezes-form">
                 <!-- 1. Kapcsolattartási adatok -->
                 <div class="contact-info-section" style="margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);">
@@ -115,12 +116,13 @@
 
                 <button type="submit" class="btn-primary" style="width: 100%; margin-top: 1rem;">Nevezés
                     Beküldése</button>
-                <p
+                <p id="reg-form-payment-notice"
                     style="margin-top: 1.5rem; color: var(--accent-primary); font-size: 0.95rem; font-style: italic; text-align: center;">
                     * A nevezés a fizetés megtörténte után válik elfogadottá.
                 </p>
             </form>
         </section>
+        </div> <!-- End of registration-form-home -->
 
         <section id="live-results" class="hidden">
             <h2 class="section-title">⏱️ Élő Futamidők & Helyezések</h2>
@@ -238,48 +240,178 @@
                 <div id="admin-section-data" class="admin-sub-section hidden">
                     <div class="section-header">
                         <h3 class="section-title" style="margin-bottom:0;">📂 Adatkezelés & Adatbázis</h3>
-                        <button class="btn-back" onclick="window.showAdminLanding()">⬅️ Vissza a központba</button>
+                        <div style="display: flex; gap: 10px;">
+                            <button id="btn-data-back-to-landing" class="btn-back hidden" onclick="window.showDataLanding()">⬅️ Vissza az adatkezeléshez</button>
+                            <button class="btn-back" onclick="window.showAdminLanding()">🏠 Vissza a központba</button>
+                        </div>
                     </div>
-                    <div class="admin-card data-management" style="margin-bottom: 2rem;">
-                        <h3 class="card-title">📂 Funkciók</h3>
-                        <div class="management-grid">
-                            <div class="import-zone">
-                                <label>📊 IMPORTÁLÁS (CSV)</label>
-                                <div style="display:flex; gap:10px;">
-                                    <input type="file" id="csv-upload" accept=".csv" style="padding:10px; margin-bottom:0;">
-                                    <button onclick="uploadCsv()" class="btn-secondary">IMPORT</button>
-                                </div>
+
+                    <!-- Data Landing View (4 Cards) -->
+                    <div id="admin-data-landing-view">
+                        <div class="admin-landing-grid">
+                            <div class="landing-card" onclick="window.showDataSubSection('admin-data-section-import')">
+                                <div class="icon">📥</div>
+                                <h3>tömeges nevezés - feltöltés</h3>
+                                <p>Versenyzők importálása CSV fájlból.</p>
+                                <div class="btn-enter">Megnyitás</div>
                             </div>
-                            <div class="export-zone">
-                                <label>📑 EXPORT</label>
-                                <button onclick="exportResultsToExcel()" class="btn-primary" style="width: 100%; height: 45px; background: #28a745;">EXCEL EXPORT</button>
+                            <div class="landing-card" onclick="window.showDataSubSection('admin-data-section-nevezes')">
+                                <div class="icon">📝</div>
+                                <h3>admin nevezés</h3>
+                                <div class="btn-enter">Megnyitás</div>
                             </div>
-                            <div class="danger-zone">
-                                <label>⚠️ VESZÉLYZÓNA</label>
-                                <button onclick="raceManager.resetTimes()" class="btn-secondary" style="width: 100%; margin-bottom: 5px; color: orange;">IDŐK NULLÁZÁSA</button>
-                                <button onclick="raceManager.resetAll()" class="btn-danger" style="width: 100%;">RENDSZERTÖRLÉS</button>
+                            <div class="landing-card" onclick="window.showDataSubSection('admin-data-section-table')">
+                                <div class="icon">👥</div>
+                                <h3>versenyzői adatbázis</h3>
+                                <p>Adatok megtekintése és szerkesztése.</p>
+                                <div class="btn-enter">Megnyitás</div>
+                            </div>
+                            <div class="landing-card" onclick="window.showDataSubSection('admin-data-section-export')">
+                                <div class="icon">📊</div>
+                                <h3>eredmények listázása</h3>
+                                <p>Excel export és eredmények kezelése.</p>
+                                <div class="btn-enter">Megnyitás</div>
+                            </div>
+                            <div class="landing-card" onclick="window.showDataSubSection('admin-data-section-system')">
+                                <div class="icon">⚙️</div>
+                                <h3>rendszerkezelés</h3>
+                                <p>Idők nullázása és adatbázis törlése.</p>
+                                <div class="btn-enter">Megnyitás</div>
                             </div>
                         </div>
                     </div>
-                    <div class="admin-table-section">
-                        <h3 class="section-title">👥 Versenyzői Adatbázis (Szerkeszthető)</h3>
-                        <div class="table-responsive">
-                            <table id="admin-table">
-                                <thead>
-                                    <tr>
-                                        <th>Rajtszám</th>
-                                        <th>Egység Tagjai</th>
-                                        <th>Ötpróba ID</th>
-                                        <th>Sorozat</th>
-                                        <th>Kategória</th>
-                                        <th>Táv</th>
-                                        <th>Státusz</th>
-                                        <th>Időeredmény</th>
-                                        <th>Művelet</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="admin-table-body"></tbody>
-                            </table>
+
+                    <!-- Sub-section 1: Import -->
+                    <div id="admin-data-section-import" class="admin-data-sub hidden">
+                        <div class="admin-card">
+                            <h3 class="card-title">📊 Tömeges Importálás (CSV)</h3>
+                            <div class="import-zone" style="margin-top: 1rem;">
+                                <label>Válassza ki a CSV fájlt:</label>
+                                <div style="display:flex; gap:10px; align-items: center;">
+                                    <input type="file" id="csv-upload" accept=".csv" style="padding:10px; margin-bottom:0; flex: 1;">
+                                    <button onclick="uploadCsv()" class="btn-primary" style="padding: 12px 24px;">IMPORTÁLÁS</button>
+                                </div>
+                                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 15px;">
+                                    💡 Használja a letölthető <a href="nevezes_minta.csv" target="_blank" style="color: var(--accent-primary);">minta CSV fájlt</a> a helyes formátumhoz.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sub-section 2: Admin Nevezés (Embedded Form Container) -->
+                    <div id="admin-data-section-nevezes" class="admin-data-sub hidden">
+                        <!-- Registration form will be moved here by JS -->
+                    </div>
+
+                    <!-- Sub-section 3: Database Table (2-Card Entry) -->
+                    <div id="admin-data-section-table" class="admin-data-sub hidden">
+                        <!-- Table Landing View -->
+                        <div id="admin-table-landing-view">
+                            <div class="admin-landing-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+                                <div class="landing-card" onclick="window.showTableSubSection('all')">
+                                    <div class="icon">👥</div>
+                                    <h3>összes versenyzői adatbázis</h3>
+                                    <p>A teljes adatbázis megtekintése és szerkesztése.</p>
+                                    <div class="btn-enter">Megnyitás</div>
+                                </div>
+                                <div class="landing-card" onclick="window.showTableSubSection('filtered')">
+                                    <div class="icon">🔍</div>
+                                    <h3>nevezettek távonként</h3>
+                                    <p>Listázás távok szerinti szűréssel.</p>
+                                    <div class="btn-enter">Megnyitás</div>
+                                </div>
+                                <div class="landing-card" onclick="window.showTableSubSection('category-list')">
+                                    <div class="icon">🏷️</div>
+                                    <h3>nevezettek kategóriánként</h3>
+                                    <p>Összes kategória és nevezettek listája.</p>
+                                    <div class="btn-enter">Megnyitás</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Table Content View -->
+                        <div id="admin-table-content-view" class="hidden">
+                            <div class="section-header" style="margin-bottom: 2rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem;">
+                                <h3 id="admin-table-title" class="section-title" style="margin-bottom:0;">👥 Versenyzői Adatbázis</h3>
+                                <button class="btn-back" onclick="window.showTableLanding()">⬅️ Vissza a választóhoz</button>
+                            </div>
+
+                            <!-- Filter Buttons (Only shown in 'filtered' view) -->
+                            <div id="admin-table-filter-ctrls" class="hidden" style="margin-bottom: 2rem;">
+                                <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 15px;">
+                                    <button onclick="window.filterAdminTable('22km')" class="btn-secondary" style="flex: 1; min-width: 150px;">📏 22 km (Hosszú)</button>
+                                    <button onclick="window.filterAdminTable('11km')" class="btn-secondary" style="flex: 1; min-width: 150px;">📐 11 km (Rövid)</button>
+                                    <button onclick="window.filterAdminTable('4km')" class="btn-secondary" style="flex: 1; min-width: 150px;">🛶 4 km (SUP)</button>
+                                    <button onclick="window.filterAdminTable('sarkany')" class="btn-secondary" style="flex: 1; min-width: 150px;">🐉 Sárkányhajó</button>
+                                </div>
+                                <div style="text-align: center;">
+                                    <button id="btn-export-filtered" onclick="window.exportFilteredTable()" class="btn-primary" style="background: #28a745; width: auto; padding: 10px 30px;">📥 Aktuális lista EXCEL exportja</button>
+                                </div>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table id="admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Rajtszám</th>
+                                            <th>Egység Tagjai</th>
+                                            <th>Ötpróba ID</th>
+                                            <th>Sorozat</th>
+                                            <th>Kategória</th>
+                                            <th>Táv</th>
+                                            <th>Státusz</th>
+                                            <th>Időeredmény</th>
+                                            <th>Művelet</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="admin-table-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Category List View (Selector + Detail) -->
+                        <div id="admin-table-category-list-view" class="hidden">
+                            <!-- Selector: Cards for each category -->
+                            <div id="admin-category-selector-view">
+                                <div class="section-header" style="margin-bottom: 2rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem;">
+                                    <h3 class="section-title" style="margin-bottom:0;">🏷️ Válassz kategóriát</h3>
+                                    <button class="btn-back" onclick="window.showTableLanding()">⬅️ Vissza a választóhoz</button>
+                                </div>
+                                <div id="admin-category-cards-container">
+                                    <!-- JS will populate this with distance headers and category card grids -->
+                                </div>
+                            </div>
+                            <!-- Detail: List of entrants for one category -->
+                            <div id="admin-category-detail-view" class="hidden">
+                                <div class="section-header" style="margin-bottom: 2rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem;">
+                                    <h3 id="admin-category-detail-title" class="section-title" style="margin-bottom:0;">🏷️ Kategória Részletek</h3>
+                                    <button class="btn-back" onclick="window.backToCategorySelector()">⬅️ Vissza a kategóriákhoz</button>
+                                </div>
+                                <div id="admin-category-detail-content">
+                                    <!-- JS will populate this with the entrant table -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sub-section 4: Export -->
+                    <div id="admin-data-section-export" class="admin-data-sub hidden">
+                        <div class="admin-card" style="max-width: 600px; margin: 0 auto;">
+                            <h3 class="card-title">📑 Excel Export</h3>
+                            <p class="card-desc">Töltse le az aktuális eredményeket és versenyzői listát.</p>
+                            <button onclick="exportResultsToExcel()" class="btn-primary" style="width: 100%; height: 55px; background: #28a745;">🚀 EXCEL EXPORT LETÖLTÉSE</button>
+                        </div>
+                    </div>
+
+                    <!-- Sub-section 5: System Management (New Standalone) -->
+                    <div id="admin-data-section-system" class="admin-data-sub hidden">
+                        <div class="admin-card" style="max-width: 600px; margin: 0 auto;">
+                            <h3 class="card-title">⚠️ Rendszerkezelés</h3>
+                            <p class="card-desc">Idők nullázása vagy teljes rendszertörlés.</p>
+                            <div style="display: flex; flex-direction: column; gap: 10px;">
+                                <button onclick="window.showConfirmModal('Tényleg nullázod az összes indított kategória idejét?', () => raceManager.resetTimes())" class="btn-secondary" style="width: 100%; color: orange; padding: 15px;">IDŐK NULLÁZÁSA</button>
+                                <button onclick="window.showConfirmModal('Tényleg törölni akarod a teljes versenyzői adatbázist? EZ NEM VISSZAVONHATÓ!', () => raceManager.resetAll())" class="btn-danger" style="width: 100%; padding: 15px;">ADATBÁZIS TÖRLÉSE</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -358,8 +490,22 @@
         </div>
     </div>
 
-    <footer style="text-align: center; padding: 20px; color: var(--text-secondary); font-size: 0.8rem; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 40px;">
-        Az időmérési és regisztrációs rendszert a <strong>DragonWave</strong> biztosítja.
+    <!-- System Confirmation Modal -->
+    <div id="confirmModal" class="modal">
+        <div class="admin-card" style="max-width: 450px; width: 90%; margin: 100px auto; text-align: center; padding: 40px;">
+            <div style="font-size: 3rem; margin-bottom: 20px;">⚠️</div>
+            <h2 class="card-title" style="justify-content: center; margin-bottom: 15px;">Végezzük el a műveletet?</h2>
+            <p id="confirmModalMessage" style="color: var(--text-secondary); margin-bottom: 30px; line-height: 1.6;"></p>
+            <div style="display: flex; gap: 15px;">
+                <button onclick="window.closeConfirmModal()" class="btn-secondary" style="flex: 1; padding: 12px;">MÉGSE</button>
+                <button id="confirmModalExecute" onclick="window.executeConfirmedAction()" class="btn-danger" style="flex: 1; background: #ff4d4d; border: none; color: white; padding: 12px;">MEGERŐSÍTÉS</button>
+            </div>
+        </div>
+    </div>
+
+    <footer style="display: flex; align-items: center; justify-content: center; gap: 20px; padding: 40px; color: var(--text-secondary); font-size: 0.95rem; border-top: 1px solid rgba(255,228,255,0.08); margin-top: 60px; background: rgba(0,0,0,0.15);">
+        <img src="admin_landingpage_4_0_png.png" alt="DragonWave Logo" style="height: 100px; filter: drop-shadow(0 0 15px rgba(0,228,255,0.4));">
+        <span>Az időmérési és regisztrációs rendszert a <strong>DragonWave</strong> biztosítja.</span>
     </footer>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>

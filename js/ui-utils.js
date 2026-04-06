@@ -69,14 +69,30 @@ export function switchTab(tab) {
     const btns = document.querySelectorAll('.nav-btn');
     
     btns.forEach(b => b.classList.remove('active'));
+    
+    // Vizualizáció vezérlése (Hero szekció mutatása/elrejtése)
+    const heroSection = document.getElementById('main-hero-section');
+    if (heroSection) {
+        if (tab === 'admin') {
+            heroSection.classList.add('hidden');
+        } else {
+            heroSection.classList.remove('hidden');
+        }
+    }
 
-    // Mindent elrejt
+    // Mindent elrejt és visszahozza a regisztrációs űrlapot a helyére
+    const regHome = document.getElementById('registration-form-home');
+    if (regHome && regForm) {
+        regHome.appendChild(regForm);
+    }
+
     if (regForm) regForm.classList.add('hidden');
     if (liveResults) liveResults.classList.add('hidden');
     if (adminView) adminView.classList.add('hidden');
     if (clockContainer) clockContainer.classList.add('hidden');
 
     if (tab === 'regisztracio') {
+        updateRegFormContext(false);
         if (regForm) regForm.classList.remove('hidden');
         const btn = document.getElementById('btn-regisztracio');
         if (btn) btn.classList.add('active');
@@ -108,6 +124,31 @@ export function switchTab(tab) {
 }
 
 /**
+ * Regisztrációs űrlap fejléc és lábléc frissítése kontextus szerint (Admin vs Publikus)
+ */
+export function updateRegFormContext(isAdmin) {
+    const subtitle = document.getElementById('reg-form-subtitle');
+    const title = document.getElementById('reg-form-title');
+    const sectionTitle = document.getElementById('reg-form-section-title');
+    const notice = document.getElementById('reg-form-payment-notice');
+
+    if (isAdmin) {
+        if (subtitle) subtitle.classList.add('hidden');
+        if (title) title.textContent = 'Admin nevezés';
+        if (sectionTitle) sectionTitle.classList.add('hidden');
+        if (notice) notice.classList.add('hidden');
+    } else {
+        if (subtitle) subtitle.classList.remove('hidden');
+        if (title) title.textContent = 'DunakesziFutam 2026';
+        if (sectionTitle) {
+            sectionTitle.classList.remove('hidden');
+            sectionTitle.textContent = 'Online Nevezés és Fizetés';
+        }
+        if (notice) notice.classList.remove('hidden');
+    }
+}
+
+/**
  * Idő formázása (ms -> HH:mm:ss.SSS)
  * @param {number} ms - Időtartam miliszekundumban
  * @returns {string}
@@ -119,4 +160,34 @@ export function formatTime(ms) {
     const seconds = Math.floor((ms % 60000) / 1000);
     const milliseconds = Math.floor(ms % 1000);
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
+}
+
+/**
+ * Rendszer szintű megerősítő ablak megjelenítése
+ */
+let pendingConfirmAction = null;
+
+export function showConfirmModal(message, onConfirm) {
+    const modal = document.getElementById('confirmModal');
+    const msgEl = document.getElementById('confirmModalMessage');
+    if (modal && msgEl) {
+        msgEl.textContent = message;
+        pendingConfirmAction = onConfirm;
+        modal.classList.add('active');
+    }
+}
+
+export function closeConfirmModal() {
+    const modal = document.getElementById('confirmModal');
+    if (modal) {
+        modal.classList.remove('active');
+        pendingConfirmAction = null;
+    }
+}
+
+export function executeConfirmedAction() {
+    if (typeof pendingConfirmAction === 'function') {
+        pendingConfirmAction();
+    }
+    closeConfirmModal();
 }
