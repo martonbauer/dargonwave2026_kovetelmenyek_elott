@@ -90,6 +90,22 @@
         </div>
     </div>
 
+    <footer style="display: flex; align-items: center; justify-content: center; gap: 20px; padding: 40px; color: var(--text-secondary); font-size: 0.95rem; border-top: 1px solid rgba(255,228,255,0.08); margin-top: 60px; background: rgba(0,0,0,0.15);">
+        <style>
+            .footer-logo {
+                height: 100px;
+                transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                filter: drop-shadow(0 0 15px rgba(0,228,255,0.4));
+                cursor: pointer;
+            }
+            .footer-logo:hover {
+                transform: scale(3) translateY(-10px);
+                z-index: 1000;
+            }
+        </style>
+        <img src="admin_landingpage_4_0_png.png" alt="DragonWave Logo" class="footer-logo">
+        <span>Az időmérési és regisztrációs rendszert a <strong>DragonWave</strong> biztosítja.</span>
+    </footer>
     <script src="landing.js"></script>
 </body>
 
