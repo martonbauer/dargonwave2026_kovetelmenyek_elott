@@ -178,6 +178,7 @@
                         <h3 class="section-title" style="margin-bottom:0;">🚀 Rajt Vezérlőpult</h3>
                         <button class="btn-back" onclick="window.showAdminLanding()">⬅️ Vissza a központba</button>
                     </div>
+                    <div class="admin-stats" id="admin-starts-stats" style="margin-bottom: 20px; background: rgba(0, 145, 255, 0.05); padding: 15px; border-radius: 12px; display: flex; flex-wrap: wrap; gap: 15px; justify-content: center;"></div>
                     <div class="starts-grid">
                         <div class="admin-card" id="mass-start-card">
                             <h3 class="card-title">🚀 Tömegrajt</h3>
@@ -201,6 +202,14 @@
                                 <div class="loading-text">Betöltés...</div>
                             </div>
                         </div>
+                    </div>
+                    <!-- Beépített Várakozók Listája Kártya (Starts) -->
+                    <div class="admin-card hidden" id="waiting-list-container-starts" style="margin-top: 20px; grid-column: 1 / -1; width: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;">
+                            <h3 class="card-title" style="margin:0;">⏳ Várakozók Névsora</h3>
+                            <button class="btn-back" onclick="window.toggleWaitingListCards(false)">Bezárás</button>
+                        </div>
+                        <div id="waiting-list-content-starts"></div>
                     </div>
                 </div>
 
@@ -233,6 +242,14 @@
                                 <div class="empty-text">Nincs aktív futam</div>
                             </div>
                         </div>
+                    </div>
+                    <!-- Beépített Várakozók Listája Kártya (Live) -->
+                    <div class="admin-card hidden" id="waiting-list-container-live" style="margin-top: 20px; grid-column: 1 / -1; width: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;">
+                            <h3 class="card-title" style="margin:0;">⏳ Várakozók Névsora</h3>
+                            <button class="btn-back" onclick="window.toggleWaitingListCards(false)">Bezárás</button>
+                        </div>
+                        <div id="waiting-list-content-live"></div>
                     </div>
                 </div>
 
@@ -307,7 +324,7 @@
                     <div id="admin-data-section-table" class="admin-data-sub hidden">
                         <!-- Table Landing View -->
                         <div id="admin-table-landing-view">
-                            <div class="admin-landing-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+                            <div class="admin-landing-grid" style="grid-template-columns: repeat(4, 1fr); gap: 15px;">
                                 <div class="landing-card" onclick="window.showTableSubSection('all')">
                                     <div class="icon">👥</div>
                                     <h3>összes versenyzői adatbázis</h3>
@@ -324,6 +341,12 @@
                                     <div class="icon">🏷️</div>
                                     <h3>nevezettek kategóriánként</h3>
                                     <p>Összes kategória és nevezettek listája.</p>
+                                    <div class="btn-enter">Megnyitás</div>
+                                </div>
+                                <div class="landing-card" onclick="window.showDataSubSection('admin-data-section-bibs')">
+                                    <div class="icon">🔢</div>
+                                    <h3>rajtszám módosítás / újraosztása</h3>
+                                    <p>Regisztrált versenyzők rajtszámának átírása.</p>
                                     <div class="btn-enter">Megnyitás</div>
                                 </div>
                             </div>
@@ -387,8 +410,58 @@
                                     <h3 id="admin-category-detail-title" class="section-title" style="margin-bottom:0;">🏷️ Kategória Részletek</h3>
                                     <button class="btn-back" onclick="window.backToCategorySelector()">⬅️ Vissza a kategóriákhoz</button>
                                 </div>
-                                <div id="admin-category-detail-content">
-                                    <!-- JS will populate this with the entrant table -->
+                                <div id="admin-category-detail-content"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sub-section 6: Bib Reassignment (Moved back to top-level for visibility) -->
+                    <div id="admin-data-section-bibs" class="admin-data-sub hidden">
+                        <div class="section-header" style="margin-bottom: 2rem; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem;">
+                            <h3 class="section-title" style="margin-bottom:0;">🔢 Rajtszámok Újraosztása</h3>
+                            <button class="btn-back" onclick="window.showTableLanding()">⬅️ Vissza a választóhoz</button>
+                        </div>
+                        
+                        <div id="bib-modification-container" style="display: flex; flex-direction: column; gap: 20px;">
+                            <!-- Módosító kártyák helye JS-ből -->
+                        </div>
+
+                        <div style="margin-top: 30px; text-align: center;">
+                            <button id="btn-add-bib-mod" class="btn-secondary" style="background: rgba(0, 145, 255, 0.1); border: 1px dashed var(--accent-primary); color: var(--accent-primary); width: auto; padding: 12px 30px;" onclick="window.addBibEditRow()">
+                                ➕ Újabb módosítás hozzáadása
+                            </button>
+                            <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 10px;">Egyszerre maximum 3 rajtszám módosítható.</p>
+                        </div>
+
+                        <!-- Rajtszám Módosítási Előzmények Panel -->
+                        <div style="margin-top: 50px; border-top: 1px solid var(--glass-border); padding-top: 30px;">
+                            <div style="text-align: center;">
+                                <button onclick="window.toggleBibHistory()" class="btn-secondary" style="width: auto; padding: 8px 25px; font-size: 0.85rem; background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border);">
+                                    🕒 Rajtszám módosítási előzmények <span id="bib-history-toggle-icon">▼</span>
+                                </button>
+                            </div>
+                            
+                            <div id="bib-history-panel" class="hidden" style="margin-top: 20px; animation: fadeIn 0.3s ease-out;">
+                                <div class="admin-card" style="max-width: 900px; margin: 0 auto; padding: 20px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                        <h4 style="margin:0; color: var(--accent-primary); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">Utolsó módosítások</h4>
+                                        <button onclick="window.clearBibHistory()" class="action-btn delete" style="padding: 5px 15px; font-size: 0.75rem; margin: 0;">Előzmények törlése</button>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="results-table" style="font-size: 0.85rem;">
+                                            <thead>
+                                                <tr>
+                                                    <th>Időpont</th>
+                                                    <th>Versenyző</th>
+                                                    <th style="text-align: center; width: 100px;">Régi #</th>
+                                                    <th style="text-align: center; width: 100px;">Új #</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="bib-history-table-body">
+                                                <tr><td colspan="4" style="text-align:center; padding: 20px; color: var(--text-secondary);">Nincsenek előzmények</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -414,6 +487,7 @@
                             </div>
                         </div>
                     </div>
+
                 </div>
             </div>
         </section>

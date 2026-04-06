@@ -3,6 +3,29 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
 const supabase = require('./database');
+const fs = require('fs');
+
+// --- 0. ELŐZMÉNYEK KEZELÉSE (HISTORY MANAGEMENT) ---
+const HISTORY_FILE = path.join(__dirname, 'history', 'bib_history.json');
+
+function ensureHistoryDir() {
+    const dir = path.dirname(HISTORY_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    if (!fs.existsSync(HISTORY_FILE)) fs.writeFileSync(HISTORY_FILE, JSON.stringify([]));
+}
+
+function getBibHistory() {
+    ensureHistoryDir();
+    try { return JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8')); }
+    catch (e) { return []; }
+}
+
+function addBibHistoryEntry(entry) {
+    const history = getBibHistory();
+    history.unshift({ id: Date.now(), timestamp: new Date().toISOString(), ...entry });
+    ensureHistoryDir();
+    fs.writeFileSync(HISTORY_FILE, JSON.stringify(history.slice(0, 100), null, 2));
+}
 
 // --- 1. STRUKTURÁLIS RÉTEGEK: MIDDLEWARE-EK IMPORTÁLÁSA ---
 const { rateLimiter } = require('./backend/middleware/rate-limiter');
@@ -239,16 +262,41 @@ app.put('/api/racer/:id', authenticateAdmin, async (req, res) => {
     const id = req.params.id;
     const { bib, category, distance, is_series, status, email, phone, members } = req.body;
     try {
+        if (bib) {
+            const { data: existing } = await supabase.from('racers').select('id').eq('bib', bib).neq('id', id).maybeSingle();
+            if (existing) return res.status(400).json({ error: `A #${bib} rajtszám már foglalt egy másik versenyzőnél!` });
+        }
         await supabase.from('racers').update({ bib, category, distance, is_series: is_series ? 1 : 0, status, email, phone }).eq('id', id);
         if (members) {
             await supabase.from('members').delete().eq('racer_id', id);
             await supabase.from('members').insert(members.map(m => ({ racer_id: id, ...m })));
         }
         await checkAndStopEmptyBatchTimers();
+        
+        // Előzmény rögzítése ha rajtszám módosítás történt
+        if (req.body.oldBib && bib && req.body.oldBib != bib) {
+            addBibHistoryEntry({
+                racerName: req.body.racerName || 'Ismeretlen',
+                oldBib: req.body.oldBib,
+                newBib: bib
+            });
+        }
+
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
+});
+
+// --- 11.5 RAJTSZÁM ELŐZMÉNYEK (BIB HISTORY API) ---
+app.get('/api/bib-history', authenticateAdmin, (req, res) => {
+    res.json(getBibHistory());
+});
+
+app.delete('/api/bib-history', authenticateAdmin, (req, res) => {
+    ensureHistoryDir();
+    fs.writeFileSync(HISTORY_FILE, JSON.stringify([]));
+    res.json({ success: true });
 });
 
 // --- 12. ADATKARBANTARTÁS (MAINTENANCE) ---

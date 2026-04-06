@@ -5,7 +5,7 @@
 
 import { RaceManager } from './js/RaceManager.js';
 import { switchTab, showToast, formatTime, updateRegFormContext, showConfirmModal, closeConfirmModal, executeConfirmedAction } from './js/ui-utils.js';
-import { renderAdminTable, renderAdminControlButtons, exportResultsToExcel, exportFilteredTableToExcel, renderAdminCategoryList, renderAdminCategoryDetail } from './js/admin-ui.js';
+import { renderAdminTable, renderAdminControlButtons, exportResultsToExcel, exportFilteredTableToExcel, renderAdminCategoryList, renderAdminCategoryDetail, renderBibManagementTable } from './js/admin-ui.js';
 import { API_URL, APP_VERSION } from './js/api.js';
 
 // --- Globális hatókör biztosítása a HTML onclick eseményekhez ---
@@ -126,6 +126,11 @@ window.showDataSubSection = (subId) => {
         }
     }
     
+    // Ha a rajtszám módosítás szekciót kérik
+    if (subId === 'admin-data-section-bibs') {
+        renderBibManagementTable();
+    }
+    
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
@@ -158,6 +163,7 @@ window.showTableSubSection = (mode) => {
     document.getElementById('admin-table-landing-view').classList.add('hidden');
     document.getElementById('admin-table-content-view').classList.add('hidden');
     document.getElementById('admin-table-category-list-view').classList.add('hidden');
+    document.getElementById('admin-data-section-bibs').classList.add('hidden');
     
     if (mode === 'category-list') {
         document.getElementById('admin-table-category-list-view').classList.remove('hidden');
@@ -187,6 +193,7 @@ window.showTableLanding = () => {
     // Elrejtjük a tartalom nézeteket
     document.getElementById('admin-table-content-view').classList.add('hidden');
     document.getElementById('admin-table-category-list-view').classList.add('hidden');
+    document.getElementById('admin-data-section-bibs').classList.add('hidden');
     // Megjelenítjük a landinget
     document.getElementById('admin-table-landing-view').classList.remove('hidden');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -238,6 +245,26 @@ window.stopRacer = () => {
         input.focus();
     } else {
         showToast("Kérem adja meg a rajtszámot!", 'error');
+    }
+};
+
+window.toggleWaitingListCards = (show) => {
+    const ids = ['waiting-list-container-starts', 'waiting-list-container-live'];
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (show) el.classList.remove('hidden');
+            else el.classList.add('hidden');
+        }
+    });
+
+    if (show && window.raceManager) {
+        window.raceManager.renderWaitingListCards();
+        // Scroll to the first visible card
+        const firstVisible = document.querySelector('.admin-card:not(.hidden)[id^="waiting-list-container"]');
+        if (firstVisible) {
+            firstVisible.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
     }
 };
 

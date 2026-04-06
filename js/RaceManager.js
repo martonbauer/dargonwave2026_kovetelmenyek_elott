@@ -589,30 +589,131 @@ export class RaceManager {
         });
     }
 
+    async updateRacerBib(id, newBib) {
+        if (!newBib || isNaN(newBib)) {
+            showToast('Kérlek adj meg egy érvényes rajtszámot!', 'error');
+            return;
+        }
+
+        const bibNum = parseInt(newBib);
+        
+        // Helyi duplikáció ellenőrzés
+        const existing = this.data.racers.find(r => r.bib === bibNum && r.id !== id);
+        if (existing) {
+            showToast(`A #${bibNum} rajtszám már foglalt!`, 'error');
+            return;
+        }
+
+        // Tagok neveinek lekérése a történethez
+        const racer = this.data.racers.find(r => r.id === id);
+        const originalBib = racer ? racer.bib : '?';
+        const racerName = racer && racer.members && racer.members.length > 0 
+            ? racer.members.map(m => m.name).join(', ') 
+            : 'Ismeretlen';
+
+        try {
+            const response = await fetch(`${API_URL}/racer/${id}`, {
+                method: 'PUT',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.adminPassword}`
+                },
+                body: JSON.stringify({ 
+                    bib: bibNum,
+                    oldBib: originalBib,
+                    racerName: racerName
+                })
+            });
+
+            const data = await response.json();
+            if (response.ok && data.success) {
+                showToast(`Rajtszám sikeresen módosítva: #${originalBib} ➔ #${bibNum}`, 'success');
+                await this.loadData();
+                return true;
+            } else {
+                showToast(data.error || 'Hiba a módosításkor!', 'error');
+                return false;
+            }
+        } catch (err) {
+            console.error('Bib update error:', err);
+            showToast('Kapcsolódási hiba!', 'error');
+            return false;
+        }
+    }
+
     // --- 4. MEGJELENÍTÉSI LOGIKA (UI RENDERING) ---
     renderUI() {
         this.renderRacersList();
         this.renderAdminStats();
         if (typeof window.renderAdminTable === 'function') window.renderAdminTable();
         this.renderAdminControlButtons();
+        this.renderWaitingListCards();
     }
 
     renderAdminStats() {
-        const statsEl = document.getElementById('admin-global-stats');
-        if (!statsEl) return;
+        const statsContainers = document.querySelectorAll('.admin-stats');
+        if (statsContainers.length === 0) return;
+
         const total = this.data.racers.length;
         const running = this.data.racers.filter(r => r.status === 'running').length;
         const finished = this.data.racers.filter(r => r.status === 'finished').length;
         const registered = this.data.racers.filter(r => r.status === 'registered').length;
 
-        statsEl.innerHTML = `
+        const statsHtml = `
             <div style="display: flex; gap: 20px;">
                 <div class="stat-item"><span style="color: #888; font-size: 0.8rem;">ÖSSZES:</span> <strong style="color: white;">${total}</strong></div>
                 <div class="stat-item"><span style="color: var(--accent-primary); font-size: 0.8rem;">FUTÓ:</span> <strong>${running}</strong></div>
                 <div class="stat-item"><span style="color: #00ff88; font-size: 0.8rem;">CÉLBA ÉRT:</span> <strong>${finished}</strong></div>
-                <div class="stat-item"><span style="color: var(--text-secondary); font-size: 0.8rem;">VÁRAKOZIK:</span> <strong>${registered}</strong></div>
+                <div class="stat-item" style="cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--text-secondary)'; this.style.background='rgba(255,255,255,0.1)';" onmouseout="this.style.borderColor='transparent'; this.style.background='rgba(0, 145, 255, 0.1)';" onclick="window.toggleWaitingListCards(true)">
+                    <span style="color: var(--text-secondary); font-size: 0.8rem;">VÁRAKOZIK:</span> <strong>${registered}</strong>
+                </div>
             </div>
         `;
+
+        statsContainers.forEach(container => {
+            container.innerHTML = statsHtml;
+        });
+    }
+
+    renderWaitingListCards() {
+        const containers = [
+            { content: document.getElementById('waiting-list-content-starts'), card: document.getElementById('waiting-list-container-starts') },
+            { content: document.getElementById('waiting-list-content-live'), card: document.getElementById('waiting-list-container-live') }
+        ].filter(item => item.content && item.card && !item.card.classList.contains('hidden'));
+
+        if (containers.length === 0) return;
+
+        const registered = this.data.racers.filter(r => r.status === 'registered');
+        
+        let html = '';
+        if (registered.length === 0) {
+            html = '<div style="text-align: center; padding: 20px; color: var(--text-secondary); opacity: 0.7;">Jelenleg nincs várakozó versenyző.</div>';
+        } else {
+            html = `
+                <div class="table-responsive">
+                    <table class="results-table" style="font-size: 0.85rem;">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px;">Rajtszám</th>
+                                <th>Egység Tagjai</th>
+                                <th>Kategória</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${registered.sort((a,b) => (a.bib || 0) - (b.bib || 0)).map(r => `
+                                <tr>
+                                    <td><strong style="color: var(--accent-primary);">#${(r.bib || 0).toString().padStart(3, '0')}</strong></td>
+                                    <td>${r.members ? r.members.map(m => m.name).join(', ') : (r.name || '-')}</td>
+                                    <td style="font-size: 0.75rem; color: var(--text-secondary);">${this.formatCategoryName(r.category)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        containers.forEach(item => { item.content.innerHTML = html; });
     }
 
     renderAdminControlButtons() {

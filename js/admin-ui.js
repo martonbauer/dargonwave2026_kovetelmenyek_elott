@@ -1,3 +1,6 @@
+import { showToast, showConfirmModal } from './ui-utils.js';
+import { API_URL } from './api.js';
+
 /**
  * --- ADMINISZTRÁCIÓS FELÜLET RÉTEG (ADMIN UI LAYER) ---
  * Az adminisztrátori felület specifikus megjelenítési logikája, 
@@ -543,3 +546,225 @@ export function renderAdminCategoryDetail(distId, catId) {
 
     contentEl.appendChild(tableDiv);
 }
+
+/**
+ * Rajtszám módosító felület inicializálása
+ */
+export function renderBibManagementTable() {
+    const container = document.getElementById('bib-modification-container');
+    if (!container) return;
+    
+    // Alaphelyzetbe állítás: egyetlen üres sor
+    container.innerHTML = '';
+    window.addBibEditRow();
+}
+
+/**
+ * Új módosító sor hozzáadása
+ */
+window.addBibEditRow = () => {
+    const container = document.getElementById('bib-modification-container');
+    const currentRows = container.querySelectorAll('.bib-mod-row').length;
+    
+    if (currentRows >= 3) {
+        showToast("Egyszerre maximum 3 módosítási sor lehet nyitva!", "error");
+        return;
+    }
+
+    const rowIdx = Date.now(); // Egyedi azonosító a sornak
+    const div = document.createElement('div');
+    div.className = 'bib-mod-row admin-card';
+    div.style = "padding: 20px; position: relative; animation: fadeIn 0.3s ease-out;";
+    
+    div.innerHTML = `
+        <div style="display: grid; grid-template-columns: 150px 1fr 150px; gap: 20px; align-items: start;">
+            <!-- Bal oldal: Keresés -->
+            <div>
+                <label style="display: block; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 5px;">Eredeti rajtszám</label>
+                <input type="number" 
+                       class="old-bib-input" 
+                       placeholder="Pl. 102"
+                       style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); color: white; border-radius: 8px; font-weight: bold; font-size: 1.1rem; text-align: center;"
+                       oninput="window.searchRacerByBib(this.value, '${rowIdx}')">
+            </div>
+
+            <!-- Közép: Versenyző adatai -->
+            <div id="racer-info-${rowIdx}" style="min-height: 80px; display: flex; align-items: center; justify-content: center; border: 1px dashed rgba(255,255,255,0.1); border-radius: 10px; background: rgba(255,255,255,0.02);">
+                <span style="color: var(--text-secondary); font-style: italic; font-size: 0.9rem;">Írj be egy rajtszámot a kereséshez...</span>
+            </div>
+
+            <!-- Jobb oldal: Új rajtszám és Mentés -->
+            <div id="save-ctrl-${rowIdx}" class="hidden">
+                <label style="display: block; font-size: 0.8rem; color: var(--accent-primary); margin-bottom: 5px;">Új rajtszám</label>
+                <input type="number" 
+                       id="new-bib-${rowIdx}" 
+                       placeholder="Új #"
+                       style="width: 100%; padding: 12px; background: rgba(0, 145, 255, 0.05); border: 1px solid var(--accent-primary); color: white; border-radius: 8px; font-weight: bold; font-size: 1.1rem; text-align: center; margin-bottom: 10px;">
+                <button class="action-btn edit" style="width: 100%; margin: 0;" onclick="window.saveBibChange('${rowIdx}')">MENTÉS</button>
+            </div>
+        </div>
+        ${container.children.length > 0 ? `<button onclick="this.parentElement.remove()" style="position: absolute; top: 10px; right: 10px; background: none; border: none; color: #ff4d4d; cursor: pointer; font-size: 1.2rem;" title="Sor törlése">✕</button>` : ''}
+    `;
+    
+    container.appendChild(div);
+};
+
+/**
+ * Versenyző keresése rajtszám alapján
+ */
+window.searchRacerByBib = (bib, rowIdx) => {
+    const infoContainer = document.getElementById(`racer-info-${rowIdx}`);
+    const saveCtrl = document.getElementById(`save-ctrl-${rowIdx}`);
+    if (!infoContainer || !saveCtrl) return;
+
+    if (!bib) {
+        infoContainer.innerHTML = '<span style="color: var(--text-secondary); font-style: italic; font-size: 0.9rem;">Írj be egy rajtszámot a kereséshez...</span>';
+        saveCtrl.classList.add('hidden');
+        return;
+    }
+
+    const rm = window.raceManager;
+    const racer = rm.data.racers.find(r => r.bib == bib);
+
+    if (racer) {
+        const names = racer.members ? racer.members.map(m => m.name).join(', ') : (racer.name || '-');
+        infoContainer.innerHTML = `
+            <div style="width: 100%; padding: 10px 20px;">
+                <div style="font-weight: bold; color: var(--accent-primary); font-size: 1.1rem; margin-bottom: 5px;">${names}</div>
+                <div style="display: flex; gap: 15px; font-size: 0.85rem; color: var(--text-secondary);">
+                    <span>🏷️ ${rm.formatCategoryName(racer.category)}</span>
+                    <span>📐 ${racer.distance}</span>
+                    <span style="color: #28a745;">✓ AKTÍV</span>
+                </div>
+            </div>
+        `;
+        infoContainer.style.border = "1px solid rgba(0, 145, 255, 0.2)";
+        infoContainer.style.background = "rgba(0, 145, 255, 0.05)";
+        saveCtrl.classList.remove('hidden');
+        // Eltároljuk az azonosítót a mentéshez
+        saveCtrl.dataset.racerId = racer.id;
+    } else {
+        infoContainer.innerHTML = '<span style="color: #ff4d4d; font-size: 0.9rem;">⚠️ Nincs ilyen rajtszámú versenyző!</span>';
+        infoContainer.style.border = "1px dashed rgba(255, 77, 77, 0.3)";
+        infoContainer.style.background = "rgba(255, 77, 77, 0.05)";
+        saveCtrl.classList.add('hidden');
+    }
+};
+
+/**
+ * Mentés wrapper
+ */
+window.saveBibChange = async (rowIdx) => {
+    const saveCtrl = document.getElementById(`save-ctrl-${rowIdx}`);
+    const racerId = saveCtrl.dataset.racerId;
+    const newBib = document.getElementById(`new-bib-${rowIdx}`).value;
+
+    if (!newBib) {
+        showToast("Kérlek adj meg egy új rajtszámot!", "error");
+        return;
+    }
+
+    try {
+        const success = await window.raceManager.updateRacerBib(racerId, newBib);
+        if (success) {
+            const row = saveCtrl.closest('.bib-mod-row');
+            row.style.opacity = "0.5";
+            row.style.pointerEvents = "none";
+            row.innerHTML = `<div style="text-align: center; padding: 20px; color: #28a745; font-weight: bold;">✓ SIKERESEN MÓDOSÍTVA: ${newBib}</div>`;
+            setTimeout(() => {
+                row.remove();
+                // Frissítsük az előzményeket a háttérben
+                const panel = document.getElementById('bib-history-panel');
+                if (panel && !panel.classList.contains('hidden')) {
+                    window.renderBibHistory();
+                }
+            }, 2000);
+        }
+    } catch (err) {
+        console.error("Save error in admin-ui:", err);
+        showToast("Hiba a mentés során!", "error");
+    }
+};
+
+/**
+ * Előzmények panel lenyitása/bezárása
+ */
+export function toggleBibHistory() {
+    const panel = document.getElementById('bib-history-panel');
+    const icon = document.getElementById('bib-history-toggle-icon');
+    
+    if (panel.classList.contains('hidden')) {
+        panel.classList.remove('hidden');
+        icon.textContent = '▲';
+        renderBibHistory();
+    } else {
+        panel.classList.add('hidden');
+        icon.textContent = '▼';
+    }
+}
+window.toggleBibHistory = toggleBibHistory;
+
+/**
+ * Előzmények renderelése
+ */
+export async function renderBibHistory() {
+    const tbody = document.getElementById('bib-history-table-body');
+    if (!tbody) return;
+
+    try {
+        const response = await fetch(`${API_URL}/bib-history`, {
+            headers: { 'Authorization': `Bearer ${window.raceManager.adminPassword}` }
+        });
+        
+        if (!response.ok) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px; color: #ff4d4d;">Hiba az adatok lekérésekor</td></tr>';
+            return;
+        }
+
+        const history = await response.json();
+
+        if (!Array.isArray(history) || history.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px; color: var(--text-secondary);">Nincsenek előzmények</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = history.map(entry => `
+            <tr>
+                <td>${new Date(entry.timestamp).toLocaleString('hu-HU')}</td>
+                <td style="font-weight: bold;">${entry.racerName}</td>
+                <td style="text-align: center; color: var(--text-secondary);">${entry.oldBib}</td>
+                <td style="text-align: center; color: var(--accent-primary); font-weight: bold;">${entry.newBib}</td>
+            </tr>
+        `).join('');
+    } catch (err) {
+        console.error("History render error:", err);
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color: #ff4d4d; padding: 20px;">Hiba az előzmények betöltésekor</td></tr>';
+    }
+}
+window.renderBibHistory = renderBibHistory;
+
+/**
+ * Előzmények törlése megerősítéssel
+ */
+export function clearBibHistory() {
+    window.showConfirmModal(
+        "Biztosan törölni akarod a rajtszám módosítási előzményeket?",
+        async () => {
+            try {
+                const response = await fetch(`${API_URL}/bib-history`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${window.raceManager.adminPassword}` }
+                });
+                if (response.ok) {
+                    showToast("Előzmények törölve.", "success");
+                    renderBibHistory();
+                } else {
+                    showToast("Sikertelen törlés.", "error");
+                }
+            } catch (err) {
+                showToast("Szerver hiba a törléskor.", "error");
+            }
+        }
+    );
+}
+window.clearBibHistory = clearBibHistory;
