@@ -1,4 +1,4 @@
-import { apiCall, API_URL } from './api.js';
+import { apiCall, API_URL, socketAdmin } from './api.js';
 import { showToast, formatTime } from './ui-utils.js';
 
 /**
@@ -74,6 +74,27 @@ export class RaceManager {
         await this.loadData();
         this.renderUI();
         this.startTickLoop();
+        this.setupRealtimeSync();
+    }
+
+    setupRealtimeSync() {
+        if (socketAdmin) {
+            socketAdmin.on('dataUpdated', (msg) => {
+                console.log('Real-time frissítés érkezett:', msg);
+                this.refreshUI();
+            });
+            socketAdmin.on('notify_event', (data) => {
+                if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+                    new Notification(data.title, { body: data.body, icon: 'admin_landingpage_4_0_png.png' });
+                }
+            });
+        }
+        
+        if (this.adminPassword && typeof Notification !== 'undefined') {
+            if (Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+        }
     }
 
     async checkConnectivity() {
@@ -646,6 +667,7 @@ export class RaceManager {
         this.renderRacersList();
         this.renderAdminStats();
         if (typeof window.renderAdminTable === 'function') window.renderAdminTable();
+        if (typeof window.renderAdminCharts === 'function') window.renderAdminCharts();
         this.renderAdminControlButtons();
         this.renderWaitingListCards();
     }

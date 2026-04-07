@@ -7,7 +7,13 @@ export const API_URL = (window.location.hostname === 'localhost' || window.locat
     ? 'http://localhost:3001/api'
     : '/api';
 
-export const APP_VERSION = "2.2.1";
+export const SOCKET_URL = (window.location.hostname === 'localhost' || window.location.protocol === 'file:')
+    ? 'http://localhost:3001'
+    : '';
+
+export const socketAdmin = typeof io !== 'undefined' ? io(SOCKET_URL) : null;
+
+export const APP_VERSION = "2.3.0";
 
 /**
  * Általános API-hívó segédfunkció

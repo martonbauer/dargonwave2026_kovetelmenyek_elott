@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<title>Projektmunka Műszaki Dokumentáció</title>
+<style>
+    @page {
+        margin-top: 2.5cm;
+        margin-bottom: 2.5cm;
+        margin-right: 2.5cm;
+        margin-left: 3.0cm; /* 2.5 cm + 0.5 cm kötési margó */
+    }
+    body {
+        font-family: "Times New Roman", Times, serif;
+        font-size: 12pt;
+        line-height: 1.5;
+        text-align: justify;
+    }
+    p {
+        text-indent: 1.25cm; /* Első sor indentálása (behúzása) */
+        margin-top: 0;
+        margin-bottom: 12pt;
+    }
+    h1, h2, h3, h4 {
+        text-align: left;
+        text-indent: 0;
+        font-weight: bold;
+    }
+    h1 { font-size: 16pt; margin-top: 24pt; margin-bottom: 12pt; page-break-before: always; }
+    h2 { font-size: 14pt; margin-top: 18pt; margin-bottom: 10pt; }
+    h3 { font-size: 12pt; margin-top: 12pt; margin-bottom: 6pt; }
+    ul, ol {
+        margin-top: 0;
+        margin-bottom: 12pt;
+        padding-left: 1.5cm;
+    }
+    li {
+        margin-bottom: 6pt;
+    }
+    .figure-caption {
+        text-align: center;
+        text-indent: 0;
+        font-style: italic;
+        font-size: 11pt;
+    }
+    .image-container {
+        text-align: center;
+        margin-top: 12pt;
+        margin-bottom: 6pt;
+    }
+    img {
+        max-width: 100%;
+        height: auto;
+    }
+    .page-break {
+        page-break-after: always;
+    }
+</style>
+</head>
+<body>
+
+<!-- Címlap -->
+<div style="text-align: center; margin-top: 10cm;">
+    <h1 style="text-align: center; page-break-before: auto; font-size: 20pt;">Projektmunka Műszaki Dokumentáció</h1>
+    <h2 style="text-align: center;">DragonWave 2026 - Versenyirányító és Időmérő Rendszer</h2>
+    <br><br><br>
+    <p style="text-align: center; text-indent: 0;"><b>Készítette:</b> [Név Helye]</p>
+    <p style="text-align: center; text-indent: 0;"><b>Dátum:</b> 2026. április</p>
+</div>
+
+<div class="page-break"></div>
+
+<!-- Tartalomjegyzék helye -->
+<h1>Tartalomjegyzék</h1>
+<p style="text-indent: 0;"><i>(Megjegyzés: A Word-ben ezt töröld ki, majd válaszd a 'Hivatkozások > Tartalomjegyzék' menüpontot a Címsor 1 és Címsor 2 stílusokból történő automatikus generáláshoz.)</i></p>
+
+<div class="page-break"></div>
+
+<h1>1. A szoftver célja és háttere</h1>
+<p>A DragonWave 2026 projektmunka egy valós, életszerű problémára kínál modern és komplex megoldást: a vízi sportversenyek (kiemelten a sárkányhajózás, kajak-kenu és SUP) adminisztratív és regisztrációs kihívásaira. A korábbi papíralapú vagy elavult táblázatos megoldásokat egy minden igényt kielégítő, valós idejű digitális platform váltja fel.</p>
+<p>A rendszer elsődleges funkciója a versenyzők gyors és zökkenőmentes online regisztrációja, az adatok központosított feldolgozása, valamint a versenynapon a kategóriák szerinti rajtindítások és az ezredmásodperc pontosságú célba érkezési idők megbízható rögzítése. A projektmunka során a cél nem pusztán egy működő program létrehozása volt, hanem egy iparági standardoknak megfelelő, a felhasználói élményt előtérbe helyező minőségi webalkalmazás implementálása.</p>
+
+<h1>2. Alkalmazott technológiák és architektúra</h1>
+<p>A szoftver robusztus, háromrétegű (többrétegű / 3-tier) architektúrára épül, amely logikailag és fizikailag is szétválasztja az adatkezelést, a kiszolgáló üzleti logikáját és a felhasználói felületet, ezáltal biztosítva a könnyebb skálázhatóságot és stabil karbantarthatóságot.</p>
+
+<h2>2.1. Adatréteg (Data Layer)</h2>
+<p>Az adatréteg szerepét a nagy teljesítményű Supabase felhőalapú platform integrációja tölti be, amely relációs PostgreSQL adatbázisra biztosít biztonságos távoli elérést. Ez felel a rendszer adatainak (versenyzői azonosítók, regisztrált események és rögzített célba futási idők) perzisztens tárolásáért. A technológia kiválasztásának fő motivációja a magas fokú adatbiztonság és az aszinkron kommunikáció melletti extrém rövid válaszidők garantálása volt.</p>
+
+<h2>2.2. Kiszolgáló és Üzleti Logika (Service Layer)</h2>
+<p>A backend egy Node.js futtatókörnyezetben konfigurált Express.js keretrendszerű webszerverként került kialakításra. A modern elvárásoknak megfelelően bevezetésre került a Socket.io interfész is, amellyel egy WebSockets alapú kétirányú és eseményvezérelt adatkapcsolat jött létre. Ennek köszönhetően a rendszer "Real-time" üzemmódban funkcionál: minden releváns esemény vagy módosítás azonnal, aszinkron módon propagálódik az összes jelenleg hálózatra csatlakozott kliens (például a zsűri vagy időmérő tabletek) felé frissítési szükséglet nélkül.</p>
+
+<h2>2.3. Felhasználói Felület (UI Layer)</h2>
+<p>A frontend natív és esztétikus webes eljárásokkal (HTML5, Vanilla CSS3, ES6 JavaScript) készült, célzottan elkerülve a rendszert lassító hatalmas frameworköket. A design a letisztult modern "Glassmorphism" vizuális nyelvet ötvözi. Kiemelt technikai érdem a Progresszív Webalkalmazás (PWA) szabványok megvalósítása a projektben. Az elkészített <code>manifest.json</code> konfiguráció és Service Worker modul révén a webes interfész a böngészők "Add to Home Screen" lehetőségeivel mobil eszközökön teljesen izoláltan, dedikált ikonnal képes elindulni.</p>
+
+<h1>3. Kiemelt funkcionális jellemzők</h1>
+
+<h2>3.1. Nevezés és hitelesített szimuláció</h2>
+<p>A központi regisztrációs felületen a résztvevők adatbázis-szinkronizált kategóriákból választhatnak. A komplex form validációs logika ellenőrzi a születési éveket, biztosítva az életkori sportlimitációk betartását. Ezt követi az elkészített adatvédelmi eljárások szerinti ÁSZF elfogadás, végül a mentést a hitelesített Barion fizetési átjáró integrációja nyugtázza (mely intelligens szimulációra is képes bemutató közegekben, valós megterhelés nélkül).</p>
+
+<h2>3.2. Valós idejű adminisztráció és analitika</h2>
+<p>Az adminisztrációs felületi dashboard a rajtgombok és a stopperek mellett modern vezetői információkat is prezentál. A letisztult interaktív fánkdiagramok (Chart.js könyvtár segítségével elkészített "Doughnut charts") azonnali áttekintést biztosítanak a beérkező regisztrált kategóriákról és a verseny állapotokról.</p>
+<p>A továbbfejlesztett Adatkezelő panel (Data Management Dashboard) villámgyors valós idejű keresőmezővel, valamint inline táblázati szerkesztési és törlési funkciókkal garantálja a téves regisztrációk helyszíni, másodpercek alatti javítását. Ugyanitt kapott helyet a versenyzők helyszíni okmányellenőrzését nyugtázó jelenléti (Megjelent) pipálási lehetőség, valamint a tranzakciókat igazoló "Befizetve / Barion" státuszkövetés is.</p>
+<p>Továbbá fejlett, úgynevezett Push értesítéseken (rendszerszintű értesítési jogosultságok alapján) keresztül figyelemfelkeltő üzeneteket továbbít a versenymenedzser a helyszínen lévő telefonokra a rajt éles indításának pillanatában.</p>
+
+<div class="image-container">
+    <img src="foldal_1.png" alt="DragonWave 2026 Admin és Nyitóképernyő design">
+</div>
+<p class="figure-caption">1. sz. kép: A DragonWave modern felhasználói és analitikai felülete</p>
+
+<h1>4. Kezelési és üzemeltetési útmutató</h1>
+<p>A szoftver fejlesztői és lokális tesztkörnyezetben történő indítása az alábbi meghatározott lépések végrehajtásával teljesíthető sikeresen.</p>
+
+<h2>4.1. Fejlesztői környezet felállítása</h2>
+<ul>
+    <li>Futtatói követelmény: A Node.js architektúra legújabb stabil verziójának rendszerkövetelménye.</li>
+    <li>A projekt telepítési mappáján belül a parancssorból kiadott <code>npm install</code> direktíva futtatása, amely a deklarált biztonsági függőségeket elvégzi és inicializálja az integrációt.</li>
+    <li>A <code>.env</code> kiterjesztésű konfigurációs fájl létrehozása, melyben a <code>SUPABASE_URL</code>, illetve a <code>SUPABASE_KEY</code> értékekhez tartozó hitelesítési kulcsok deklarálásra kerülnek.</li>
+    <li>A backend vezérlőpult a terminál által futtatott <code>node server.js</code> utasítással bootolható fel, ami a kommunikációt automatikusan a 3001-es TCP portra irányítja.</li>
+</ul>
+
+<h2>4.2. Kimutatások és Excel exportálás</h2>
+<p>Az offline és biztonsági kimutatások vizsgáztatása végett a modulrendszer rendelkezik az Excel-kompatibilis .xlsx kiterjesztési struktúra exportálási képességével is. A generátor gomb lekéri és azonnal formázva lementi az adott versenyszakasz teljes névsorát az elért hitelesített célidőkkel listázva.</p>
+
+<div class="page-break"></div>
+
+<h1>5. Mellékletek</h1>
+
+<p>A csatolt képek méretét és felbontását az értékelési előírások igazolják. Az alábbi illusztráción a projektmű dokumentálására kijelölt márka arculati elemeinek egyik vizuális bemutatása látható normatív elvárások alapján.</p>
+
+<div class="image-container">
+    <img src="admin_landingpage_4_0_png.png" alt="DragonWave Vizuális Arculat Melléklet">
+</div>
+<p class="figure-caption">2. sz. kép: A rendszer beépített grafikai elemzésének és arculati dizájnjának alapja</p>
+
+</body>
+</html>

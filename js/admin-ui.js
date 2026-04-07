@@ -10,6 +10,66 @@ import { API_URL } from './api.js';
 /**
  * Adminisztrátori versenyzői táblázat kirajzolása
  */
+let chartDistances = null;
+let chartStatus = null;
+
+export function renderAdminCharts() {
+    const rm = window.raceManager;
+    if (!rm || !rm.data.racers) return;
+
+    const ctxDist = document.getElementById('chart-distances');
+    const ctxStat = document.getElementById('chart-status');
+    
+    if (!ctxDist || !ctxStat || typeof Chart === 'undefined') return;
+
+    const racers = rm.data.racers;
+    
+    const distCount = { '22km': 0, '11km': 0, '4km': 0 };
+    racers.forEach(r => { if(distCount[r.distance] !== undefined) distCount[r.distance]++; });
+    
+    const distData = {
+        labels: ['22km Hosszú', '11km Rövid', '4km SUP'],
+        datasets: [{
+            data: [distCount['22km'], distCount['11km'], distCount['4km']],
+            backgroundColor: ['#00A3FF', '#FF4D4D', '#00FFCC'],
+            borderWidth: 0
+        }]
+    };
+
+    const statCount = { 'registered': 0, 'running': 0, 'finished': 0 };
+    racers.forEach(r => { if(statCount[r.status] !== undefined) statCount[r.status]++; });
+
+    const statData = {
+        labels: ['Regisztrált (Vár)', 'Futó (Pályán)', 'Befutott'],
+        datasets: [{
+            data: [statCount['registered'], statCount['running'], statCount['finished']],
+            backgroundColor: ['#555555', '#00A3FF', '#00FFCC'],
+            borderWidth: 0
+        }]
+    };
+
+    const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'right', labels: { color: 'white' } }
+        }
+    };
+
+    if (chartDistances) {
+        chartDistances.data = distData; chartDistances.update();
+    } else {
+        chartDistances = new Chart(ctxDist, { type: 'doughnut', data: distData, options: chartOptions });
+    }
+
+    if (chartStatus) {
+        chartStatus.data = statData; chartStatus.update();
+    } else {
+        chartStatus = new Chart(ctxStat, { type: 'pie', data: statData, options: chartOptions });
+    }
+}
+window.renderAdminCharts = renderAdminCharts;
+
 export function renderAdminTable(filterType = 'all') {
     const tbody = document.getElementById('admin-table-body');
     if (!tbody) return;
@@ -32,6 +92,17 @@ export function renderAdminTable(filterType = 'all') {
         racers = racers.filter(r => r.distance === '4km');
     } else if (filterType === 'sarkany') {
         racers = racers.filter(r => r.category.includes('sarkany'));
+    }
+
+    // Keresési szűrő alkalmazása
+    if (window.adminSearchQuery) {
+        const query = window.adminSearchQuery.toLowerCase();
+        racers = racers.filter(r => {
+            const nameMatch = r.members && r.members.some(m => m.name.toLowerCase().includes(query));
+            const bibMatch = r.bib && r.bib.toString().includes(query);
+            const catMatch = r.category && window.raceManager.formatCategoryName(r.category).toLowerCase().includes(query);
+            return nameMatch || bibMatch || catMatch;
+        });
     }
 
     if (racers.length === 0) {
@@ -60,25 +131,40 @@ export function renderAdminTable(filterType = 'all') {
 
         const memberList = r.members ? r.members.map(m => `<div style="margin-bottom:2px;">${m.name || '?'} <span style="font-size:0.7rem; color:#888;">(${m.birth_date || '?'})</span></div>`).join('') : (r.name || '-');
         const otprobaList = r.members ? r.members.map(m => `<div style="margin-bottom:2px;">${m.otproba_id || '-'}</div>`).join('') : (r.otproba_id || '-');
-        const isSeriesText = r.is_series ? '<span style="color:var(--accent-secondary); font-weight:bold;">IGEN</span>' : 'nem';
+        
+        // Helyi Check-in és Fizetési állapot betöltése (localstorage fallback vagy valós API)
+        const isChecked = localStorage.getItem(`dw_checkin_${r.id}`) === 'true';
+        const isPaid = localStorage.getItem(`dw_paid_${r.id}`) === 'true';
+        
+        const checkInHtml = `<input type="checkbox" style="transform: scale(1.5)" ${isChecked ? 'checked' : ''} onchange="localStorage.setItem('dw_checkin_${r.id}', this.checked); showToast('Jelenlét mentve', 'info');">`;
+        const paidHtml = isPaid ? 
+            `<span style="background:#5BB226; color:white; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;">Befizetve</span>` : 
+            `<button onclick="localStorage.setItem('dw_paid_${r.id}', 'true'); renderAdminTable(window.currentTableFilter);" class="action-btn" style="background:transparent; border:1px solid #5BB226; color:#5BB226; padding:2px 8px; font-size:0.8rem;">Függőben</button>`;
 
         tr.innerHTML = `
             <td><strong>#${(r.bib || 0).toString().padStart(3, '0')}</strong></td>
             <td>${memberList}</td>
             <td>${otprobaList}</td>
-            <td>${isSeriesText}</td>
             <td>${window.raceManager.formatCategoryName(r.category)}</td>
-            <td>${r.distance || '-'}</td>
             <td style="color:${statusColor}">${(r.status || 'registered').toUpperCase()}</td>
             <td class="time" ${dataStartAttr}>${timeStr}</td>
-            <td>
-                <button class="action-btn edit" onclick="window.raceManager.openEditModal('${r.id}')">Szerkesztés</button>
-                <button class="action-btn delete" onclick="window.raceManager.deleteRacer('${r.id}', ${r.bib || 'null'})">Törlés</button>
+            <td style="text-align:center;">${checkInHtml}</td>
+            <td style="text-align:center;">${paidHtml}</td>
+            <td style="white-space: nowrap; text-align:center;">
+                <button class="action-btn edit" onclick="window.raceManager.openEditModal('${r.id}')" style="background:var(--accent-secondary); padding: 5px 8px; font-size: 1rem; border-radius: 6px; margin-right: 5px;" title="Szerkesztés">✏️</button>
+                <button class="action-btn delete" onclick="window.raceManager.deleteRacer('${r.id}', ${r.bib || 'null'})" style="background:#dc3545; padding: 5px 8px; font-size: 1rem; border-radius: 6px;" title="Törlés">🗑️</button>
             </td>
         `;
         tbody.appendChild(tr);
     });
 }
+
+// globális kereső támogatása
+window.adminSearchQuery = '';
+window.handleTableSearch = (query) => {
+    window.adminSearchQuery = query;
+    window.renderAdminTable(window.currentTableFilter);
+};
 
 /**
  * Adminisztrátori vezérlőgombok (Start/Stop) kirajzolása
@@ -489,6 +575,7 @@ export function renderAdminCategoryList() {
  * Egy konkrét kategória nevezettjeinek listázása
  */
 export function renderAdminCategoryDetail(distId, catId) {
+    window.renderAdminCategoryDetail = renderAdminCategoryDetail;
     const rm = window.raceManager;
     const titleEl = document.getElementById('admin-category-detail-title');
     const contentEl = document.getElementById('admin-category-detail-content');
@@ -534,11 +621,11 @@ export function renderAdminCategoryDetail(distId, catId) {
                     <th>Rajtszám</th>
                     <th>Egység Tagjai</th>
                     <th>Ötpróba ID</th>
-                    <th>Sorozat</th>
                     <th>Kategória</th>
-                    <th>Táv</th>
                     <th>Státusz</th>
                     <th>Időeredmény</th>
+                    <th>Megjelent</th>
+                    <th>Barion</th>
                     <th style="min-width: 180px; text-align: center;">Művelet</th>
                 </tr>
             </thead>
@@ -568,17 +655,23 @@ export function renderAdminCategoryDetail(distId, catId) {
 
         const memberList = r.members ? r.members.map(m => `<div style="margin-bottom:2px;">${m.name || '?'} <span style="font-size:0.7rem; color:#888;">(${m.birth_date || '?'})</span></div>`).join('') : (r.name || '-');
         const otprobaList = r.members ? r.members.map(m => `<div style="margin-bottom:2px;">${m.otproba_id || '-'}</div>`).join('') : (r.otproba_id || '-');
-        const isSeriesText = r.is_series ? '<span style="color:var(--accent-secondary); font-weight:bold;">IGEN</span>' : 'nem';
+        const isChecked = localStorage.getItem(`dw_checkin_${r.id}`) === 'true';
+        const isPaid = localStorage.getItem(`dw_paid_${r.id}`) === 'true';
+        
+        const checkInHtml = `<input type="checkbox" style="transform: scale(1.5)" ${isChecked ? 'checked' : ''} onchange="localStorage.setItem('dw_checkin_${r.id}', this.checked); showToast('Jelenlét mentve', 'info');">`;
+        const paidHtml = isPaid ? 
+            `<span style="background:#5BB226; color:white; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;">Befizetve</span>` : 
+            `<button onclick="localStorage.setItem('dw_paid_${r.id}', 'true'); window.renderAdminCategoryDetail('${distId}', '${catId}');" class="action-btn" style="background:transparent; border:1px solid #5BB226; color:#5BB226; padding:2px 8px; font-size:0.8rem;">Függőben</button>`;
 
         tr.innerHTML = `
             <td><strong>#${(r.bib || 0).toString().padStart(3, '0')}</strong></td>
             <td>${memberList}</td>
             <td>${otprobaList}</td>
-            <td>${isSeriesText}</td>
             <td>${rm.formatCategoryName(r.category)}</td>
-            <td>${r.distance || '-'}</td>
             <td style="color:${statusColor}">${(r.status || 'registered').toUpperCase()}</td>
             <td class="time" ${dataStartAttr}>${timeStr}</td>
+            <td style="text-align:center;">${checkInHtml}</td>
+            <td style="text-align:center;">${paidHtml}</td>
             <td style="white-space: nowrap; text-align: center;">
                 <div style="display: flex; gap: 8px; justify-content: center;">
                     <button class="action-btn edit" style="margin:0; padding: 6px 12px; font-size: 0.75rem;" onclick="window.raceManager.openEditModal('${r.id}')">Szerkesztés</button>

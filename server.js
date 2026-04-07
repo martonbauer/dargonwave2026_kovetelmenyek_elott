@@ -38,8 +38,21 @@ const { getGroupQuery, checkAndStopEmptyBatchTimers } = require('./backend/servi
 // --- 3. STRUKTURÁLIS RÉTEGEK: SEGÉDFUNKCIÓK (UTILITIES) IMPORTÁLÁSA ---
 const { validateRacerData, normalizeCategoryToSlug } = require('./backend/utils/validation');
 
+const http = require('http');
+const { Server } = require('socket.io');
+
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: '*' } });
+
+io.on('connection', (socket) => {
+    console.log('Új kliens csatlakozott az élő szinkronizációhoz!');
+});
+
+const emitUpdate = (action, payload = {}) => { io.emit(action, payload); };
+const emitRefresh = () => { io.emit('dataUpdated', { action: 'refresh' }); };
 
 // --- 4. ALAPVETŐ SZERVER KONFIGURÁCIÓK ÉS MIDDLEWARE-EK ---
 const corsOptions = {
@@ -51,6 +64,24 @@ app.use(cors(corsOptions));
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname)));
 app.use(rateLimiter);
+
+// --- 4.5 VALÓS IDEJŰ SZINKRONIZÁCIÓ (REALTIME MIDDLEWARE) ---
+app.use((req, res, next) => {
+    const originalJson = res.json;
+    res.json = function(body) {
+        if (['POST', 'PUT', 'DELETE'].includes(req.method) && res.statusCode >= 200 && res.statusCode < 300 && !req.path.includes('/api/login')) {
+            emitRefresh();
+            if (req.path.includes('/api/start-')) {
+                let msg = 'Egy kategória vagy táv rajtja elindult.';
+                if(req.body && req.body.categoryName) msg = req.body.categoryName + ' elindult!';
+                else if (req.body && req.body.distance) msg = req.body.distance + ' elindult!';
+                emitUpdate('notify_event', { title: '🚀 Futam elindult!', body: msg });
+            }
+        }
+        originalJson.apply(this, arguments);
+    };
+    next();
+});
 
 // --- 5. HITELESÍTÉS (AUTHENTICATION) ---
 app.post('/api/login', (req, res) => {
@@ -122,6 +153,70 @@ app.post('/api/register', async (req, res) => {
             }
         }
         res.json({ id: racerId, bib, category, distance, status: 'registered' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- 8.5 BARION FIZETÉS (PAYMENT INTEGRATION) ---
+app.post('/api/barion/payment', async (req, res) => {
+    const { email, amount, guestString, orderId } = req.body;
+    const posKey = process.env.BARION_POS_KEY;
+    
+    // Fallback ha nincs kulcs: szimulált visszatérés (hogy az élesítés előtt is működjön a projekt bemutató)
+    if (!posKey || posKey === 'your_barion_poskey') {
+        return res.json({ 
+            PaymentId: "TEST-BARION-ID-12345", 
+            PaymentRequestId: "TEST-REQ-ID", 
+            Status: "Prepared", 
+            GatewayUrl: `management.html?payment=success&id=${orderId || 'test'}`,
+            simulated: true
+        });
+    }
+
+    const payload = {
+        POSKey: posKey,
+        PaymentType: "Immediate",
+        GuestCheckout: true,
+        FundingSources: ["All"],
+        PaymentRequestId: orderId || `DRGW-${Date.now()}`,
+        PayerHint: email || "ugyfel@pelda.hu",
+        Transactions: [
+            {
+                POSTransactionId: `TR-${Date.now()}`,
+                Payee: email || "ugyfel@pelda.hu",
+                Total: amount || 0,
+                Items: [
+                    {
+                        Name: "DragonWave Nevezési Díj",
+                        Description: guestString || "Nevezés",
+                        Quantity: 1,
+                        Unit: "db",
+                        UnitPrice: amount || 0,
+                        ItemTotal: amount || 0
+                    }
+                ]
+            }
+        ],
+        Locale: "hu-HU",
+        Currency: "HUF",
+        RedirectUrl: `${req.headers.origin}?payment=success`,
+        CallbackUrl: `${req.headers.origin}/api/barion/callback`
+    };
+
+    try {
+        const fetch = (await import('node-fetch')).default || global.fetch; // Node 18+ natív fetch támogatás
+        const response = await fetch('https://api.barion.com/v2/Payment/Start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        
+        if (data.Errors && data.Errors.length > 0) {
+            return res.status(400).json({ error: data.Errors[0].Description });
+        }
+        res.json(data);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -378,6 +473,6 @@ app.post('/api/upload-csv', authenticateAdmin, async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`DragonWave Server running at http://localhost:${PORT}`);
 });

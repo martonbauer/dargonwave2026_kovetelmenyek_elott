@@ -10,7 +10,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DunakesziFutam | Versenyirányítás</title>
     <link rel="stylesheet" href="drgon.css?v=1.0.5">
- 
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#00A3FF">
 </head>
 
 <body>
@@ -168,6 +169,17 @@
                             <h3>Adatkezelés</h3>
                             <p>Import/Export funkciók és a versenyzői adatbázis szerkesztése.</p>
                             <div class="btn-enter">Megnyitás</div>
+                        </div>
+                    </div>
+                    
+                    <div id="admin-charts-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+                        <div class="admin-card">
+                            <h3 style="color: var(--accent-primary); margin-bottom: 10px; text-align: center;">📊 Nevezések Távok Szerint</h3>
+                            <canvas id="chart-distances" style="max-height: 250px;"></canvas>
+                        </div>
+                        <div class="admin-card">
+                            <h3 style="color: var(--accent-primary); margin-bottom: 10px; text-align: center;">📊 Nevezések Állapota</h3>
+                            <canvas id="chart-status" style="max-height: 250px;"></canvas>
                         </div>
                     </div>
                 </div>
@@ -372,6 +384,10 @@
                                 </div>
                             </div>
 
+                            <div style="margin-bottom: 20px; max-width: 400px;">
+                                <input type="text" id="admin-table-search" placeholder="🔍 Keresés név, rajtszám vagy kategória alapján..." style="width: 100%; padding: 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); color: var(--text-primary); border-radius: 8px;" onkeyup="window.handleTableSearch(this.value)">
+                            </div>
+                            
                             <div class="table-responsive">
                                 <table id="admin-table">
                                     <thead>
@@ -379,11 +395,11 @@
                                             <th>Rajtszám</th>
                                             <th>Egység Tagjai</th>
                                             <th>Ötpróba ID</th>
-                                            <th>Sorozat</th>
                                             <th>Kategória</th>
-                                            <th>Táv</th>
                                             <th>Státusz</th>
                                             <th>Időeredmény</th>
+                                            <th>Megjelent</th>
+                                            <th>Barion</th>
                                             <th>Művelet</th>
                                         </tr>
                                     </thead>
@@ -667,25 +683,106 @@
         </div>
     </div>
 
-    <footer style="display: flex; align-items: center; justify-content: center; gap: 20px; padding: 40px; color: var(--text-secondary); font-size: 0.95rem; border-top: 1px solid rgba(255,228,255,0.08); margin-top: 60px; background: rgba(0,0,0,0.15);">
-        <style>
-            .footer-logo {
-                height: 100px;
-                transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-                filter: drop-shadow(0 0 15px rgba(0,228,255,0.4));
-                cursor: pointer;
-            }
-            .footer-logo:hover {
-                transform: scale(3) translateY(-10px);
-                z-index: 1000;
-            }
-        </style>
+    <footer class="site-footer">
         <img src="admin_landingpage_4_0_png.png" alt="DragonWave Logo" class="footer-logo">
         <span>Az időmérési és regisztrációs rendszert a <strong>DragonWave</strong> biztosítja.</span>
     </footer>
+    <div id="editRacerModal" class="modal">
+        <div class="modal-content" style="max-width: 500px; text-align: left;">
+            <div class="section-header" style="margin-bottom: 20px;">
+                <h3 class="section-title">✏️ Nevezés Szerkesztése</h3>
+            </div>
+            
+            <input type="hidden" id="edit-id">
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <div style="flex: 1;">
+                    <label style="display:block; margin-bottom:5px; color:var(--text-secondary);">Rajtszám</label>
+                    <input type="number" id="edit-bib" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid var(--accent-primary); color: white; border-radius: 8px;">
+                </div>
+                <div style="flex: 1;">
+                    <label style="display:block; margin-bottom:5px; color:var(--text-secondary);">Státusz</label>
+                    <select id="edit-status" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); color: white; border-radius: 8px;">
+                        <option value="registered">Registered</option>
+                        <option value="running">Running</option>
+                        <option value="finished">Finished</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="display:block; margin-bottom:5px; color:var(--text-secondary);">Kategória azonosító</label>
+                <input type="text" id="edit-category" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); color: white; border-radius: 8px;">
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <label style="display:block; margin-bottom:5px; color:var(--text-secondary);">Versenyzők adatai</label>
+                <div id="edit-members-container" style="display: flex; flex-direction: column; gap: 10px;">
+                    <!-- JS generálja ide a member sorokat -->
+                </div>
+            </div>
+
+            <!-- Ezek az elemek csak azért kellenek, hogy a RaceManager saveRacer()-e ne haljon el, beállítjuk őket rejtett formában if nem kell -->
+            <input type="hidden" id="edit-distance" value="11km">
+            <input type="hidden" id="edit-email" value="">
+            <input type="hidden" id="edit-phone" value="">
+            <input type="checkbox" id="edit-is_series" style="display:none;">
+
+            <div style="display:flex; justify-content: flex-end; gap: 10px; margin-top: 25px;">
+                <button onclick="window.raceManager.closeEditModal()" class="action-btn" style="background: rgba(255,255,255,0.1);">Mégsem</button>
+                <button onclick="window.raceManager.saveRacer()" class="btn-primary" style="padding: 10px 20px;">💾 Módosítások mentése</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="payment-modal" class="modal">
+        <div class="modal-content" style="max-width: 400px; text-align: center; background: white; color: #333; border-radius: 12px; padding: 30px;">
+            <img src="https://www.barion.com/wp-content/uploads/2020/06/barion-logo-black.png" alt="Barion" style="height: 40px; margin-bottom: 20px;">
+            <h3 style="color: #333; margin-top: 0;">Biztonságos Barion Fizetés</h3>
+            <p>Nevezési díj: <strong id="payment-amount" style="font-size: 1.2rem; color: #111;">15 000 Ft</strong></p>
+            <p style="font-size: 0.8rem; color: #666; margin-bottom: 20px;">(Átirányítás a hivatalos fizetési felületre)</p>
+            
+            <div style="display:flex; flex-direction:column; gap:10px;">
+                <button id="btn-pay-success" class="btn-primary" style="background:#5BB226; border:none; height: 50px; font-weight: bold; font-size: 1rem; width: 100%;">Tovább a fizetésre ➔</button>
+                <button onclick="document.getElementById('payment-modal').classList.remove('active'); window.showToast('Fizetés megszakítva', 'error');" class="btn-stop" style="background:#dc3545; height: 40px; width: 100%; margin-top: 5px; font-weight: bold;">✖ Mégsem</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script type="module" src="dragon.js"></script>
+    <script>
+        // Mobile menu fix for offline/CORS mode
+        document.addEventListener('DOMContentLoaded', () => {
+            const menuToggle = document.getElementById('menuToggle');
+            const mainNav = document.getElementById('main-nav');
+            if(menuToggle && mainNav) {
+                menuToggle.addEventListener('click', () => {
+                    menuToggle.classList.toggle('active');
+                    mainNav.classList.toggle('active');
+                });
+                
+                // Hide menu on click for nav items
+                const navLinks = mainNav.querySelectorAll('.nav-btn');
+                navLinks.forEach(link => {
+                    link.addEventListener('click', () => {
+                        menuToggle.classList.remove('active');
+                        mainNav.classList.remove('active');
+                    });
+                });
+            }
+        });
+    </script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('sw.js').catch(err => console.error(err));
+        });
+      }
+    </script>
 </body>
 
 </html>

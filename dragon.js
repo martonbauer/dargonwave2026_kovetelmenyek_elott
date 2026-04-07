@@ -556,13 +556,70 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!name || !birth_date) throw new Error(`Kérjük adja meg a(z) ${idx + 1}. versenyző minden adatát!`);
                 members.push({ name, birth_date, otproba_id });
             });
-            await window.raceManager.registerRacer(members, kategoria, tav, false, email, phone, contactName);
-            this.reset();
-            window.updateCategorySelect();
+            const payModal = document.getElementById('payment-modal');
+            if(payModal) {
+                payModal.classList.add('active');
+                
+                const btnPaySuccess = document.getElementById('btn-pay-success');
+                const newBtn = btnPaySuccess.cloneNode(true);
+                btnPaySuccess.parentNode.replaceChild(newBtn, btnPaySuccess);
+                
+                newBtn.onclick = async () => {
+                    newBtn.disabled = true;
+                    newBtn.textContent = 'Szinkronizálás Barionnal...';
+                    try {
+                        // 1. Átmeneti regisztráció a szerveren
+                        const formRes = await window.raceManager.registerRacer(members, kategoria, tav, false, email, phone, contactName, true); // true = silent flag (opcionálisan kiegészítjük, de a race manager bírja)
+                        
+                        // 2. Barion fizetés indítása API-n keresztül
+                        const payload = {
+                            email: email,
+                            amount: 15000,
+                            guestString: `${contactName} - ${tav}`,
+                            orderId: `DRGW-${Date.now()}`
+                        };
+                        const barionRes = await fetch(`${API_URL}/barion/payment`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        const barionData = await barionRes.json();
+                        
+                        // 3. Átirányítás a cél URL-re
+                        if (barionData.GatewayUrl) {
+                            showToast('Átirányítás a Barion biztonságos oldalára...', 'info');
+                            setTimeout(() => {
+                                window.location.href = barionData.GatewayUrl;
+                            }, 1500);
+                        } else {
+                            showToast('Hiba a Barion inicializálásakor!', 'error');
+                            newBtn.disabled = false;
+                            newBtn.textContent = 'Tovább a fizetésre ➔';
+                        }
+                    } catch (submitErr) {
+                        showToast(submitErr.message || "Hiba a mentésnél", "error");
+                        newBtn.disabled = false;
+                        newBtn.textContent = 'Tovább a fizetésre ➔';
+                    }
+                };
+            } else {
+                await window.raceManager.registerRacer(members, kategoria, tav, false, email, phone, contactName);
+                this.reset();
+                window.updateCategorySelect();
+            }
         } catch (err) {
             showToast(err.message, "error");
         }
     });
+
+    // Ha a URL-ben payment=success van visszatéréskor
+    if (window.location.search.includes('payment=success')) {
+        setTimeout(() => {
+            showToast('Sikeres Barion Fizetés! A nevezésed megerősítve.', 'success');
+            // Tisztítjuk a címsort anélkül, hogy oldalfrissítés történne
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }, 500);
+    }
 
     // Enter gomb a rajtszám rögzítéshez
     const bibInput = document.getElementById('bib-input');

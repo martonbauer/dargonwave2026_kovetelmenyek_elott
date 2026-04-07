@@ -1,6 +1,6 @@
 # DragonWave 2026 - Versenyirányító Rendszer
 
-Ez a verzió a natív Node.js `http` modult és `db.json` alapú adatkezelést használja.
+Erőteljes, WebSocket és Supabase technológiákkal felvértezett valós idejű nevezési rendzer integrált Barion fizetési kapuval (szimulációs réteggel) és PWA támogatással.
 
 ## 📊 Excel / CSV Importálási útmutató
 
