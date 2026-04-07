@@ -130,6 +130,26 @@ app.post('/api/register', async (req, res) => {
     if (validationError) return res.status(400).json({ error: validationError });
 
     try {
+        let isDuplicate = false;
+        
+        // --- DUPLIKÁCIÓ ELLENŐRZÉS (A 2026-os versenyszabályok alapján) ---
+        if (members && members.length > 0) {
+            for (const m of members) {
+                // 1. Ellenőrzés Ötpróba ID alapján
+                if (m.otproba_id && m.otproba_id.trim().length > 0) {
+                    const { data } = await supabase.from('members').select('id').eq('otproba_id', m.otproba_id.trim()).limit(1);
+                    if (data && data.length > 0) { isDuplicate = true; break; }
+                }
+                // 2. Ellenőrzés Név + Születési dátum alapján
+                if (!isDuplicate && m.name && m.birth_date) {
+                    const { data } = await supabase.from('members').select('id').ilike('name', m.name.trim()).eq('birth_date', m.birth_date.trim()).limit(1);
+                    if (data && data.length > 0) { isDuplicate = true; break; }
+                }
+            }
+        }
+        
+        const finalStatus = isDuplicate ? 'duplicate' : 'registered';
+
         const bib = await getNextBib(distance, category);
         if (bib === null) return res.status(400).json({ error: 'Nincs több szabad rajtszám!' });
 
@@ -137,7 +157,7 @@ app.post('/api/register', async (req, res) => {
         const { error: rError } = await supabase.from('racers').insert({
             id: racerId, bib, category, distance, 
             is_series: is_series ? 1 : 0, 
-            email, phone, status: 'registered'
+            email, phone, status: finalStatus
         });
         if (rError) throw rError;
 
@@ -152,7 +172,7 @@ app.post('/api/register', async (req, res) => {
                 throw mError;
             }
         }
-        res.json({ id: racerId, bib, category, distance, status: 'registered' });
+        res.json({ id: racerId, bib, category, distance, status: finalStatus, isDuplicate });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -320,12 +340,74 @@ app.post('/api/stop-racer', authenticateAdmin, async (req, res) => {
     try {
         const { data: racer } = await supabase.from('racers').select('*').eq('bib', bib).single();
         if (!racer) return res.status(404).json({ error: 'Nincs ilyen rajtszám!' });
+        
+        if (racer.status === 'finished') {
+            return res.status(400).json({ error: 'Már beérkezett! (Második nyomás kihagyva)' });
+        }
+
         const total_time = now - racer.start_time;
         await supabase.from('racers').update({ status: 'finished', finish_time: now, total_time }).eq('bib', bib);
         const { data: members } = await supabase.from('members').select('name').eq('racer_id', racer.id);
         const names = (members || []).map(m => m.name).join(', ');
         await checkAndStopEmptyBatchTimers();
         res.json({ success: true, racer: { name: names, total_time } });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/stop-bulk-racers', authenticateAdmin, async (req, res) => {
+    const { bibs } = req.body;
+    const baseNow = Date.now();
+    
+    if (!bibs || !Array.isArray(bibs) || bibs.length === 0) {
+        return res.status(400).json({ error: 'Üres rajtszám lista!' });
+    }
+
+    try {
+        const { data: racers } = await supabase.from('racers').select('id, bib, start_time, status').in('bib', bibs);
+        const results = { successful: [], failed: [] };
+        
+        if (!racers || racers.length === 0) {
+            return res.status(404).json({ error: 'Nincs találat a megadott rajtszámokra!' });
+        }
+
+        // Rendezzük és járjuk be a kliens által küldött EXACT sorrendben (bibs tömb)
+        const promises = bibs.map(async (bibStr, index) => {
+            const bibNum = parseInt(bibStr);
+            const r = racers.find(dbRacer => dbRacer.bib === bibNum);
+            
+            if (!r) {
+                // Ha valamit elgépeltek és nincs rajtszám (Bár az error array-be is mehet)
+                return;
+            }
+            if (r.status === 'finished') {
+                results.failed.push(`#${r.bib}: Már beérkezett`);
+                return;
+            }
+            if (r.status !== 'running') {
+                results.failed.push(`#${r.bib}: Nincs futamban`);
+                return;
+            }
+            
+            // TRÜKK: Minden egymást követő beütött rajtszámnak +10 milliszekundumot (0.01 mp) adunk
+            // Így megmarad a bíró által begépelt sorrend, nem lesz holtverseny!
+            const racerFinishTime = baseNow + (index * 10);
+            const total_time = racerFinishTime - r.start_time;
+            
+            const { error } = await supabase.from('racers')
+                .update({ status: 'finished', finish_time: racerFinishTime, total_time })
+                .eq('id', r.id);
+                
+            if (error) results.failed.push(`#${r.bib}: DB hiba`);
+            else results.successful.push(`#${r.bib}`);
+        });
+
+        await Promise.all(promises);
+        await checkAndStopEmptyBatchTimers();
+
+        
+        res.json({ success: true, results });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -439,20 +521,45 @@ app.post('/api/upload-csv', authenticateAdmin, async (req, res) => {
                         .maybeSingle();
 
                     if (existing) return 0;
+                    
+                    let isDuplicate = false;
+                    const membersToInsert = [];
+                    
+                    for(let j=0; j<4; j++) {
+                        if(fields[j+1]) {
+                            const mName = fields[j+1].trim();
+                            const mBirth = fields[j+8] ? fields[j+8].trim() : '';
+                            const mOtp = fields[j+13] ? fields[j+13].trim() : '';
+                            
+                            membersToInsert.push({ racer_id: "", name: mName, birth_date: mBirth, otproba_id: mOtp });
+                            
+                            if (mOtp.length > 0) {
+                                const { data } = await supabase.from('members').select('id').eq('otproba_id', mOtp).limit(1);
+                                if (data && data.length > 0) isDuplicate = true;
+                            }
+                            if (!isDuplicate && mName && mBirth) {
+                                const { data } = await supabase.from('members').select('id').ilike('name', mName).eq('birth_date', mBirth).limit(1);
+                                if (data && data.length > 0) isDuplicate = true;
+                            }
+                        }
+                    }
 
+                    const finalStatus = isDuplicate ? 'duplicate' : 'registered';
                     const racerId = Date.now().toString() + "_" + Math.floor(Math.random() * 1000);
+                    
+                    membersToInsert.forEach(m => m.racer_id = racerId);
+
                     const { error: rError } = await supabase.from('racers').insert({ 
                         id: racerId, bib, category, distance: dist, 
                         email: fields[5] || 'csv@imported.hu', 
                         phone: fields[6] || '0000', 
-                        status: 'registered' 
+                        status: finalStatus 
                     });
                     
                     if (!rError) {
-                        const members = [];
-                        for(let j=0; j<4; j++) if(fields[j+1]) members.push({ racer_id: racerId, name: fields[j+1], birth_date: fields[j+8] || '', otproba_id: fields[j+13] || '' });
+                        if (membersToInsert.length === 0) return 1;
                         
-                        const { error: mError } = await supabase.from('members').insert(members);
+                        const { error: mError } = await supabase.from('members').insert(membersToInsert);
                         if (mError) {
                             await supabase.from('racers').delete().eq('id', racerId);
                             return 0;
@@ -469,6 +576,69 @@ app.post('/api/upload-csv', authenticateAdmin, async (req, res) => {
         
         res.json({ success: true, importedCount: added });
     } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/create-dragon-team', authenticateAdmin, async (req, res) => {
+    const { memberIds, bib } = req.body;
+    if (!memberIds || !Array.isArray(memberIds) || memberIds.length === 0) {
+        return res.status(400).json({ error: 'Nincs kijelölt tag!' });
+    }
+    if (!bib) return res.status(400).json({ error: 'Nincs megadva rajtszám!' });
+
+    try {
+        // 1. Megszerezzük a kiválasztott tagok jelenlegi racer_id-it (későbbi takarításhoz)
+        const { data: oldMembers, error: oldError } = await supabase.from('members').select('racer_id').in('id', memberIds);
+        if (oldError) throw oldError;
+        
+        const oldRacerIds = [...new Set((oldMembers || []).map(m => m.racer_id))].filter(id => id);
+
+        // 2. Megnézzük, létezik-e már a cél rajtszám
+        const { data: existingRacer } = await supabase.from('racers').select('id, category').eq('bib', parseInt(bib)).maybeSingle();
+        
+        let targetRacerId = existingRacer ? existingRacer.id : null;
+
+        if (existingRacer) {
+            console.log(`[CreateDragonTeam] Using existing racer: ${existingRacer.id} (Bib: ${bib})`);
+            // Ha létezik, de nem sárkányhajó, akkor hiba
+            if (!(existingRacer.category || '').includes('sarkany')) {
+                return res.status(400).json({ error: `A #${bib} rajtszám már foglalt egy másik kategóriában!` });
+            }
+        } else {
+            console.log(`[CreateDragonTeam] Creating new racer for Bib: ${bib}`);
+            // Ha nem létezik, létrehozzuk
+            targetRacerId = "DRAGON_" + Date.now();
+            const { error: rError } = await supabase.from('racers').insert({
+                id: targetRacerId, 
+                bib: parseInt(bib), 
+                category: 'sarkanyhajo_otproba', 
+                distance: '11km', 
+                status: 'registered'
+            });
+            if (rError) throw rError;
+        }
+
+        // 3. Tagok behelyezése a cél egységbe
+        const { error: mError } = await supabase.from('members')
+            .update({ racer_id: targetRacerId })
+            .in('id', memberIds);
+        
+        if (mError) throw mError;
+
+        // 4. Takarítás: töröljük azokat a régi rekordokat, amik kiürültek
+        for (const oldId of oldRacerIds) {
+            if (oldId === targetRacerId) continue;
+            const { data: remMembers } = await supabase.from('members').select('id').eq('racer_id', oldId).limit(1);
+            if (!remMembers || remMembers.length === 0) {
+                // Ha nincs benne több tag, töröljük a racer rekordot is (kivéve ha épp oda mozgattunk)
+                await supabase.from('racers').delete().eq('id', oldId);
+            }
+        }
+
+        res.json({ success: true, racerId: targetRacerId });
+    } catch (err) {
+        console.error("[CreateDragonTeam Error]", err);
         res.status(500).json({ error: err.message });
     }
 });

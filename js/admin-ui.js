@@ -119,8 +119,12 @@ export function renderAdminTable(filterType = 'all') {
             statusColor = 'var(--accent-primary)';
             tr.className = "status-running";
             dataStartAttr = `data-start="${r.start_time || 0}"`;
+        } else if (r.status === 'finished') {
+            statusColor = '#00FFCC';
+        } else if (r.status === 'duplicate') {
+            statusColor = '#FF4D4D'; // Piros a duplikációnak
+            tr.style.background = 'rgba(255, 77, 77, 0.1)';
         }
-        if (r.status === 'finished') statusColor = '#00FFCC';
 
         let timeStr = "00:00:00.000";
         if (r.status === 'running') {
@@ -1034,16 +1038,29 @@ export function renderResultsCategoryList() {
         const card = document.createElement('div');
         card.className = 'landing-card';
         card.style = 'padding: 20px; text-align: left; align-items: flex-start; cursor: pointer; min-height: auto;';
-        card.onclick = () => window.showResultsCategoryDetail('11km', 'sarkany');
-
         card.innerHTML = `
+            <div style="font-size: 0.65rem; color: #FF9100; background: rgba(255, 145, 0, 0.1); padding: 3px 10px; border-radius: 10px; margin-bottom: 12px; font-weight:800; border: 1px solid rgba(255, 145, 0, 0.2);">
+                ${rm.data.racers.filter(r => (r.category || '').includes('sarkany') && r.status !== 'finished').length} NEVEZETT
+            </div>
+            <div style="font-weight: 700; color: white;">Csapatok Összeállítása</div>
+            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 8px;">Egyéni tagok csoportosítása ➔</div>
+        `;
+        card.onclick = () => window.showDataSubSection('admin-data-section-teams');
+        grid.appendChild(card);
+
+        const card2 = document.createElement('div');
+        card2.className = 'landing-card';
+        card2.style = 'padding: 20px; text-align: left; align-items: flex-start; cursor: pointer; min-height: auto;';
+        card2.onclick = () => window.showResultsCategoryDetail('11km', 'sarkany');
+
+        card2.innerHTML = `
             <div style="font-size: 0.65rem; color: #FFD700; background: rgba(255, 215, 0, 0.1); padding: 3px 10px; border-radius: 10px; margin-bottom: 12px; font-weight:800; border: 1px solid rgba(255, 215, 0, 0.2);">
                 ${finishersSarkany.length} BEÉRKEZETT
             </div>
-            <div style="font-weight: 700; color: white;">Sárkányhajó Open</div>
-            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 8px;">Megnyitás a rangsorért ➔</div>
+            <div style="font-weight: 700; color: white;">Sárkányhajó Open Rangsor</div>
+            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 8px;">Eredmények megtekintése ➔</div>
         `;
-        grid.appendChild(card);
+        grid.appendChild(card2);
         sarkanySection.appendChild(grid);
         container.appendChild(sarkanySection);
     }
@@ -1100,3 +1117,93 @@ export function renderResultsCategoryDetail(distId, catId) {
     });
 }
 window.renderResultsCategoryDetail = renderResultsCategoryDetail;
+
+/**
+ * --- SÁRKÁNYHAJÓ CSAPATÉPÍTŐ (TEAM MANAGER) ---
+ */
+export function renderTeamManager() {
+    const tbody = document.getElementById('dragon-team-builder-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const rm = window.raceManager;
+    if (!rm || !rm.data.racers) return;
+
+    // Keressük ki azokat a tagokat (members), akik sárkányhajó kategóriában vannak
+    // PLUSZ: akiknek a racer-je még üres vagy csak egyéni puffer
+    const dragonRacers = rm.data.racers.filter(r => (r.category || '').includes('sarkany'));
+    
+    // Gyűjtsük össze az összes tagot ezekből a racer-ekből
+    let allDragonMembers = [];
+    dragonRacers.forEach(r => {
+        if (r.members) {
+            r.members.forEach(m => {
+                allDragonMembers.push({ ...m, racerBib: r.bib, racerStatus: r.status });
+            });
+        }
+    });
+
+    if (allDragonMembers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--text-secondary);">Nincs sárkányhajóra jelentkezett versenyző a rendszerben.</td></tr>';
+        return;
+    }
+
+    allDragonMembers.forEach(m => {
+        const tr = document.createElement('tr');
+        // Kiemelés, ha már van rajtszáma (azaz már egy egység része)
+        const hasTeam = m.racerBib && m.racerBib > 0;
+        
+        tr.innerHTML = `
+            <td><input type="checkbox" class="dragon-member-check" value="${m.id}"></td>
+            <td style="font-weight:bold;">${m.name}</td>
+            <td>${m.birth_date || '-'}</td>
+            <td>${m.otproba_id || '-'}</td>
+            <td style="font-size:0.8rem; color:${hasTeam ? 'var(--accent-primary)' : '#888'};">
+                ${hasTeam ? `Egység: #${m.racerBib}` : '<span style="color:#ff9800; font-weight:bold;">Egyéni jelentkező</span>'}
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+window.renderTeamManager = renderTeamManager;
+
+window.selectAllDragonMembers = (checked) => {
+    document.querySelectorAll('.dragon-member-check:not(:disabled)').forEach(cb => cb.checked = checked);
+};
+
+window.createDragonTeam = async () => {
+    const selectedIds = Array.from(document.querySelectorAll('.dragon-member-check:checked')).map(cb => cb.value);
+    const bib = document.getElementById('new-team-bib').value;
+
+    if (selectedIds.length === 0) {
+        showToast("Válasszon ki legalább egy tagot!", "error");
+        return;
+    }
+    if (!bib) {
+        showToast("Adja meg az új egység rajtszámát!", "error");
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/create-dragon-team`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${window.raceManager.adminPassword}`
+            },
+            body: JSON.stringify({ memberIds: selectedIds, bib })
+        });
+        const result = await response.json();
+        if (response.ok) {
+            showToast(`Sikeres csapatépítés! #${bib} egység létrehozva.`, "success");
+            document.getElementById('new-team-bib').value = '';
+            await window.raceManager.loadData();
+            renderTeamManager();
+            window.renderAdminTable();
+        } else {
+            showToast(result.error, "error");
+        }
+    } catch (err) {
+        showToast("Hiba a szerver kapcsolatban!", "error");
+    }
+};

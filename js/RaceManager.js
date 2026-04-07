@@ -178,17 +178,21 @@ export class RaceManager {
             }
 
             if (response.ok) {
-                const newRacer = await response.json();
+                const result = await response.json();
                 await this.loadData();
                 this.renderUI();
 
-                showToast(`Sikeres nevezés! Rajtszám: ${newRacer.bib.toString().padStart(3, '0')}`, 'success');
+                if (result.isDuplicate) {
+                    showToast(`FIGYELEM: Te már neveztél! A nevezésedet rögzítettük 'Függő Duplikáció' állapotban. Az Adminisztrátor fogja jóváhagyni.`, 'info');
+                } else {
+                    showToast(`Sikeres nevezés! Rajtszám: ${result.bib.toString().padStart(3, '0')}`, 'success');
+                }
 
                 setTimeout(() => {
                     window.location.href = "https://sarkanyhajozz.hu/termek/dunakeszi-futam-elonevezes/";
-                }, 2000);
+                }, 3000);
 
-                return newRacer.bib;
+                return result.bib;
             } else {
                 const errorData = await response.json();
                 showToast(errorData.error || "Hiba a regisztráció során!", "error");

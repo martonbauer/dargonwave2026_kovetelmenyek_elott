@@ -5,7 +5,7 @@
 
 import { RaceManager } from './js/RaceManager.js';
 import { switchTab, showToast, formatTime, updateRegFormContext, showConfirmModal, closeConfirmModal, executeConfirmedAction } from './js/ui-utils.js';
-import { renderAdminTable, renderAdminControlButtons, exportResultsToExcel, exportFilteredTableToExcel, renderAdminCategoryList, renderAdminCategoryDetail, renderBibManagementTable } from './js/admin-ui.js';
+import { renderAdminTable, renderAdminControlButtons, exportResultsToExcel, exportFilteredTableToExcel, renderAdminCategoryList, renderAdminCategoryDetail, renderBibManagementTable, renderResultsCategoryList } from './js/admin-ui.js';
 import { API_URL, APP_VERSION } from './js/api.js';
 
 // --- Globális hatókör biztosítása a HTML onclick eseményekhez ---
@@ -25,6 +25,7 @@ window.executeConfirmedAction = executeConfirmedAction;
 window.renderAdminTable = renderAdminTable;
 window.renderAdminControlButtons = renderAdminControlButtons;
 window.exportResultsToExcel = exportResultsToExcel;
+window.renderResultsCategoryList = renderResultsCategoryList;
 
 // Inicializálás
 window.raceManager = new RaceManager();
@@ -130,7 +131,7 @@ window.updateAdminDataHeader = (title, backAction = null, useLocalBack = false) 
 };
 
 // --- Adatkezelés Al-navigáció ---
-window.showDataSubSection = (subId) => {
+window.showDataSubSection = async (subId) => {
     // Elrejtjük a data landinget és minden más data al-szekciót
     document.getElementById('admin-data-landing-view').classList.add('hidden');
     document.querySelectorAll('.admin-data-sub').forEach(s => s.classList.add('hidden'));
@@ -163,6 +164,12 @@ window.showDataSubSection = (subId) => {
     // Ha a rajtszám módosítás szekciót kérik
     if (subId === 'admin-data-section-bibs') {
         renderBibManagementTable();
+    }
+
+    // Ha a sárkányhajó építő szekciót kérik
+    if (subId === 'admin-data-section-teams') {
+        const { renderTeamManager } = await import('./js/admin-ui.js');
+        renderTeamManager();
     }
     
     window.scrollTo({ top: 0, behavior: 'smooth' });

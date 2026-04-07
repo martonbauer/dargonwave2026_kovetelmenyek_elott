@@ -307,6 +307,12 @@
                                 <p>Idők nullázása és adatbázis törlése.</p>
                                 <div class="btn-enter">Megnyitás</div>
                             </div>
+                            <div class="landing-card" onclick="window.showDataSubSection('admin-data-section-teams')">
+                                <div class="icon">🐉</div>
+                                <h3>sárkányhajó építés</h3>
+                                <p>Egyéni jelentkezők csapatba sorolása.</p>
+                                <div class="btn-enter">Megnyitás</div>
+                            </div>
                         </div>
                     </div>
 
@@ -585,11 +591,45 @@
                     <!-- Sub-section 5: System Management (New Standalone) -->
                     <div id="admin-data-section-system" class="admin-data-sub hidden">
                         <div class="admin-card" style="max-width: 600px; margin: 0 auto;">
+                            <!-- ... existing content ... -->
                             <h3 class="card-title">⚠️ Rendszerkezelés</h3>
                             <p class="card-desc">Idők nullázása vagy teljes rendszertörlés.</p>
                             <div style="display: flex; flex-direction: column; gap: 10px;">
                                 <button onclick="window.showConfirmModal('Tényleg nullázod az összes indított kategória idejét?', () => raceManager.resetTimes())" class="btn-secondary" style="width: 100%; color: orange; padding: 15px;">IDŐK NULLÁZÁSA</button>
                                 <button onclick="window.showConfirmModal('Tényleg törölni akarod a teljes versenyzői adatbázist? EZ NEM VISSZAVONHATÓ!', () => raceManager.resetAll())" class="btn-danger" style="width: 100%; padding: 15px;">ADATBÁZIS TÖRLÉSE</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sub-section 7: Dragon Boat Team Building -->
+                    <div id="admin-data-section-teams" class="admin-data-sub hidden">
+                        <div class="admin-card">
+                            <h3 class="card-title">🐉 Sárkányhajó Egység Összeállítása</h3>
+                            <p class="card-desc">Jelölje ki az egyéni regisztráltakat, majd hozzon létre belőlük egy új hajóegységet.</p>
+                            
+                            <div style="margin-bottom: 20px; display: flex; gap: 10px; align-items: flex-end;">
+                                <div style="flex: 1;">
+                                    <label>Új Csapat Rajtszáma</label>
+                                    <input type="number" id="new-team-bib" placeholder="Pl. 900" style="margin-bottom:0;">
+                                </div>
+                                <button onclick="window.createDragonTeam()" class="btn-primary" style="width: auto; padding: 12px 30px; margin-bottom:0;">EGYSÉG LÉTREHOZÁSA</button>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="results-table">
+                                    <thead>
+                                        <tr>
+                                            <th><input type="checkbox" onchange="window.selectAllDragonMembers(this.checked)"></th>
+                                            <th>Név</th>
+                                            <th>Szül.idő</th>
+                                            <th>Ötpróba ID</th>
+                                            <th>Aktuális Egység</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="dragon-team-builder-body">
+                                        <!-- JS fogja feltölteni -->
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
@@ -619,6 +659,7 @@
                             <option value="registered">REGISTERED</option>
                             <option value="running">RUNNING</option>
                             <option value="finished">FINISHED</option>
+                            <option value="duplicate">DUPLICATE</option>
                         </select>
                     </div>
                 </div>
@@ -687,53 +728,6 @@
         <img src="admin_landingpage_4_0_png.png" alt="DragonWave Logo" class="footer-logo">
         <span>Az időmérési és regisztrációs rendszert a <strong>DragonWave</strong> biztosítja.</span>
     </footer>
-    <div id="editRacerModal" class="modal">
-        <div class="modal-content" style="max-width: 500px; text-align: left;">
-            <div class="section-header" style="margin-bottom: 20px;">
-                <h3 class="section-title">✏️ Nevezés Szerkesztése</h3>
-            </div>
-            
-            <input type="hidden" id="edit-id">
-            
-            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                <div style="flex: 1;">
-                    <label style="display:block; margin-bottom:5px; color:var(--text-secondary);">Rajtszám</label>
-                    <input type="number" id="edit-bib" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid var(--accent-primary); color: white; border-radius: 8px;">
-                </div>
-                <div style="flex: 1;">
-                    <label style="display:block; margin-bottom:5px; color:var(--text-secondary);">Státusz</label>
-                    <select id="edit-status" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); color: white; border-radius: 8px;">
-                        <option value="registered">Registered</option>
-                        <option value="running">Running</option>
-                        <option value="finished">Finished</option>
-                    </select>
-                </div>
-            </div>
-
-            <div style="margin-bottom: 15px;">
-                <label style="display:block; margin-bottom:5px; color:var(--text-secondary);">Kategória azonosító</label>
-                <input type="text" id="edit-category" style="width: 100%; padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); color: white; border-radius: 8px;">
-            </div>
-
-            <div style="margin-bottom: 15px;">
-                <label style="display:block; margin-bottom:5px; color:var(--text-secondary);">Versenyzők adatai</label>
-                <div id="edit-members-container" style="display: flex; flex-direction: column; gap: 10px;">
-                    <!-- JS generálja ide a member sorokat -->
-                </div>
-            </div>
-
-            <!-- Ezek az elemek csak azért kellenek, hogy a RaceManager saveRacer()-e ne haljon el, beállítjuk őket rejtett formában if nem kell -->
-            <input type="hidden" id="edit-distance" value="11km">
-            <input type="hidden" id="edit-email" value="">
-            <input type="hidden" id="edit-phone" value="">
-            <input type="checkbox" id="edit-is_series" style="display:none;">
-
-            <div style="display:flex; justify-content: flex-end; gap: 10px; margin-top: 25px;">
-                <button onclick="window.raceManager.closeEditModal()" class="action-btn" style="background: rgba(255,255,255,0.1);">Mégsem</button>
-                <button onclick="window.raceManager.saveRacer()" class="btn-primary" style="padding: 10px 20px;">💾 Módosítások mentése</button>
-            </div>
-        </div>
-    </div>
 
     <div id="payment-modal" class="modal">
         <div class="modal-content" style="max-width: 400px; text-align: center; background: white; color: #333; border-radius: 12px; padding: 30px;">

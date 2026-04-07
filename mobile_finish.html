@@ -433,42 +433,47 @@
                 return;
             }
 
-            const bibs = input.split(/\s+/).filter(b => b.length > 0);
-            document.getElementById('app-loading').style.display = 'flex';
-
-            let results = [];
-            let errors = [];
-
-            for (const bib of bibs) {
-                try {
-                    const response = await fetch(`${API_BASE}/stop-racer`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${adminPassword}`
-                        },
-                        body: JSON.stringify({ bib: parseInt(bib) })
-                    });
-                    const data = await response.json();
-                    if (response.ok && data.success) {
-                        results.push(`#${bib}`);
-                    } else {
-                        errors.push(`#${bib}: ${data.error || 'Hiba'}`);
-                    }
-                } catch (err) {
-                    errors.push(`#${bib}: Kapcsolat`);
-                }
+            const bibsRaw = input.split(/\s+/).filter(b => b.length > 0);
+            const bibs = bibsRaw.map(b => parseInt(b)).filter(b => !isNaN(b));
+            
+            if (bibs.length === 0) {
+                showToast('Érvénytelen rajtszámok!', 'error');
+                return;
             }
 
-            document.getElementById('app-loading').style.display = 'none';
-            
-            if (results.length > 0) {
-                const msg = `Rögzítve: ${results.join(', ')}`;
-                showToast(msg + (errors.length > 0 ? `\n\nSikertelen (${errors.length} db):\n${errors.slice(0, 3).join('\n')}` : ''), 'success');
-                if (errors.length === 0) bibInput.value = '';
-                else bibInput.focus();
-            } else if (errors.length > 0) {
-                showToast(`Hiba történt:\n${errors[0]}`, 'error');
+            document.getElementById('app-loading').style.display = 'flex';
+
+            try {
+                const response = await fetch(`${API_BASE}/stop-bulk-racers`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminPassword}`
+                    },
+                    body: JSON.stringify({ bibs })
+                });
+                const data = await response.json();
+                
+                document.getElementById('app-loading').style.display = 'none';
+                
+                if (response.ok && data.success) {
+                    const { successful, failed } = data.results;
+                    let msg = "";
+                    if (successful.length > 0) {
+                        msg += `✅ Rögzítve:\n${successful.join(', ')}\n`;
+                        bibInput.value = '';
+                    }
+                    if (failed.length > 0) {
+                        msg += `\n❌ Sikertelen:\n${failed.join('\n')}`;
+                    }
+                    
+                    showToast(msg, failed.length > 0 ? (successful.length > 0 ? 'warning' : 'error') : 'success');
+                } else {
+                    showToast(`Szerver hiba: ${data.error || 'Ismeretlen'}`, 'error');
+                }
+            } catch (err) {
+                document.getElementById('app-loading').style.display = 'none';
+                showToast(`Kapcsolódási hiba! Ellenőrizd a netet.`, 'error');
             }
         }
 
@@ -481,7 +486,7 @@
                 } else if (val === 'submit') {
                     handleSubmit();
                 } else {
-                    if (bibInput.value.length < 50) {
+                    if (bibInput.value.length < 250) {
                         // Avoid consecutive spaces
                         if (val === ' ' && bibInput.value.endsWith(' ')) return;
                         bibInput.value += val;
