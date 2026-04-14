@@ -8,23 +8,28 @@ const fs = require('fs');
 // --- 0. ELŐZMÉNYEK KEZELÉSE (HISTORY MANAGEMENT) ---
 const HISTORY_FILE = path.join(__dirname, 'history', 'bib_history.json');
 
-function ensureHistoryDir() {
+async function ensureHistoryDir() {
     const dir = path.dirname(HISTORY_FILE);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    if (!fs.existsSync(HISTORY_FILE)) fs.writeFileSync(HISTORY_FILE, JSON.stringify([]));
+    try { await fs.promises.mkdir(dir, { recursive: true }); }
+    catch (e) {}
+    try { await fs.promises.access(HISTORY_FILE); }
+    catch (e) { await fs.promises.writeFile(HISTORY_FILE, JSON.stringify([])); }
 }
 
-function getBibHistory() {
-    ensureHistoryDir();
-    try { return JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8')); }
+async function getBibHistory() {
+    await ensureHistoryDir();
+    try { 
+        const data = await fs.promises.readFile(HISTORY_FILE, 'utf8');
+        return JSON.parse(data); 
+    }
     catch (e) { return []; }
 }
 
-function addBibHistoryEntry(entry) {
-    const history = getBibHistory();
+async function addBibHistoryEntry(entry) {
+    const history = await getBibHistory();
     history.unshift({ id: Date.now(), timestamp: new Date().toISOString(), ...entry });
-    ensureHistoryDir();
-    fs.writeFileSync(HISTORY_FILE, JSON.stringify(history.slice(0, 100), null, 2));
+    await ensureHistoryDir();
+    await fs.promises.writeFile(HISTORY_FILE, JSON.stringify(history.slice(0, 100), null, 2));
 }
 
 // --- 1. STRUKTURÁLIS RÉTEGEK: MIDDLEWARE-EK IMPORTÁLÁSA ---
@@ -61,7 +66,7 @@ const corsOptions = {
     allowedHeaders: ['Content-Type', 'Authorization']
 };
 app.use(cors(corsOptions));
-app.use(bodyParser.json({ limit: '10mb' }));
+app.use(bodyParser.json({ limit: '1mb' }));
 app.use(express.static(path.join(__dirname)));
 app.use(rateLimiter);
 
@@ -112,14 +117,35 @@ app.get('/api/data', async (req, res) => {
         const { data: categories, error: cError } = await supabase.from('categories').select('*');
         if (cError) throw cError;
 
+        const { data: checkpoints, error: chkError } = await supabase.from('checkpoints').select('*');
+        if (chkError) console.warn("Checkpoints fetch (maybe table missing):", chkError.message);
+
         const categoriesObj = {};
         (categories || []).forEach(c => categoriesObj[c.key] = c.start_time);
 
-        res.json({ racers: racers || [], categories: categoriesObj, serverNow: Date.now() });
+        res.json({ 
+            racers: racers || [], 
+            categories: categoriesObj, 
+            checkpoints: checkpoints || [],
+            serverNow: Date.now() 
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
+
+class SimpleMutex {
+    constructor() { this.queue = []; this.locked = false; }
+    async acquire() {
+        if (!this.locked) { this.locked = true; return; }
+        return new Promise(resolve => this.queue.push(resolve));
+    }
+    release() {
+        if (this.queue.length > 0) { const resolve = this.queue.shift(); resolve(); }
+        else { this.locked = false; }
+    }
+}
+const registerMutex = new SimpleMutex();
 
 // --- 8. VERSENYZŐ REGISZTRÁCIÓ (REGISTRATION) ---
 app.post('/api/register', async (req, res) => {
@@ -129,6 +155,7 @@ app.post('/api/register', async (req, res) => {
     const validationError = validateRacerData(req.body);
     if (validationError) return res.status(400).json({ error: validationError });
 
+    await registerMutex.acquire();
     try {
         let isDuplicate = false;
         
@@ -175,8 +202,16 @@ app.post('/api/register', async (req, res) => {
         res.json({ id: racerId, bib, category, distance, status: finalStatus, isDuplicate });
     } catch (err) {
         res.status(500).json({ error: err.message });
+    } finally {
+        registerMutex.release();
     }
 });
+
+let fetchLib;
+async function getFetch() {
+    if (!fetchLib) { fetchLib = global.fetch ? global.fetch : (await import('node-fetch')).default; }
+    return fetchLib;
+}
 
 // --- 8.5 BARION FIZETÉS (PAYMENT INTEGRATION) ---
 app.post('/api/barion/payment', async (req, res) => {
@@ -225,8 +260,8 @@ app.post('/api/barion/payment', async (req, res) => {
     };
 
     try {
-        const fetch = (await import('node-fetch')).default || global.fetch; // Node 18+ natív fetch támogatás
-        const response = await fetch('https://api.barion.com/v2/Payment/Start', {
+        const customFetch = await getFetch();
+        const response = await customFetch('https://api.barion.com/v2/Payment/Start', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -413,6 +448,28 @@ app.post('/api/stop-bulk-racers', authenticateAdmin, async (req, res) => {
     }
 });
 
+// --- 10.5 ELLENŐRZŐPONT REGISZTRÁCIÓ (CHECKPOINT) ---
+app.post('/api/checkpoint', authenticateAdmin, async (req, res) => {
+    const { bib, checkpoint_name } = req.body;
+    const now = Date.now();
+    try {
+        const { data: racer } = await supabase.from('racers').select('id, status').eq('bib', bib).maybeSingle();
+        if (!racer) return res.status(404).json({ error: 'Nincs ilyen rajtszám!' });
+        
+        const { error } = await supabase.from('checkpoints').insert({
+            racer_bib: bib,
+            checkpoint_name: checkpoint_name,
+            timestamp: now
+        });
+        
+        if (error) throw error;
+
+        res.json({ success: true, bib, checkpoint_name, timestamp: now });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // --- 11. VERSENYZŐ KEZELÉS: CRUD (MANAGEMENT) ---
 app.delete('/api/racer/:idOrBib', authenticateAdmin, async (req, res) => {
     const param = req.params.idOrBib;
@@ -452,7 +509,7 @@ app.put('/api/racer/:id', authenticateAdmin, async (req, res) => {
         
         // Előzmény rögzítése ha rajtszám módosítás történt
         if (req.body.oldBib && bib && req.body.oldBib != bib) {
-            addBibHistoryEntry({
+            await addBibHistoryEntry({
                 racerName: req.body.racerName || 'Ismeretlen',
                 oldBib: req.body.oldBib,
                 newBib: bib
@@ -466,13 +523,13 @@ app.put('/api/racer/:id', authenticateAdmin, async (req, res) => {
 });
 
 // --- 11.5 RAJTSZÁM ELŐZMÉNYEK (BIB HISTORY API) ---
-app.get('/api/bib-history', authenticateAdmin, (req, res) => {
-    res.json(getBibHistory());
+app.get('/api/bib-history', authenticateAdmin, async (req, res) => {
+    res.json(await getBibHistory());
 });
 
-app.delete('/api/bib-history', authenticateAdmin, (req, res) => {
-    ensureHistoryDir();
-    fs.writeFileSync(HISTORY_FILE, JSON.stringify([]));
+app.delete('/api/bib-history', authenticateAdmin, async (req, res) => {
+    await ensureHistoryDir();
+    await fs.promises.writeFile(HISTORY_FILE, JSON.stringify([]));
     res.json({ success: true });
 });
 
@@ -499,7 +556,7 @@ app.post('/api/reset-times', authenticateAdmin, async (req, res) => {
 });
 
 // --- 13. CSV IMPORTÁLÁS (DATA IMPORT) ---
-app.post('/api/upload-csv', authenticateAdmin, async (req, res) => {
+app.post('/api/upload-csv', authenticateAdmin, bodyParser.json({ limit: '10mb' }), async (req, res) => {
     const { csvData } = req.body;
     const lines = csvData.trim().split('\n');
     let added = 0;

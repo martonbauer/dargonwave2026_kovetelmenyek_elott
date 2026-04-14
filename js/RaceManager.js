@@ -490,11 +490,10 @@ export class RaceManager {
     }
 
     startTickLoop() {
-        const tick = () => {
+        if (this.tickInterval) clearInterval(this.tickInterval);
+        this.tickInterval = setInterval(() => {
             this.updateTick();
-            this.animationFrameId = requestAnimationFrame(tick);
-        };
-        this.animationFrameId = requestAnimationFrame(tick);
+        }, 50); // Minta időzítő, nem áll meg mikor a tab inaktív
     }
 
     updateTick() {
@@ -674,6 +673,7 @@ export class RaceManager {
         if (typeof window.renderAdminCharts === 'function') window.renderAdminCharts();
         this.renderAdminControlButtons();
         this.renderWaitingListCards();
+        this.renderRunningListCards();
     }
 
     renderAdminStats() {
@@ -688,7 +688,9 @@ export class RaceManager {
         const statsHtml = `
             <div style="display: flex; gap: 20px;">
                 <div class="stat-item"><span style="color: #888; font-size: 0.8rem;">ÖSSZES:</span> <strong style="color: white;">${total}</strong></div>
-                <div class="stat-item"><span style="color: var(--accent-primary); font-size: 0.8rem;">FUTÓ:</span> <strong>${running}</strong></div>
+                <div class="stat-item" style="cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--text-secondary)'; this.style.background='rgba(255,255,255,0.1)';" onmouseout="this.style.borderColor='transparent'; this.style.background='rgba(0, 145, 255, 0.1)';" onclick="window.toggleRunningListCards(true)">
+                    <span style="color: var(--accent-primary); font-size: 0.8rem;">FUTÓ:</span> <strong>${running}</strong>
+                </div>
                 <div class="stat-item"><span style="color: #00ff88; font-size: 0.8rem;">CÉLBA ÉRT:</span> <strong>${finished}</strong></div>
                 <div class="stat-item" style="cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--text-secondary)'; this.style.background='rgba(255,255,255,0.1)';" onmouseout="this.style.borderColor='transparent'; this.style.background='rgba(0, 145, 255, 0.1)';" onclick="window.toggleWaitingListCards(true)">
                     <span style="color: var(--text-secondary); font-size: 0.8rem;">VÁRAKOZIK:</span> <strong>${registered}</strong>
@@ -727,6 +729,47 @@ export class RaceManager {
                         </thead>
                         <tbody>
                             ${registered.sort((a,b) => (a.bib || 0) - (b.bib || 0)).map(r => `
+                                <tr>
+                                    <td><strong style="color: var(--accent-primary);">#${(r.bib || 0).toString().padStart(3, '0')}</strong></td>
+                                    <td>${r.members ? r.members.map(m => m.name).join(', ') : (r.name || '-')}</td>
+                                    <td style="font-size: 0.75rem; color: var(--text-secondary);">${this.formatCategoryName(r.category)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        containers.forEach(item => { item.content.innerHTML = html; });
+    }
+
+    renderRunningListCards() {
+        const containers = [
+            { content: document.getElementById('running-list-content-starts'), card: document.getElementById('running-list-container-starts') },
+            { content: document.getElementById('running-list-content-live'), card: document.getElementById('running-list-container-live') }
+        ].filter(item => item.content && item.card && !item.card.classList.contains('hidden'));
+
+        if (containers.length === 0) return;
+
+        const runningRacers = this.data.racers.filter(r => r.status === 'running');
+        
+        let html = '';
+        if (runningRacers.length === 0) {
+            html = '<div style="text-align: center; padding: 20px; color: var(--text-secondary); opacity: 0.7;">Jelenleg nincs futó versenyző.</div>';
+        } else {
+            html = `
+                <div class="table-responsive">
+                    <table class="results-table" style="font-size: 0.85rem;">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px;">Rajtszám</th>
+                                <th>Egység Tagjai</th>
+                                <th>Kategória</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${runningRacers.sort((a,b) => (a.bib || 0) - (b.bib || 0)).map(r => `
                                 <tr>
                                     <td><strong style="color: var(--accent-primary);">#${(r.bib || 0).toString().padStart(3, '0')}</strong></td>
                                     <td>${r.members ? r.members.map(m => m.name).join(', ') : (r.name || '-')}</td>

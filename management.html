@@ -223,6 +223,14 @@
                         </div>
                         <div id="waiting-list-content-starts"></div>
                     </div>
+                    <!-- Beépített Futók Listája Kártya (Starts) -->
+                    <div class="admin-card hidden" id="running-list-container-starts" style="margin-top: 20px; grid-column: 1 / -1; width: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;">
+                            <h3 class="card-title" style="margin:0;">🏃 Futók Névsora</h3>
+                            <button class="btn-back" onclick="window.toggleRunningListCards(false)">Bezárás</button>
+                        </div>
+                        <div id="running-list-content-starts"></div>
+                    </div>
                 </div>
 
                 <!-- Section 2: Élő Kontroll -->
@@ -262,6 +270,14 @@
                             <button class="btn-back" onclick="window.toggleWaitingListCards(false)">Bezárás</button>
                         </div>
                         <div id="waiting-list-content-live"></div>
+                    </div>
+                    <!-- Beépített Futók Listája Kártya (Live) -->
+                    <div class="admin-card hidden" id="running-list-container-live" style="margin-top: 20px; grid-column: 1 / -1; width: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--glass-border); padding-bottom: 10px;">
+                            <h3 class="card-title" style="margin:0;">🏃 Futók Névsora</h3>
+                            <button class="btn-back" onclick="window.toggleRunningListCards(false)">Bezárás</button>
+                        </div>
+                        <div id="running-list-content-live"></div>
                     </div>
                 </div>
 

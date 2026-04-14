@@ -46,3 +46,15 @@ ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public Access" ON racers FOR ALL USING (true);
 CREATE POLICY "Public Access" ON members FOR ALL USING (true);
 CREATE POLICY "Public Access" ON categories FOR ALL USING (true);
+
+-- Checkpoints Table
+CREATE TABLE IF NOT EXISTS checkpoints (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    racer_bib BIGINT NOT NULL,
+    checkpoint_name VARCHAR(255) NOT NULL,
+    timestamp BIGINT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE checkpoints ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Public Access" ON checkpoints FOR ALL USING (true);

@@ -430,6 +430,25 @@ window.toggleWaitingListCards = (show) => {
     }
 };
 
+window.toggleRunningListCards = (show) => {
+    const ids = ['running-list-container-starts', 'running-list-container-live'];
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            if (show) el.classList.remove('hidden');
+            else el.classList.add('hidden');
+        }
+    });
+
+    if (show && window.raceManager) {
+        window.raceManager.renderRunningListCards();
+        const firstVisible = document.querySelector('.admin-card:not(.hidden)[id^="running-list-container"]');
+        if (firstVisible) {
+            firstVisible.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+};
+
 // --- CSV Importálás ---
 window.uploadCsv = async () => {
     const fileInput = document.getElementById('csv-upload');
