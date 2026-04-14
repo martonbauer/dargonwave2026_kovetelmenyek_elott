@@ -239,27 +239,64 @@
                         <h3 class="section-title" style="margin-bottom:0;">🎯 Élő Kontroll & Időmérés</h3>
                         <button class="btn-back" onclick="window.showAdminLanding()">⬅️ Vissza a központba</button>
                     </div>
-                    <div class="admin-grid">
-                        <div class="admin-card" id="bib-recorder-card" style="grid-column: span 2;">
-                            <h3 class="card-title">🎯 Beérkeztetés</h3>
-                            <div class="admin-stats" id="admin-global-stats" style="margin-bottom: 20px; background: rgba(0, 145, 255, 0.05); padding: 15px; border-radius: 12px; display: flex; flex-wrap: wrap; gap: 15px; justify-content: center;"></div>
-                            <div id="bib-stop-panel" class="bib-recorder">
-                                <label for="bib-input">Rajtszám beírása célba érkezéskor:</label>
-                                <div class="bib-input-wrapper">
-                                    <input type="text" id="bib-input" placeholder="000" autofocus>
-                                    <div class="button-group" style="display: flex; gap: 10px;">
-                                        <button onclick="document.getElementById('bib-input').value += ' '; document.getElementById('bib-input').focus();" class="btn-secondary bulk-btn-mobile" style="flex: 1; height: 60px; font-weight: 700;">➕ TÖMEGES</button>
-                                        <button onclick="window.stopRacer()" class="btn-stop-major" style="flex: 2; height: 60px;">RÖGZÍTÉS</button>
+                    <div class="admin-grid" style="display: flex; flex-direction: column; gap: 20px;">
+                        <!-- Card 1: Köridő Rögzítése -->
+                        <div class="admin-card" id="checkpoint-recorder-card">
+                            <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+                                <div style="flex: 2; min-width: 280px;">
+                                    <h3 class="card-title">📍 Köridő Rögzítése (Ellenőrzőpont)</h3>
+                                    <div class="admin-stats-cp" id="admin-checkpoint-stats" style="margin-bottom: 20px; background: rgba(255, 153, 0, 0.05); padding: 15px; border-radius: 12px; display: flex; flex-wrap: wrap; gap: 15px; justify-content: center;"></div>
+                                    <div class="bib-recorder">
+                                        <label for="checkpoint-bib-input">Rajtszám beírása:</label>
+                                        <div class="bib-input-wrapper">
+                                            <input type="text" id="checkpoint-bib-input" placeholder="000" style="margin-bottom: 10px;">
+                                        </div>
+                                        <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 5px 0 15px 0;">💡 Több rajtszám esetén használd a <strong>SPACE</strong> gombot.</p>
+                                        <label for="checkpoint-name-select" style="margin-top: 10px; display:block;">Melyik pont?</label>
+                                        <select id="checkpoint-name-select" style="margin-bottom: 15px; width: 100%; padding: 12px; background: rgba(0,0,0,0.2); color: white; border: 1px solid var(--glass-border); border-radius: 8px;">
+                                            <option value="22km_tav_11km_fordulo">22km táv ➔ 11km Forduló</option>
+                                        </select>
+                                        <div class="button-group" style="display: flex; gap: 10px; margin-bottom: 15px;">
+                                            <button onclick="document.getElementById('checkpoint-bib-input').value += ' '; document.getElementById('checkpoint-bib-input').focus();" class="btn-secondary bulk-btn-mobile" style="flex: 1; height: 50px; font-weight: 700;">➕ TÖMEGES</button>
+                                            <button onclick="window.recordCheckpoint()" class="btn-primary" style="flex: 2; height: 50px; font-weight: bold; background: #007bff; border:none; color:white; border-radius:8px;">RÖGZÍTÉS</button>
+                                        </div>
+                                        <button onclick="window.open('mobile_checkpoint.html', '_blank')" class="btn-secondary" style="width: 100%; height: 40px; background-color: var(--accent-primary); color: #000; border: none; font-weight: bold; border-radius: 8px;">📱 Külön mobilos felület</button>
                                     </div>
                                 </div>
-                                <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 15px 0; text-align: center;">💡 Több rajtszám esetén használd a <strong>SPACE</strong> gombot.</p>
-                                <button onclick="window.open('mobile_finish.html', '_blank')" class="btn-secondary" style="width: 100%; background-color: var(--accent-primary); color: #000; border: none; font-weight: bold;">📱 Külön mobilos felület</button>
+                                <div style="flex: 1; min-width: 250px; border-radius: 8px; background: rgba(0,0,0,0.15); padding: 15px;">
+                                    <h3 class="card-title" style="font-size: 1.1rem; margin-top: 0;">⏱️ Futó Órák</h3>
+                                    <div id="admin-category-timers-cp" class="admin-timer-grid">
+                                        <div class="empty-text">Nincs aktív futam</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="admin-card" id="timers-card" style="grid-column: span 1;">
-                            <h3 class="card-title">⏱️ Futó Órák</h3>
-                            <div id="admin-category-timers" class="admin-timer-grid">
-                                <div class="empty-text">Nincs aktív futam</div>
+
+                        <!-- Card 2: Beérkeztetés -->
+                        <div class="admin-card" id="bib-recorder-card">
+                            <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+                                <div style="flex: 2; min-width: 280px;">
+                                    <h3 class="card-title">🎯 Beérkeztetés (Cél)</h3>
+                                    <div class="admin-stats" id="admin-global-stats" style="margin-bottom: 20px; background: rgba(0, 145, 255, 0.05); padding: 15px; border-radius: 12px; display: flex; flex-wrap: wrap; gap: 15px; justify-content: center;"></div>
+                                    <div id="bib-stop-panel" class="bib-recorder">
+                                        <label for="bib-input">Rajtszám beírása célba érkezéskor:</label>
+                                        <div class="bib-input-wrapper">
+                                            <input type="text" id="bib-input" placeholder="000" autofocus>
+                                            <div class="button-group" style="display: flex; gap: 10px;">
+                                                <button onclick="document.getElementById('bib-input').value += ' '; document.getElementById('bib-input').focus();" class="btn-secondary bulk-btn-mobile" style="flex: 1; height: 60px; font-weight: 700;">➕ TÖMEGES</button>
+                                                <button onclick="window.stopRacer()" class="btn-stop-major" style="flex: 2; height: 60px;">RÖGZÍTÉS</button>
+                                            </div>
+                                        </div>
+                                        <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 15px 0; text-align: center;">💡 Több rajtszám esetén használd a <strong>SPACE</strong> gombot.</p>
+                                        <button onclick="window.open('mobile_finish.html', '_blank')" class="btn-secondary" style="width: 100%; background-color: var(--accent-primary); color: #000; border: none; font-weight: bold;">📱 Külön mobilos felület</button>
+                                    </div>
+                                </div>
+                                <div style="flex: 1; min-width: 250px; border-radius: 8px; background: rgba(0,0,0,0.15); padding: 15px;">
+                                    <h3 class="card-title" style="font-size: 1.1rem; margin-top: 0;">⏱️ Futó Órák</h3>
+                                    <div id="admin-category-timers-finish" class="admin-timer-grid">
+                                        <div class="empty-text">Nincs aktív futam</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DragonWave Mobile Köridő</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #00E4FF;
+            --primary-dark: #00A3FF;
+            --bg: #0B192C;
+            --text: #CDE2FF;
+            --card-bg: rgba(16, 37, 66, 0.85);
+            --error: #FF4D4D;
+            --success: #00FFC2;
+            --border: rgba(0, 228, 255, 0.25);
+            --accent: #5EB1FF;
+            --glass: rgba(255, 255, 255, 0.03);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Montserrat', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg);
+            background: radial-gradient(circle at top right, #162a4a, #0b192c);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 15px;
+            overflow-x: hidden;
+        }
+
+        header {
+            text-align: center;
+            padding: 15px 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 15px rgba(0, 228, 255, 0.3);
+        }
+        
+        header p {
+            font-size: 0.75rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 4px;
+            font-weight: 600;
+        }
+
+        .container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 450px;
+            margin: 0 auto;
+        }
+
+        #login-view, #app-view {
+            width: 100%;
+            display: none;
+            flex-direction: column;
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            padding: 25px;
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+        }
+
+        #login-view.active, #app-view.active {
+            display: flex;
+        }
+
+        h2 {
+            font-size: 1rem;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: white;
+            opacity: 0.9;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+            width: 100%;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 18px;
+            font-size: 1.2rem;
+            background: var(--glass);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            color: white;
+            outline: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        select option {
+            background: var(--bg);
+            color: white;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--primary);
+            background: rgba(0, 228, 255, 0.08);
+            box-shadow: 0 0 20px rgba(0, 228, 255, 0.15);
+        }
+
+        #bib-input {
+            font-size: 2.5rem;
+            text-align: center;
+            font-weight: 800;
+            height: 75px;
+            padding: 10px;
+            letter-spacing: 3px;
+            color: var(--primary);
+            font-family: 'Space Mono', monospace;
+            cursor: default;
+        }
+
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .key-btn {
+            background: var(--glass);
+            color: white;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            height: 72px;
+            font-size: 1.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .key-btn:active {
+            transform: scale(0.9);
+            background: var(--primary);
+            color: var(--bg);
+            border-color: transparent;
+            box-shadow: 0 0 20px rgba(0, 228, 255, 0.4);
+        }
+
+        .key-bulk {
+            font-size: 0.9rem;
+            background: rgba(0, 228, 255, 0.12);
+            border-color: var(--primary);
+            color: var(--primary);
+            letter-spacing: 1px;
+            font-weight: 800;
+        }
+
+        .key-del {
+            background: rgba(255, 77, 77, 0.1);
+            border-color: rgba(255, 77, 77, 0.3);
+            color: #ff6b6b;
+        }
+
+        .key-submit {
+            grid-column: span 3;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: var(--bg);
+            font-size: 1.5rem;
+            font-weight: 900;
+            height: 80px;
+            letter-spacing: 2px;
+            border: none;
+            border-radius: 20px;
+            margin-top: 5px;
+            box-shadow: 0 8px 25px rgba(0, 228, 255, 0.3);
+        }
+
+        .key-submit:active {
+            transform: scale(0.97);
+            filter: brightness(1.1);
+            box-shadow: 0 4px 15px rgba(0, 228, 255, 0.2);
+        }
+
+        .btn-logout {
+            background-color: transparent;
+            color: #ff6b6b;
+            border: 1px solid rgba(255, 77, 77, 0.25);
+            border-radius: 12px;
+            padding: 14px 25px;
+            font-size: 0.85rem;
+            width: auto;
+            align-self: center;
+            margin: 25px auto;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        #toast {
+            position: fixed;
+            top: 25px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-150%);
+            padding: 18px 30px;
+            border-radius: 20px;
+            font-weight: 700;
+            color: white;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.28);
+            width: 92%;
+            max-width: 420px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            white-space: pre-line;
+            font-size: 1rem;
+            line-height: 1.4;
+        }
+
+        #toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        #toast.success { background: linear-gradient(135deg, #00FFC2, #00D1FF); color: #0b192c; }
+        #toast.error { background: linear-gradient(135deg, #FF4D4D, #CC0000); }
+        #toast.warning { background: linear-gradient(135deg, #FFB800, #FF8A00); color: #0b192c; }
+
+        .hint {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--accent);
+            margin-top: 15px;
+            opacity: 0.8;
+            font-weight: 600;
+        }
+        
+        .loading-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(11, 25, 44, 0.85);
+            backdrop-filter: blur(6px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 24px;
+            z-index: 10;
+            display: none;
+        }
+        
+        .loading-spinner {
+            width: 45px;
+            height: 45px;
+            border: 4px solid rgba(0, 228, 255, 0.2);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>DragonWave</h1>
+        <p>Hivatalos Köridő Rögzítő</p>
+    </header>
+
+    <div id="toast">Message here</div>
+
+    <div class="container">
+        <!-- LOGIN VIEW -->
+        <div id="login-view">
+            <h2>Admin Belépés</h2>
+            <div class="input-group">
+                <label>Vezérlő Jelszó</label>
+                <input type="password" id="password-input" placeholder="••••••••" autocomplete="current-password">
+            </div>
+            <button class="key-submit" id="login-btn">Belépés</button>
+            <div class="loading-overlay" id="login-loading">
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
+
+        <!-- MAIN APP VIEW -->
+        <div id="app-view">
+            <h2>Köridő Rögzítés</h2>
+            
+            <div class="input-group" style="margin-bottom: 15px;">
+                <label>Melyik ellenőrzőpont?</label>
+                <select id="checkpoint-select" style="font-size: 1rem; padding: 12px; height: auto;">
+                    <option value="22km_tav_11km_fordulo">22km táv ➔ 11km Forduló</option>
+                </select>
+            </div>
+
+            <div class="input-group" style="margin-bottom: 12px;">
+                <label>Rajtszám(ok)</label>
+                <input type="text" id="bib-input" inputmode="none" placeholder="---" autocomplete="off" readonly>
+            </div>
+            
+            <div class="keypad">
+                <button class="key-btn" data-val="1">1</button>
+                <button class="key-btn" data-val="2">2</button>
+                <button class="key-btn" data-val="3">3</button>
+                
+                <button class="key-btn" data-val="4">4</button>
+                <button class="key-btn" data-val="5">5</button>
+                <button class="key-btn" data-val="6">6</button>
+                
+                <button class="key-btn" data-val="7">7</button>
+                <button class="key-btn" data-val="8">8</button>
+                <button class="key-btn" data-val="9">9</button>
+                
+                <button class="key-btn key-bulk" data-val=" ">TÖMEGES</button>
+                <button class="key-btn" data-val="0">0</button>
+                <button class="key-btn key-del" data-val="del">⌫</button>
+
+                <button class="key-btn key-submit" data-val="submit">KÖR RÖGZÍTÉSE</button>
+            </div>
+            
+            <p class="hint">Több rajtszám esetén használd a TÖMEGES gombot!</p>
+            
+            <div class="loading-overlay" id="app-loading">
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
+    </div>
+    
+    <button class="btn-logout" id="logout-btn" style="display: none;">Kijelentkezés</button>
+
+    <script>
+        const loginView = document.getElementById('login-view');
+        const appView = document.getElementById('app-view');
+        const toastEl = document.getElementById('toast');
+        const loginBtn = document.getElementById('login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const passwordInput = document.getElementById('password-input');
+        const bibInput = document.getElementById('bib-input');
+        const checkPointSelect = document.getElementById('checkpoint-select');
+        
+        let adminPassword = localStorage.getItem('dragonwave_admin_pwd') || '';
+        const API_BASE = (window.location.hostname === 'localhost' || window.location.protocol === 'file:')
+            ? 'http://localhost:3001/api' : '/api';
+
+        function init() {
+            if (adminPassword) showApp();
+            else showLogin();
+        }
+
+        function showLogin() {
+            loginView.classList.add('active');
+            appView.classList.remove('active');
+            logoutBtn.style.display = 'none';
+        }
+
+        function showApp() {
+            loginView.classList.remove('active');
+            appView.classList.add('active');
+            logoutBtn.style.display = 'block';
+            bibInput.value = '';
+        }
+
+        let toastTimeout;
+        function showToast(message, type = 'success') {
+            toastEl.textContent = message;
+            toastEl.className = '';
+            toastEl.classList.add('show', type);
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => toastEl.classList.remove('show'), 5000);
+        }
+
+        async function handleLogin() {
+            const pwd = passwordInput.value.trim();
+            if (!pwd) return showToast('Jelszó megadása kötelező!', 'error');
+            document.getElementById('login-loading').style.display = 'flex';
+            try {
+                const response = await fetch(`${API_BASE}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: pwd })
+                });
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    adminPassword = pwd;
+                    localStorage.setItem('dragonwave_admin_pwd', pwd);
+                    showToast('Sikeres belépés!', 'success');
+                    showApp();
+                } else showToast(data.error || 'Hibás jelszó!', 'error');
+            } catch (err) {
+                showToast('Csatlakozási hiba.', 'error');
+            } finally {
+                document.getElementById('login-loading').style.display = 'none';
+            }
+        }
+
+        loginBtn.addEventListener('click', handleLogin);
+        passwordInput.addEventListener('keypress', (e) => e.key === 'Enter' && handleLogin());
+        logoutBtn.addEventListener('click', () => {
+            adminPassword = '';
+            localStorage.removeItem('dragonwave_admin_pwd');
+            showLogin();
+        });
+
+        async function handleSubmit() {
+            const input = bibInput.value.trim();
+            const checkpointName = checkPointSelect.value;
+            
+            if (!input) {
+                showToast('Adj meg legalább egy rajtszámot!', 'warning');
+                return;
+            }
+
+            const bibsRaw = input.split(/\s+/).filter(b => b.length > 0);
+            const bibs = bibsRaw.map(b => parseInt(b)).filter(b => !isNaN(b));
+            
+            if (bibs.length === 0) {
+                showToast('Érvénytelen rajtszámok!', 'error');
+                return;
+            }
+
+            document.getElementById('app-loading').style.display = 'flex';
+
+            try {
+                let successful = [];
+                let failed = [];
+
+                for (const bib of bibs) {
+                    const response = await fetch(`${API_BASE}/checkpoint`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${adminPassword}`
+                        },
+                        body: JSON.stringify({ bib, checkpoint_name: checkpointName })
+                    });
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        successful.push(bib);
+                    } else {
+                        failed.push(`${bib} (${data.error || 'Hiba'})`);
+                    }
+                }
+                
+                document.getElementById('app-loading').style.display = 'none';
+                
+                let msg = "";
+                if (successful.length > 0) {
+                    msg += `✅ Kör rögzítve:\n${successful.join(', ')}\n`;
+                    bibInput.value = '';
+                }
+                if (failed.length > 0) {
+                    msg += `\n❌ Sikertelen:\n${failed.join('\n')}`;
+                }
+                
+                showToast(msg, failed.length > 0 ? (successful.length > 0 ? 'warning' : 'error') : 'success');
+            } catch (err) {
+                document.getElementById('app-loading').style.display = 'none';
+                showToast(`Kapcsolódási hiba! Ellenőrizd a netet.`, 'error');
+            }
+        }
+
+        document.querySelectorAll('.key-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const val = btn.getAttribute('data-val');
+                if (val === 'del') {
+                    bibInput.value = bibInput.value.trimEnd(); // Remove space if last char
+                    bibInput.value = bibInput.value.slice(0, -1);
+                } else if (val === 'submit') {
+                    handleSubmit();
+                } else {
+                    if (bibInput.value.length < 250) {
+                        // Avoid consecutive spaces
+                        if (val === ' ' && bibInput.value.endsWith(' ')) return;
+                        bibInput.value += val;
+                    }
+                }
+                bibInput.dispatchEvent(new Event('input'));
+            });
+        });
+
+        init();
+    </script>
+</body>
+</html>

@@ -260,22 +260,92 @@ export class RaceManager {
     }
 
     async stopRacer(bibInput) {
-        const bib = parseInt(bibInput, 10);
-        try {
-            const response = await apiCall('stop-racer', 'POST', { bib }, this.adminPassword);
-            if (!response) return;
-            const result = await response.json();
-            if (response.ok) {
-                await this.refreshUI();
-                const names = result.racer.name;
-                showToast(`CÉL: #${bib} ${names} - ${formatTime(result.racer.total_time)}`, 'success');
-                const bibInputEl = document.getElementById('bib-input');
-                if (bibInputEl) { bibInputEl.value = ''; bibInputEl.focus(); }
-            } else {
-                showToast(result.error, 'error');
+        const inputStr = String(bibInput).trim();
+        if (!inputStr) { showToast("Kérlek adj meg legalább egy érvényes rajtszámot!", "error"); return; }
+        
+        const bibs = inputStr.split(/\s+/).map(b => parseInt(b, 10)).filter(b => !isNaN(b));
+        if (bibs.length === 0) { showToast("Kérlek adj meg érvényes rajtszámokat!", "error"); return; }
+
+        if (bibs.length > 1) {
+            try {
+                const response = await apiCall('stop-bulk-racers', 'POST', { bibs }, this.adminPassword);
+                if (!response) return;
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    await this.refreshUI();
+                    const { successful, failed } = data.results;
+                    let msg = "";
+                    if (successful.length > 0) {
+                        msg += `✅ Rögzítve:\n${successful.join(', ')}\n`;
+                        const bibInputEl = document.getElementById('bib-input');
+                        if (bibInputEl) { bibInputEl.value = ''; bibInputEl.focus(); }
+                    }
+                    if (failed.length > 0) msg += `\n❌ Sikertelen:\n${failed.join('\n')}`;
+                    showToast(msg, failed.length > 0 ? (successful.length > 0 ? 'warning' : 'error') : 'success');
+                } else {
+                    showToast(data.error || 'Hiba a tömeges rögzítéskor!', 'error');
+                }
+            } catch (err) {
+                showToast("Hálózati hiba a tömeges rögzítéskor!", "error");
             }
+        } else {
+            const bib = bibs[0];
+            try {
+                const response = await apiCall('stop-racer', 'POST', { bib }, this.adminPassword);
+                if (!response) return;
+                const result = await response.json();
+                if (response.ok) {
+                    await this.refreshUI();
+                    const names = result.racer.name;
+                    showToast(`CÉL: #${bib} ${names} - ${formatTime(result.racer.total_time)}`, 'success');
+                    const bibInputEl = document.getElementById('bib-input');
+                    if (bibInputEl) { bibInputEl.value = ''; bibInputEl.focus(); }
+                } else {
+                    showToast(result.error, 'error');
+                }
+            } catch (err) {
+                showToast("Hiba a célba érkezés rögzítésekor!", "error");
+            }
+        }
+    }
+
+    async recordCheckpoint(bibInput, checkpointName) {
+        const inputStr = String(bibInput).trim();
+        if (!inputStr) { showToast("Kérlek adj meg egy érvényes rajtszámot!", "error"); return; }
+
+        const bibs = inputStr.split(/\s+/).map(b => parseInt(b, 10)).filter(b => !isNaN(b));
+        if (bibs.length === 0) { showToast("Kérlek adj meg egy érvényes rajtszámot!", "error"); return; }
+
+        try {
+            let successful = [];
+            let failed = [];
+
+            for (const bib of bibs) {
+                const response = await apiCall('checkpoint', 'POST', { bib, checkpoint_name: checkpointName }, this.adminPassword);
+                if (response && response.ok) {
+                    successful.push(bib);
+                } else {
+                    const data = response ? await response.json() : { error: 'Hiba' };
+                    failed.push(`${bib} (${data.error || 'Hiba'})`);
+                }
+            }
+
+            await this.refreshUI();
+            
+            let msg = "";
+            if (successful.length > 0) {
+                msg += `📍 Kör rögzítve:\n${successful.join(', ')}\n`;
+                const cpBibEl = document.getElementById('checkpoint-bib-input');
+                if (cpBibEl) { cpBibEl.value = ''; cpBibEl.focus(); }
+            }
+            if (failed.length > 0) {
+                msg += `\n❌ Sikertelen:\n${failed.join('\n')}`;
+            }
+
+            showToast(msg, failed.length > 0 ? (successful.length > 0 ? 'warning' : 'error') : 'success');
         } catch (err) {
-            showToast("Hiba a célba érkezés rögzítésekor!", "error");
+            showToast("Hálózati hiba az ellenőrzőpont rögzítésekor!", "error");
         }
     }
 
@@ -562,10 +632,9 @@ export class RaceManager {
 
     updateLiveTimers() {
         const publicContainer = document.getElementById('category-timers');
-        const adminContainer = document.getElementById('admin-category-timers');
         const containers = [];
         if (publicContainer) containers.push(publicContainer);
-        if (adminContainer) containers.push(adminContainer);
+        document.querySelectorAll('.admin-timer-grid').forEach(el => containers.push(el));
         if (containers.length === 0) return;
 
         const activeCategories = Object.keys(this.data.categories || {})
@@ -580,7 +649,7 @@ export class RaceManager {
                     activeCategories.forEach(cat => {
                         const div = document.createElement('div');
                         div.className = 'cat-timer';
-                        const isAdmin = container.id === 'admin-category-timers';
+                        const isAdmin = container.classList.contains('admin-timer-grid');
                         div.innerHTML = `
                             <div class="cat-name">${this.formatCategoryName(cat.id)}</div>
                             <div class="cat-time" id="${container.id}-timer-${cat.id}">00:00:00.000</div>
@@ -701,6 +770,20 @@ export class RaceManager {
         statsContainers.forEach(container => {
             container.innerHTML = statsHtml;
         });
+
+        const cpStatsContainer = document.getElementById('admin-checkpoint-stats');
+        if (cpStatsContainer) {
+            const running22km = this.data.racers.filter(r => r.status === 'running' && r.distance === '22km').length;
+            const megfordult = (this.data.checkpoints || []).filter(c => c.checkpoint_name === '22km_tav_11km_fordulo').length;
+            cpStatsContainer.innerHTML = `
+                <div style="display: flex; gap: 20px;">
+                    <div class="stat-item" style="cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--text-secondary)'; this.style.background='rgba(255,255,255,0.1)';" onmouseout="this.style.borderColor='transparent'; this.style.background='rgba(255, 153, 0, 0.1)';" onclick="window.toggleRunningListCards(true)">
+                        <span style="color: var(--accent-primary); font-size: 0.8rem;">22KM FUTÓ LÉTSZÁM:</span> <strong style="color: white;">${running22km}</strong>
+                    </div>
+                    <div class="stat-item"><span style="color: #ff9900; font-size: 0.8rem;">MEGFORDULT (11km):</span> <strong style="color: white;">${megfordult}</strong></div>
+                </div>
+            `;
+        }
     }
 
     renderWaitingListCards() {

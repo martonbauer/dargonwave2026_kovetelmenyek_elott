@@ -945,11 +945,30 @@ export function renderResultsTable(filterType = 'all') {
         return;
     }
 
+    const thead = document.querySelector('#admin-results-table thead tr');
+    const showFordulo = filterType === '22km' || filterType === 'all';
+    
+    if (thead) {
+        thead.innerHTML = `
+            <th>Helyezés</th>
+            <th>Rajtszám</th>
+            <th>Egység Tagjai</th>
+            <th>Kategória</th>
+            <th>Táv</th>
+            ${showFordulo ? '<th>Forduló idő (11km)</th>' : ''}
+            <th>Időeredmény</th>
+        `;
+    }
+
     racers.forEach((r, idx) => {
         const tr = document.createElement('tr');
         const memberList = r.members ? r.members.map(m => m.name).join(', ') : (r.name || '-');
         const rank = idx + 1;
         const rankDecor = rank <= 3 ? `font-weight: 800; color: ${rank === 1 ? '#FFD700' : rank === 2 ? '#C0C0C0' : '#CD7F32'}` : '';
+
+        const cp = (rm.data.checkpoints || []).find(c => c.bib === r.bib && c.checkpoint_name === '22km_tav_11km_fordulo');
+        const forduloTd = showFordulo ? 
+            `<td style="font-family:'Space Mono'; color:#ff9900;">${cp ? formatTime(cp.timestamp - r.start_time) : '-'}</td>` : '';
 
         tr.innerHTML = `
             <td style="${rankDecor}">${rank}.</td>
@@ -957,6 +976,7 @@ export function renderResultsTable(filterType = 'all') {
             <td>${memberList}</td>
             <td>${rm.formatCategoryName(r.category)}</td>
             <td>${r.distance || '-'}</td>
+            ${forduloTd}
             <td style="font-family:'Space Mono'; font-weight:bold; color:var(--accent-primary);">${formatTime(r.total_time || 0)}</td>
         `;
         tbody.appendChild(tr);
@@ -1101,16 +1121,35 @@ export function renderResultsCategoryDetail(distId, catId) {
         return;
     }
 
+    const thead = document.querySelector('.results-table thead tr');
+    const theadCategory = document.querySelector('#admin-results-category-detail thead tr');
+    const targetThead = theadCategory || thead;
+    
+    if (targetThead) {
+        targetThead.innerHTML = `
+            <th>Helyezés</th>
+            <th>Rajtszám</th>
+            <th>Egység Tagjai</th>
+            ${distId === '22km' ? '<th>Forduló idő (11km)</th>' : ''}
+            <th>Időeredmény</th>
+        `;
+    }
+
     finishers.forEach((r, idx) => {
         const tr = document.createElement('tr');
         const memberList = r.members ? r.members.map(m => m.name).join(', ') : (r.name || '-');
         const rank = idx + 1;
         const rankDecor = rank <= 3 ? `font-weight: 800; color: ${rank === 1 ? '#FFD700' : rank === 2 ? '#C0C0C0' : '#CD7F32'}` : '';
 
+        const cp = (rm.data.checkpoints || []).find(c => c.bib === r.bib && c.checkpoint_name === '22km_tav_11km_fordulo');
+        const forduloTd = (distId === '22km') ? 
+            `<td style="font-family:'Space Mono'; color:#ff9900;">${cp ? formatTime(cp.timestamp - r.start_time) : '-'}</td>` : '';
+
         tr.innerHTML = `
             <td style="${rankDecor}">${rank}.</td>
             <td><strong>#${(r.bib || 0).toString().padStart(3, '0')}</strong></td>
             <td>${memberList}</td>
+            ${forduloTd}
             <td style="font-family:'Space Mono'; font-weight:bold; color:var(--accent-primary);">${formatTime(r.total_time || 0)}</td>
         `;
         tbody.appendChild(tr);
