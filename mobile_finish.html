@@ -305,11 +305,13 @@
         <!-- LOGIN VIEW -->
         <div id="login-view">
             <h2>Admin Belépés</h2>
-            <div class="input-group">
-                <label>Vezérlő Jelszó</label>
-                <input type="password" id="password-input" placeholder="••••••••" autocomplete="current-password">
-            </div>
-            <button class="key-submit" id="login-btn">Belépés</button>
+            <form id="login-form" onsubmit="event.preventDefault();" style="width: 100%; display: flex; flex-direction: column;">
+                <div class="input-group">
+                    <label>Vezérlő Jelszó</label>
+                    <input type="password" id="password-input" placeholder="••••••••" autocomplete="current-password">
+                </div>
+                <button type="submit" class="key-submit" id="login-btn">Belépés</button>
+            </form>
             <div class="loading-overlay" id="login-loading">
                 <div class="loading-spinner"></div>
             </div>

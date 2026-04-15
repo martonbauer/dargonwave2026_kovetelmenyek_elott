@@ -59,3 +59,19 @@ A rendszer a modern versenyigazgatás és felhasználói élmény követelménye
 - **Jelenlét és Befizetés követése**: Az admin táblázatban dedikált check-box segítségével pipálható a helyszínen 'Megjelent' státusz, és automatikusan jelzi a Barion-al 'Befizetve' flaget.
 - **Rajt Funkciók (Indítópult)**: Élesítheti a versenytávokat kategóriánként - a WebSocket kapcsolat miatt az indítás minden versenyző és adminisztrátor gépre századmásodpercre elterjedően rögzítve jelzi a futó tikkert (órát).
 - **Élő Kontroll (Célvonal) és Tömeges Beérkeztetés**: Érkező hajók rajtszámának begépelésével regisztrálható a megállított befutó idő. A rendszer a mobilalkalmazásban támogatja a **Batch API-n keresztüli tömeges adatküldést** (akár 250 karakteres kapacitással) és beépített **idempotens felülírás-védelmet** alkalmaz a szerveroldalon. Ez biztosítja, hogy ha több bíró is beérkezteti ugyanazt a versenyzőt, mindig a leggyorsabb (elsőként rögzített) milliszekundum-pontos idő marad érvényben, kizárva a hálózati laggok miatti adatütközéseket. A rendszer ez alapján rögzíti és azonnal frissíti a hivatalos Scoreboard sorrendet.
+- **Ellenőrzőpont (Checkpoint) Rögzítése**: A maratoni vagy hosszabb (pl. 22km-es) távok esetében a rendszer egy új ellenőrzőpont (11km-es forduló) hálózati rögzítését is lehetővé teszi, elkülönítve a célidőtől (`checkpoint_time`). Ez statisztikai és közvetítési szempontból is esszenciális a verseny alakulásának követéséhez. A megoldás offline/gyenge hálózati kapcsolattal is kompatibilis, Queue-t (aszinkron háttérszálat) futtat a böngésző szintjén az elküldés garantálására (Service Worker integráció).
+
+## 6. Adatbázis Modell (Supabase / Schema)
+A rendszer robusztus performanciáját a jól strukturált PosgreSQL adatbázis adja. Fő entitások:
+- `registrations`: Az alapvető versenyzői adatokat, kapcsolattartási információkat és kategória-besorolást tartja nyilván. Tartalmazza a Barion tranzakció státuszát és a versenyfizetési azonosítót is.
+- `race_timing`: Egy-egy a `registrations` entitással. A valós idejű óraidőket és állapotokat reprezentálja: `status` (pending, racing, finished, dns), `start_time` (rajt pillanata ms pontossággal), `checkpoint_time` (féltáv részidő), és `end_time` (hivatalos célidő).
+- `checkpoints` (auditor tábla): Naplózó tábla a különböző földrajzi mérőpontokon áthaladó hajók kronológiai időpecsétjeinek rögzítésére tranzakció-biztos módon, komplex RLS biztosítási háziszabályokkal a háttérben.
+
+## 7. Biztonság és Készültség
+A DragonWave 2026 maximálisan figyelembe veszi a robusztusságot és az adatbiztonságot:
+- **JWT (JSON Web Tokens) Autentikáció**: Az Admin rendszert kriptográfiai szempontból védett stateless authentikáció és authorizáció kezeli. Csak igazolt `token` birtokában hívhatók az API-k (módosítás, törlés, fizetési adatok lekérdezése).
+- **Aszinkron Fájl Ingest & Biztonság**: Az admin API oldalon kezelt fájlműveletek (pl. PDF parse műveletek, Batch fájlok) aszinkron módon futnak, kiküszöbölve a CPU kiszolgáló event loopjának leállását. Eszköz a DDoS és blokkolt szálak kivédésére nagy terheltségnél.
+- **Payload Strict Limits**: Maximált REST API payload nagyság és validált sémák biztosítják, hogy ne lehessen óriási adatcsomagokkal (pl. JSON bombák) lefagyasztani az egyedi szolgáltatási rétegeket felhő alapú DDOS környezetben.
+
+## 8. Nyílt Jövőkép és Továbbfejleszthetőség
+A keretrendszer az elkülönített, szolgáltatás orientált (Service-Oriented) architektúra miatt könnyedén integrálható újdonságokkal. A jövőben hardveresen az RFID chip-alapú fizikai időmérő szőnyegek, Barion éles fiókos fizetések, és extra natív mobil kliens (iOS/Android) zökkenőmentes implementációja valósítható meg mindössze a meglévő interfészek illesztésével. A rendszer a vizsgaremek keretében iparági standardokkal kidolgozott, stabil alapot biztosít további sportrendezvények kiszolgálásához is.

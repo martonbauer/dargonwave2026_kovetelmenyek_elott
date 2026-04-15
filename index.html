@@ -82,11 +82,13 @@
     <div class="modal" id="loginModal">
         <div class="login-card">
             <h2>Admin Belépés</h2>
-            <div class="input-group">
-                <label>Jelszó</label>
-                <input type="password" id="adminPasswordInput" placeholder="••••••••">
-            </div>
-            <button class="btn-submit" onclick="performLogin()">BELÉPÉS</button>
+            <form onsubmit="event.preventDefault(); performLogin();" style="display:flex; flex-direction:column; gap:15px;">
+                <div class="input-group">
+                    <label>Jelszó</label>
+                    <input type="password" id="adminPasswordInput" placeholder="••••••••">
+                </div>
+                <button type="submit" class="cta-button" style="width:100%;">Belépés</button>
+            </form>
             <button style="background: none; border: none; color: var(--text-muted); margin-top: 15px; cursor: pointer;"
                 onclick="toggleModal('loginModal', false)">Bezárás</button>
         </div>
@@ -98,11 +100,11 @@
     </footer>
     <script src="landing.js"></script>
     <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('sw.js').catch(err => console.error(err));
-        });
-      }
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(err => console.error(err));
+            });
+        }
     </script>
 </body>
 

@@ -410,6 +410,16 @@ window.stopRacer = () => {
     }
 };
 
+window.recordCheckpoint = () => {
+    const input = document.getElementById('checkpoint-bib-input');
+    const select = document.getElementById('checkpoint-name-select');
+    if (input && input.value && select && select.value) {
+        window.raceManager.recordCheckpoint(input.value, select.value);
+    } else {
+        showToast("Kérem adja meg a rajtszámot és az ellenőrzőpontot!", 'error');
+    }
+};
+
 window.toggleWaitingListCards = (show) => {
     const ids = ['waiting-list-container-starts', 'waiting-list-container-live'];
     ids.forEach(id => {
@@ -650,6 +660,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Enter gomb a rajtszám rögzítéshez
     const bibInput = document.getElementById('bib-input');
     if (bibInput) bibInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') window.stopRacer(); });
+
+    // Enter gomb az ellenőrzőponthoz
+    const cpBibInput = document.getElementById('checkpoint-bib-input');
+    if (cpBibInput) cpBibInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') window.recordCheckpoint(); });
 
     // Mobil menü kezelés
     const menuToggle = document.getElementById('menuToggle');

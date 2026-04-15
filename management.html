@@ -136,8 +136,10 @@
         <section id="admin-view" class="hidden">
             <div id="admin-login-panel">
                 <h2>Admin Belépés</h2>
-                <input type="password" id="admin-pass" placeholder="Jelszó">
-                <button onclick="loginAdmin()">Belépés</button>
+                <form onsubmit="event.preventDefault(); loginAdmin();" style="display: flex; flex-direction: column; gap: 15px; width: 100%;">
+                    <input type="password" id="admin-pass" placeholder="Jelszó" style="width: 100%;">
+                    <button type="submit" style="width: 100%;">Belépés</button>
+                </form>
             </div>
             <div id="admin-dashboard-panel" class="hidden">
                 <!-- Top Bar (Always Visible) -->
@@ -251,7 +253,7 @@
                                         <div class="bib-input-wrapper">
                                             <input type="text" id="checkpoint-bib-input" placeholder="000" style="margin-bottom: 10px;">
                                         </div>
-                                        <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 5px 0 15px 0;">💡 Több rajtszám esetén használd a <strong>SPACE</strong> gombot.</p>
+                                        <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 5px 0 15px 0;">💡 Több rajtszám esetén használd a <strong>TÖMEGES</strong> gombot.</p>
                                         <label for="checkpoint-name-select" style="margin-top: 10px; display:block;">Melyik pont?</label>
                                         <select id="checkpoint-name-select" style="margin-bottom: 15px; width: 100%; padding: 12px; background: rgba(0,0,0,0.2); color: white; border: 1px solid var(--glass-border); border-radius: 8px;">
                                             <option value="22km_tav_11km_fordulo">22km táv ➔ 11km Forduló</option>
@@ -287,7 +289,7 @@
                                                 <button onclick="window.stopRacer()" class="btn-stop-major" style="flex: 2; height: 60px;">RÖGZÍTÉS</button>
                                             </div>
                                         </div>
-                                        <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 15px 0; text-align: center;">💡 Több rajtszám esetén használd a <strong>SPACE</strong> gombot.</p>
+                                        <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 15px 0; text-align: center;">💡 Több rajtszám esetén használd a <strong>TÖMEGES</strong> gombot.</p>
                                         <button onclick="window.open('mobile_finish.html', '_blank')" class="btn-secondary" style="width: 100%; background-color: var(--accent-primary); color: #000; border: none; font-weight: bold;">📱 Külön mobilos felület</button>
                                     </div>
                                 </div>

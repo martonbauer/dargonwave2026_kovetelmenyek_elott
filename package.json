@@ -16,5 +16,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js"
+  },
+  "devDependencies": {
+    "html-to-docx": "^1.8.0",
+    "pdf-parse": "^2.4.5"
   }
 }

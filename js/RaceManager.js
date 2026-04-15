@@ -450,7 +450,7 @@ export class RaceManager {
                 }
                 row.innerHTML = `
                     <input type="text" class="edit-m-name" value="${m.name || ''}" placeholder="Név">
-                    <input type="date" class="edit-m-birth" value="${birth}">
+                    <input type="text" onfocus="(this.type='date')" onblur="if(!this.value)this.type='text'" class="edit-m-birth" placeholder="ÉÉÉÉ.HH.NN." value="${birth}">
                     <input type="text" class="edit-m-otproba" value="${m.otproba_id || ''}" placeholder="5P ID">
                 `;
                 container.appendChild(row);
@@ -613,7 +613,7 @@ export class RaceManager {
                 </div>
                 <div>
                     <label>Születési Dátum</label>
-                    <input type="date" class="member-birth" required>
+                    <input type="text" onfocus="(this.type='date')" onblur="if(!this.value)this.type='text'" class="member-birth" placeholder="ÉÉÉÉ.HH.NN." required>
                 </div>
                 <div style="margin-top: 15px;">
                     <label>Ötpróba azonosító (opcionális)</label>
