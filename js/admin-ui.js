@@ -136,14 +136,13 @@ export function renderAdminTable(filterType = 'all') {
         const memberList = r.members ? r.members.map(m => `<div style="margin-bottom:2px;">${m.name || '?'} <span style="font-size:0.7rem; color:#888;">(${m.birth_date || '?'})</span></div>`).join('') : (r.name || '-');
         const otprobaList = r.members ? r.members.map(m => `<div style="margin-bottom:2px;">${m.otproba_id || '-'}</div>`).join('') : (r.otproba_id || '-');
         
-        // Helyi Check-in és Fizetési állapot betöltése (localstorage fallback vagy valós API)
-        const isChecked = localStorage.getItem(`dw_checkin_${r.id}`) === 'true';
-        const isPaid = localStorage.getItem(`dw_paid_${r.id}`) === 'true';
+        const isChecked = !!r.checked_in;
+        const isPaid = !!r.is_paid;
         
-        const checkInHtml = `<input type="checkbox" style="transform: scale(1.5)" ${isChecked ? 'checked' : ''} onchange="localStorage.setItem('dw_checkin_${r.id}', this.checked); showToast('Jelenlét mentve', 'info');">`;
+        const checkInHtml = `<input type="checkbox" style="transform: scale(1.5)" ${isChecked ? 'checked' : ''} onchange="window.raceManager.updateRacerStatus('${r.id}', 'checked_in', this.checked).then(res => { if(res) { window.raceManager.renderWaitingListCards(); window.raceManager.renderRunningListCards(); } })">`;
         const paidHtml = isPaid ? 
-            `<span style="background:#5BB226; color:white; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;">Befizetve</span>` : 
-            `<button onclick="localStorage.setItem('dw_paid_${r.id}', 'true'); renderAdminTable(window.currentTableFilter);" class="action-btn" style="background:transparent; border:1px solid #5BB226; color:#5BB226; padding:2px 8px; font-size:0.8rem;">Függőben</button>`;
+            `<span style="background:#5BB226; color:white; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold; cursor:pointer;" onclick="if(confirm('Mégis visszaállítod fizetetlenre?')) window.raceManager.updateRacerStatus('${r.id}', 'is_paid', false).then(() => renderAdminTable(window.currentTableFilter))">Befizetve</span>` : 
+            `<button onclick="window.raceManager.updateRacerStatus('${r.id}', 'is_paid', true).then(() => renderAdminTable(window.currentTableFilter))" class="action-btn" style="background:transparent; border:1px solid #5BB226; color:#5BB226; padding:2px 8px; font-size:0.8rem;">Függőben</button>`;
 
         tr.innerHTML = `
             <td><strong>#${(r.bib || 0).toString().padStart(3, '0')}</strong></td>
@@ -659,13 +658,13 @@ export function renderAdminCategoryDetail(distId, catId) {
 
         const memberList = r.members ? r.members.map(m => `<div style="margin-bottom:2px;">${m.name || '?'} <span style="font-size:0.7rem; color:#888;">(${m.birth_date || '?'})</span></div>`).join('') : (r.name || '-');
         const otprobaList = r.members ? r.members.map(m => `<div style="margin-bottom:2px;">${m.otproba_id || '-'}</div>`).join('') : (r.otproba_id || '-');
-        const isChecked = localStorage.getItem(`dw_checkin_${r.id}`) === 'true';
-        const isPaid = localStorage.getItem(`dw_paid_${r.id}`) === 'true';
+        const isChecked = !!r.checked_in;
+        const isPaid = !!r.is_paid;
         
-        const checkInHtml = `<input type="checkbox" style="transform: scale(1.5)" ${isChecked ? 'checked' : ''} onchange="localStorage.setItem('dw_checkin_${r.id}', this.checked); showToast('Jelenlét mentve', 'info');">`;
+        const checkInHtml = `<input type="checkbox" style="transform: scale(1.5)" ${isChecked ? 'checked' : ''} onchange="window.raceManager.updateRacerStatus('${r.id}', 'checked_in', this.checked)">`;
         const paidHtml = isPaid ? 
-            `<span style="background:#5BB226; color:white; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;">Befizetve</span>` : 
-            `<button onclick="localStorage.setItem('dw_paid_${r.id}', 'true'); window.renderAdminCategoryDetail('${distId}', '${catId}');" class="action-btn" style="background:transparent; border:1px solid #5BB226; color:#5BB226; padding:2px 8px; font-size:0.8rem;">Függőben</button>`;
+            `<span style="background:#5BB226; color:white; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold; cursor:pointer;" onclick="if(confirm('Mégis visszaállítod fizetetlenre?')) window.raceManager.updateRacerStatus('${r.id}', 'is_paid', false).then(() => window.renderAdminCategoryDetail('${distId}', '${catId}'))">Befizetve</span>` : 
+            `<button onclick="window.raceManager.updateRacerStatus('${r.id}', 'is_paid', true).then(() => window.renderAdminCategoryDetail('${distId}', '${catId}'))" class="action-btn" style="background:transparent; border:1px solid #5BB226; color:#5BB226; padding:2px 8px; font-size:0.8rem;">Függőben</button>`;
 
         tr.innerHTML = `
             <td><strong>#${(r.bib || 0).toString().padStart(3, '0')}</strong></td>
@@ -966,7 +965,7 @@ export function renderResultsTable(filterType = 'all') {
         const rank = idx + 1;
         const rankDecor = rank <= 3 ? `font-weight: 800; color: ${rank === 1 ? '#FFD700' : rank === 2 ? '#C0C0C0' : '#CD7F32'}` : '';
 
-        const cp = (rm.data.checkpoints || []).find(c => c.bib === r.bib && c.checkpoint_name === '22km_tav_11km_fordulo');
+        const cp = (rm.data.checkpoints || []).find(c => c.racer_bib === r.bib && c.checkpoint_name === '22km_tav_11km_fordulo');
         const forduloTd = showFordulo ? 
             `<td style="font-family:'Space Mono'; color:#ff9900;">${cp ? formatTime(cp.timestamp - r.start_time) : '-'}</td>` : '';
 
@@ -1141,7 +1140,7 @@ export function renderResultsCategoryDetail(distId, catId) {
         const rank = idx + 1;
         const rankDecor = rank <= 3 ? `font-weight: 800; color: ${rank === 1 ? '#FFD700' : rank === 2 ? '#C0C0C0' : '#CD7F32'}` : '';
 
-        const cp = (rm.data.checkpoints || []).find(c => c.bib === r.bib && c.checkpoint_name === '22km_tav_11km_fordulo');
+        const cp = (rm.data.checkpoints || []).find(c => c.racer_bib === r.bib && c.checkpoint_name === '22km_tav_11km_fordulo');
         const forduloTd = (distId === '22km') ? 
             `<td style="font-family:'Space Mono'; color:#ff9900;">${cp ? formatTime(cp.timestamp - r.start_time) : '-'}</td>` : '';
 

@@ -184,6 +184,8 @@ app.post('/api/register', async (req, res) => {
         const { error: rError } = await supabase.from('racers').insert({
             id: racerId, bib, category, distance, 
             is_series: is_series ? 1 : 0, 
+            checked_in: 0,
+            is_paid: 0,
             email, phone, status: finalStatus
         });
         if (rError) throw rError;
@@ -494,13 +496,18 @@ app.delete('/api/racer/:idOrBib', authenticateAdmin, async (req, res) => {
 
 app.put('/api/racer/:id', authenticateAdmin, async (req, res) => {
     const id = req.params.id;
-    const { bib, category, distance, is_series, status, email, phone, members } = req.body;
+    const { bib, category, distance, is_series, status, email, phone, members, checked_in, is_paid } = req.body;
     try {
         if (bib) {
             const { data: existing } = await supabase.from('racers').select('id').eq('bib', bib).neq('id', id).maybeSingle();
             if (existing) return res.status(400).json({ error: `A #${bib} rajtszám már foglalt egy másik versenyzőnél!` });
         }
-        await supabase.from('racers').update({ bib, category, distance, is_series: is_series ? 1 : 0, status, email, phone }).eq('id', id);
+        await supabase.from('racers').update({ 
+            bib, category, distance, status, email, phone,
+            is_series: is_series ? 1 : 0, 
+            checked_in: checked_in ? 1 : 0,
+            is_paid: is_paid ? 1 : 0
+        }).eq('id', id);
         if (members) {
             await supabase.from('members').delete().eq('racer_id', id);
             await supabase.from('members').insert(members.map(m => ({ racer_id: id, ...m })));

@@ -643,23 +643,34 @@ export class RaceManager {
 
         containers.forEach(container => {
             if (activeCategories.length > 0) {
-                const needsRebuild = container.children.length !== activeCategories.length || container.querySelector('.cat-timer') === null;
+                const safeId = (id) => id.replace(/[^a-z0-9]/gi, '_');
+                
+                // Ellenőrizzük, hogy minden aktív kategóriához megvan-e a timer elem
+                const missingTimers = activeCategories.some(cat => !container.querySelector(`[data-cat-id="${cat.id}"]`));
+                const needsRebuild = container.children.length !== activeCategories.length || 
+                                   container.querySelector('.cat-timer') === null ||
+                                   missingTimers;
+
                 if (needsRebuild) {
                     container.innerHTML = '';
                     activeCategories.forEach(cat => {
                         const div = document.createElement('div');
                         div.className = 'cat-timer';
+                        div.setAttribute('data-cat-id', cat.id);
                         const isAdmin = container.classList.contains('admin-timer-grid');
+                        const displayId = `${container.id || 'timer'}-val-${safeId(cat.id)}`;
                         div.innerHTML = `
                             <div class="cat-name">${this.formatCategoryName(cat.id)}</div>
-                            <div class="cat-time" id="${container.id}-timer-${cat.id}">00:00:00.000</div>
+                            <div class="cat-time" id="${displayId}">00:00:00.000</div>
                             ${isAdmin ? `<button onclick="window.stopCategory(null, null, '${cat.id}')" style="margin-top:10px; padding:5px 10px; font-size:0.7rem; background:rgba(255,68,68,0.2); color:#ff4444; border:1px solid #ff4444; border-radius:4px; cursor:pointer; width:100%;">AZONNALI LEÁLLÍTÁS (CÉL)</button>` : ''}
                         `;
                         container.appendChild(div);
                     });
                 }
+                
                 activeCategories.forEach(cat => {
-                    const timeEl = document.getElementById(`${container.id}-timer-${cat.id}`);
+                    const displayId = `${container.id || 'timer'}-val-${safeId(cat.id)}`;
+                    const timeEl = document.getElementById(displayId);
                     if (timeEl) {
                         const now = Date.now() + (this.serverTimeOffset || 0);
                         timeEl.textContent = formatTime(now - cat.start);
@@ -721,7 +732,7 @@ export class RaceManager {
             const data = await response.json();
             if (response.ok && data.success) {
                 showToast(`Rajtszám sikeresen módosítva: #${originalBib} ➔ #${bibNum}`, 'success');
-                await this.loadData();
+                await this.refreshUI();
                 return true;
             } else {
                 showToast(data.error || 'Hiba a módosításkor!', 'error');
@@ -730,6 +741,42 @@ export class RaceManager {
         } catch (err) {
             console.error('Bib update error:', err);
             showToast('Kapcsolódási hiba!', 'error');
+            return false;
+        }
+    }
+
+    async updateRacerStatus(id, field, value) {
+        try {
+            const response = await fetch(`${API_URL}/racer/${id}`, {
+                method: 'PUT',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.adminPassword}`
+                },
+                body: JSON.stringify({ [field]: value })
+            });
+
+            if (response.ok) {
+                showToast('Állapot mentve.', 'success');
+                // Frissítjük a helyi adatot és az UI-t
+                const racer = this.data.racers.find(r => r.id === id);
+                if (racer) racer[field] = value;
+                
+                // Ha megjelent állapot változott, frissítsük a listákat
+                if (field === 'checked_in' || field === 'is_paid') {
+                    this.renderWaitingListCards();
+                    this.renderRunningListCards();
+                    if (typeof window.renderAdminTable === 'function') window.renderAdminTable();
+                }
+                
+                return true;
+            } else {
+                const err = await response.json();
+                showToast(err.error || 'Hiba a mentéskor!', 'error');
+                return false;
+            }
+        } catch (err) {
+            showToast('Hálózati hiba!', 'error');
             return false;
         }
     }
@@ -743,6 +790,7 @@ export class RaceManager {
         this.renderAdminControlButtons();
         this.renderWaitingListCards();
         this.renderRunningListCards();
+        this.renderLiveLog();
     }
 
     renderAdminStats() {
@@ -956,5 +1004,51 @@ export class RaceManager {
             tbody.appendChild(tr);
         });
         container.appendChild(catWrapper);
+    }
+
+    renderLiveLog() {
+        const logContainer = document.getElementById('admin-event-log-content');
+        if (!logContainer) return;
+
+        const events = [];
+
+        // Checkpoints feldolgozása
+        if (this.data.checkpoints) {
+            this.data.checkpoints.forEach(cp => {
+                events.push({
+                    type: 'checkpoint',
+                    time: cp.timestamp,
+                    bib: cp.racer_bib,
+                    msg: `📍 KÖR rögzítve: #${cp.racer_bib} (${cp.checkpoint_name.replace('22km_tav_11km_fordulo', 'Forduló')})`
+                });
+            });
+        }
+
+        // Finishers feldolgozása
+        if (this.data.racers) {
+            this.data.racers.filter(r => r.status === 'finished').forEach(r => {
+                const finishTime = (r.start_time || 0) + (r.total_time || 0);
+                events.push({
+                    type: 'finish',
+                    time: finishTime,
+                    bib: r.bib,
+                    msg: `🎯 BEÉRKEZETT: #${r.bib} - Idő: ${formatTime(r.total_time)}`
+                });
+            });
+        }
+
+        events.sort((a,b) => b.time - a.time);
+        const recentEvents = events.slice(0, 15);
+
+        if (recentEvents.length === 0) {
+            logContainer.innerHTML = '<div class="empty-text">Nincs rögzített esemény</div>';
+            return;
+        }
+
+        logContainer.innerHTML = recentEvents.map(e => `
+            <div style="padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); color: ${e.type === 'checkpoint' ? '#ff9900' : '#00ffcc'}">
+                <span style="color: #888; font-size: 0.75rem;">[${new Date(e.time).toLocaleTimeString('hu-HU')}]</span> ${e.msg}
+            </div>
+        `).join('');
     }
 }
