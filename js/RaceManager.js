@@ -436,6 +436,7 @@ export class RaceManager {
         document.getElementById('edit-email').value = racer.email || '';
         document.getElementById('edit-phone').value = racer.phone || '';
         document.getElementById('edit-is_series').checked = !!racer.is_series;
+        document.getElementById('edit-is_paid').value = racer.is_paid ? "1" : "0";
 
         const container = document.getElementById('edit-members-container');
         if (container) {
@@ -486,6 +487,7 @@ export class RaceManager {
             email: document.getElementById('edit-email').value,
             phone: document.getElementById('edit-phone').value,
             is_series: document.getElementById('edit-is_series').checked,
+            is_paid: document.getElementById('edit-is_paid').value === "1",
             members: members
         };
         try {
@@ -897,16 +899,22 @@ export class RaceManager {
                                 <th style="width: 80px;">Rajtszám</th>
                                 <th>Egység Tagjai</th>
                                 <th>Kategória</th>
+                                <th style="text-align: right;">Eltelt idő</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${runningRacers.sort((a,b) => (a.bib || 0) - (b.bib || 0)).map(r => `
-                                <tr>
+                            ${runningRacers.sort((a,b) => (a.bib || 0) - (b.bib || 0)).map(r => {
+                                const now = Date.now() + (this.serverTimeOffset || 0);
+                                const timeDisplay = formatTime(now - (r.start_time || 0));
+                                return `
+                                <tr class="status-running">
                                     <td><strong style="color: var(--accent-primary);">#${(r.bib || 0).toString().padStart(3, '0')}</strong></td>
                                     <td>${r.members ? r.members.map(m => m.name).join(', ') : (r.name || '-')}</td>
                                     <td style="font-size: 0.75rem; color: var(--text-secondary);">${this.formatCategoryName(r.category)}</td>
+                                    <td style="text-align: right; font-weight: bold; color: #00ff88; font-family: 'Space Mono', monospace;" class="time" data-start="${r.start_time || 0}">${timeDisplay}</td>
                                 </tr>
-                            `).join('')}
+                            `;
+                            }).join('')}
                         </tbody>
                     </table>
                 </div>
