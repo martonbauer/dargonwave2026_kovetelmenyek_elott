@@ -862,6 +862,7 @@ export class RaceManager {
                                 <th style="width: 80px;">Rajtszám</th>
                                 <th>Egység Tagjai</th>
                                 <th>Kategória</th>
+                                <th>Táv</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -870,6 +871,7 @@ export class RaceManager {
                                     <td><strong style="color: var(--accent-primary);">#${(r.bib || 0).toString().padStart(3, '0')}</strong></td>
                                     <td>${r.members ? r.members.map(m => m.name).join(', ') : (r.name || '-')}</td>
                                     <td style="font-size: 0.75rem; color: var(--text-secondary);">${this.formatCategoryName(r.category)}</td>
+                                    <td style="font-size: 0.75rem; color: #aaa;">${r.distance || '-'}</td>
                                 </tr>
                             `).join('')}
                         </tbody>
@@ -903,6 +905,7 @@ export class RaceManager {
                                 <th style="width: 80px;">Rajtszám</th>
                                 <th>Egység Tagjai</th>
                                 <th>Kategória</th>
+                                <th>Táv</th>
                                 <th style="text-align: right;">Eltelt idő</th>
                             </tr>
                         </thead>
@@ -915,6 +918,7 @@ export class RaceManager {
                                     <td><strong style="color: var(--accent-primary);">#${(r.bib || 0).toString().padStart(3, '0')}</strong></td>
                                     <td>${r.members ? r.members.map(m => m.name).join(', ') : (r.name || '-')}</td>
                                     <td style="font-size: 0.75rem; color: var(--text-secondary);">${this.formatCategoryName(r.category)}</td>
+                                    <td style="font-size: 0.75rem; color: #aaa;">${r.distance || '-'}</td>
                                     <td style="text-align: right; font-weight: bold; color: #00ff88; font-family: 'Space Mono', monospace;" class="time" data-start="${r.start_time || 0}">${timeDisplay}</td>
                                 </tr>
                             `;
@@ -951,6 +955,7 @@ export class RaceManager {
                                 <th style="width: 80px;">Rajtszám</th>
                                 <th>Egység Tagjai</th>
                                 <th>Kategória</th>
+                                <th>Táv</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -959,6 +964,7 @@ export class RaceManager {
                                     <td><strong style="color: var(--accent-primary);">#${(r.bib || 0).toString().padStart(3, '0')}</strong></td>
                                     <td>${r.members ? r.members.map(m => m.name).join(', ') : (r.name || '-')}</td>
                                     <td style="font-size: 0.75rem; color: var(--text-secondary);">${this.formatCategoryName(r.category)}</td>
+                                    <td style="font-size: 0.75rem; color: #aaa;">${r.distance || '-'}</td>
                                 </tr>
                             `).join('')}
                         </tbody>

@@ -149,6 +149,7 @@ export function renderAdminTable(filterType = 'all') {
             <td>${memberList}</td>
             <td>${otprobaList}</td>
             <td>${window.raceManager.formatCategoryName(r.category)}</td>
+            <td style="font-weight: bold;">${r.distance || '-'}</td>
             <td style="color:${statusColor}">${(r.status || 'registered').toUpperCase()}</td>
             <td class="time" ${dataStartAttr}>${timeStr}</td>
             <td style="text-align:center;">${checkInHtml}</td>
