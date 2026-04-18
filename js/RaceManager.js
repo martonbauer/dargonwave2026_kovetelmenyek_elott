@@ -826,6 +826,9 @@ export class RaceManager {
         if (cpStatsContainer) {
             const running22km = this.data.racers.filter(r => r.status === 'running' && r.distance === '22km').length;
             const megfordult = (this.data.checkpoints || []).filter(c => c.checkpoint_name === '22km_tav_11km_fordulo').length;
+            const cpData = this.data.checkpoints || [];
+            const nem_fordult = this.data.racers.filter(r => r.status === 'running' && r.distance === '22km' && !cpData.some(c => c.racer_bib === r.bib && c.checkpoint_name === '22km_tav_11km_fordulo')).length;
+            
             cpStatsContainer.innerHTML = `
                 <div style="display: flex; gap: 20px;">
                     <div class="stat-item" style="cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--text-secondary)'; this.style.background='rgba(255,255,255,0.1)';" onmouseout="this.style.borderColor='transparent'; this.style.background='rgba(255, 153, 0, 0.1)';" onclick="window.toggleRunningListCards(true)">
@@ -833,7 +836,7 @@ export class RaceManager {
                     </div>
                     <div class="stat-item"><span style="color: #ff9900; font-size: 0.8rem;">MEGFORDULT (11km):</span> <strong style="color: white;">${megfordult}</strong></div>
                     <div class="stat-item" style="cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--text-secondary)'; this.style.background='rgba(255,255,255,0.1)';" onmouseout="this.style.borderColor='transparent'; this.style.background='rgba(255, 153, 0, 0.1)';" onclick="window.toggleNotTurnedListCards(true)">
-                        <span style="color: #ff4444; font-size: 0.8rem;">MÉG NEM FORDULT:</span> <strong style="color: white;">${running22km - megfordult}</strong>
+                        <span style="color: #ff4444; font-size: 0.8rem;">MÉG NEM FORDULT:</span> <strong style="color: white;">${nem_fordult}</strong>
                     </div>
                 </div>
             `;
