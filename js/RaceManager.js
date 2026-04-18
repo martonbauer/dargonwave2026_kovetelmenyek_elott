@@ -989,10 +989,11 @@ export class RaceManager {
     }
 
     createResultsTable(container, title, racers, showCategory = false) {
+        const hasKöridő = racers.some(r => r.distance === '22km');
         const catWrapper = document.createElement('div');
         catWrapper.className = 'category-results-table';
         catWrapper.style.marginBottom = '2rem';
-        catWrapper.innerHTML = `<h4 class="category-title">${title}</h4><table class="results-table"><thead><tr><th style="width: 80px;">Helyezés</th><th style="width: 80px;">Rajtszám</th><th>Név</th>${showCategory ? '<th>Kategória</th>' : ''}<th style="text-align:right;">Időeredmény</th></tr></thead><tbody></tbody></table>`;
+        catWrapper.innerHTML = `<h4 class="category-title">${title}</h4><table class="results-table"><thead><tr><th style="width: 80px;">Helyezés</th><th style="width: 80px;">Rajtszám</th><th>Név</th>${showCategory ? '<th>Kategória</th>' : ''}${hasKöridő ? '<th>Köridő</th>' : ''}<th style="text-align:right;">Időeredmény</th></tr></thead><tbody></tbody></table>`;
         const tbody = catWrapper.querySelector('tbody');
         let rank = 1;
         racers.forEach(r => {
@@ -1007,8 +1008,21 @@ export class RaceManager {
                 timeDisplay = formatTime(r.total_time || 0);
                 rankDisplay = `${rank++}.`;
             }
+
+            let cpHtml = '';
+            if (hasKöridő) {
+                let lapTimeStr = r.status === 'finished' ? "nincs adat" : "-";
+                if (this.data.checkpoints) {
+                    const cp = this.data.checkpoints.find(c => c.racer_bib === r.bib && c.checkpoint_name === '22km_tav_11km_fordulo');
+                    if (cp) {
+                        lapTimeStr = formatTime(cp.timestamp - (r.start_time || 0));
+                    }
+                }
+                cpHtml = `<td style="font-family: 'Space Mono', monospace; font-size: 0.85rem; color: #ff9900;">${lapTimeStr}</td>`;
+            }
+
             const rowColor = r.status === 'finished' ? '#00ff88' : (r.status === 'running' ? 'var(--accent-primary)' : 'inherit');
-            tr.innerHTML = `<td style="color:${rowColor}; font-weight:bold;">${rankDisplay}</td><td>#${(r.bib || 0).toString().padStart(3, '0')}</td><td>${r.members ? r.members.map(m => m.name).join(', ') : (r.name || '-')}</td>${showCategory ? `<td style="font-size: 0.8rem; color: #888;">${this.categoryMap[r.category] || r.category}</td>` : ''}<td class="time" style="color:${rowColor}; font-family: 'Space Mono', monospace;" ${dataStartAttr}>${timeDisplay}</td>`;
+            tr.innerHTML = `<td style="color:${rowColor}; font-weight:bold;">${rankDisplay}</td><td>#${(r.bib || 0).toString().padStart(3, '0')}</td><td>${r.members ? r.members.map(m => m.name).join(', ') : (r.name || '-')}</td>${showCategory ? `<td style="font-size: 0.8rem; color: #888;">${this.categoryMap[r.category] || r.category}</td>` : ''}${cpHtml}<td class="time" style="color:${rowColor}; font-family: 'Space Mono', monospace; text-align:right;" ${dataStartAttr}>${timeDisplay}</td>`;
             tbody.appendChild(tr);
         });
         container.appendChild(catWrapper);
