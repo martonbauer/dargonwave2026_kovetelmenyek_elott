@@ -459,6 +459,21 @@ window.toggleRunningListCards = (show) => {
     }
 };
 
+window.toggleNotTurnedListCards = (show) => {
+    const el = document.getElementById('not-turned-list-container-live');
+    if (el) {
+        if (show) el.classList.remove('hidden');
+        else el.classList.add('hidden');
+    }
+
+    if (show && window.raceManager) {
+        window.raceManager.renderNotTurnedListCards();
+        if (el && !el.classList.contains('hidden')) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }
+};
+
 // --- CSV Importálás ---
 window.uploadCsv = async () => {
     const fileInput = document.getElementById('csv-upload');

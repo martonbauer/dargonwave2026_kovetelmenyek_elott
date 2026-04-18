@@ -792,6 +792,7 @@ export class RaceManager {
         this.renderAdminControlButtons();
         this.renderWaitingListCards();
         this.renderRunningListCards();
+        this.renderNotTurnedListCards();
         this.renderLiveLog();
     }
 
@@ -831,6 +832,9 @@ export class RaceManager {
                         <span style="color: var(--accent-primary); font-size: 0.8rem;">22KM FUTÓ LÉTSZÁM:</span> <strong style="color: white;">${running22km}</strong>
                     </div>
                     <div class="stat-item"><span style="color: #ff9900; font-size: 0.8rem;">MEGFORDULT (11km):</span> <strong style="color: white;">${megfordult}</strong></div>
+                    <div class="stat-item" style="cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s;" onmouseover="this.style.borderColor='var(--text-secondary)'; this.style.background='rgba(255,255,255,0.1)';" onmouseout="this.style.borderColor='transparent'; this.style.background='rgba(255, 153, 0, 0.1)';" onclick="window.toggleNotTurnedListCards(true)">
+                        <span style="color: #ff4444; font-size: 0.8rem;">MÉG NEM FORDULT:</span> <strong style="color: white;">${running22km - megfordult}</strong>
+                    </div>
                 </div>
             `;
         }
@@ -922,6 +926,47 @@ export class RaceManager {
         }
 
         containers.forEach(item => { item.content.innerHTML = html; });
+    }
+
+    renderNotTurnedListCards() {
+        const liveCard = document.getElementById('not-turned-list-container-live');
+        const liveContent = document.getElementById('not-turned-list-content-live');
+        if (!liveCard || liveCard.classList.contains('hidden') || !liveContent) return;
+
+        const checkpoints = this.data.checkpoints || [];
+        const notTurnedRacers = this.data.racers.filter(r => {
+            if (r.status !== 'running' || r.distance !== '22km') return false;
+            return !checkpoints.some(c => c.racer_bib === r.bib && c.checkpoint_name === '22km_tav_11km_fordulo');
+        });
+
+        let html = '';
+        if (notTurnedRacers.length === 0) {
+            html = '<div style="text-align: center; padding: 20px; color: var(--text-secondary); opacity: 0.7;">Jelenleg nincs ilyen versenyző.</div>';
+        } else {
+            html = `
+                <div class="table-responsive">
+                    <table class="results-table" style="font-size: 0.85rem;">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px;">Rajtszám</th>
+                                <th>Egység Tagjai</th>
+                                <th>Kategória</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${notTurnedRacers.sort((a,b) => (a.bib || 0) - (b.bib || 0)).map(r => `
+                                <tr>
+                                    <td><strong style="color: var(--accent-primary);">#${(r.bib || 0).toString().padStart(3, '0')}</strong></td>
+                                    <td>${r.members ? r.members.map(m => m.name).join(', ') : (r.name || '-')}</td>
+                                    <td style="font-size: 0.75rem; color: var(--text-secondary);">${this.formatCategoryName(r.category)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+        liveContent.innerHTML = html;
     }
 
     renderAdminControlButtons() {
