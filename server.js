@@ -427,9 +427,9 @@ app.post('/api/stop-bulk-racers', authenticateAdmin, async (req, res) => {
                 return;
             }
             
-            // TRÜKK: Minden egymást követő beütött rajtszámnak +10 milliszekundumot (0.01 mp) adunk
+            // TRÜKK: Minden egymást követő beütött rajtszámnak +500 milliszekundumot (0.5 mp) adunk
             // Így megmarad a bíró által begépelt sorrend, nem lesz holtverseny!
-            const racerFinishTime = baseNow + (index * 10);
+            const racerFinishTime = baseNow + (index * 500);
             const total_time = racerFinishTime - r.start_time;
             
             const { error } = await supabase.from('racers')
