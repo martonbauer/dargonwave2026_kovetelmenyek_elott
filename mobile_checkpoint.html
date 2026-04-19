@@ -33,16 +33,21 @@
             color: var(--text);
             display: flex;
             flex-direction: column;
-            min-height: 100vh;
-            padding: 15px;
-            overflow-x: hidden;
+            height: 100svh;
+            padding: 8px;
+            overflow: hidden;
+            touch-action: pan-x pan-y;
         }
 
         header {
             text-align: center;
-            padding: 15px 0;
+            padding: 8px 0;
             border-bottom: 1px solid var(--border);
-            margin-bottom: 20px;
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
         }
 
         header h1 {
@@ -59,8 +64,24 @@
             color: var(--accent);
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin-top: 4px;
             font-weight: 600;
+        }
+
+        .stats-container {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 6px;
+            border-radius: 8px;
+            font-size: 0.65rem;
+            text-align: center;
+            border: 1px solid rgba(0, 145, 255, 0.2);
+            flex: 1;
         }
 
         .container {
@@ -68,6 +89,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
             width: 100%;
             max-width: 450px;
             margin: 0 auto;
@@ -79,10 +101,11 @@
             flex-direction: column;
             background: var(--card-bg);
             backdrop-filter: blur(12px);
-            padding: 25px;
-            border-radius: 24px;
+            padding: 15px;
+            border-radius: 20px;
             border: 1px solid var(--border);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+            max-height: 100%;
         }
 
         #login-view.active, #app-view.active {
@@ -90,41 +113,40 @@
         }
 
         h2 {
-            font-size: 1rem;
-            margin-bottom: 15px;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
             text-align: center;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 1.5px;
+            letter-spacing: 1px;
             color: white;
             opacity: 0.9;
         }
 
         .input-group {
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             width: 100%;
         }
 
         label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
             font-weight: 700;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: var(--accent);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
 
         input, select {
             width: 100%;
-            padding: 18px;
-            font-size: 1.2rem;
+            padding: 12px;
+            font-size: 1.1rem;
             background: var(--glass);
             border: 1px solid var(--border);
-            border-radius: 14px;
+            border-radius: 12px;
             color: white;
             outline: none;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s ease;
         }
 
         select option {
@@ -135,57 +157,55 @@
         input:focus, select:focus {
             border-color: var(--primary);
             background: rgba(0, 228, 255, 0.08);
-            box-shadow: 0 0 20px rgba(0, 228, 255, 0.15);
         }
 
         #bib-input {
-            font-size: 2.5rem;
+            font-size: 2.2rem;
             text-align: center;
             font-weight: 800;
-            height: 75px;
-            padding: 10px;
+            height: 60px;
+            padding: 5px;
             letter-spacing: 3px;
             color: var(--primary);
             font-family: 'Space Mono', monospace;
-            cursor: default;
+            margin-bottom: 10px;
         }
 
         .keypad {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
+            gap: 8px;
             width: 100%;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
+            flex-grow: 1;
         }
 
         .key-btn {
             background: var(--glass);
             color: white;
             border: 1px solid var(--border);
-            border-radius: 18px;
-            height: 72px;
-            font-size: 1.8rem;
+            border-radius: 14px;
+            min-height: 45px;
+            font-size: 1.4rem;
             font-weight: 700;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: all 0.1s;
         }
 
         .key-btn:active {
-            transform: scale(0.9);
+            transform: scale(0.95);
             background: var(--primary);
             color: var(--bg);
             border-color: transparent;
-            box-shadow: 0 0 20px rgba(0, 228, 255, 0.4);
         }
 
         .key-bulk {
-            font-size: 0.9rem;
+            font-size: 0.75rem;
             background: rgba(0, 228, 255, 0.12);
             border-color: var(--primary);
             color: var(--primary);
-            letter-spacing: 1px;
             font-weight: 800;
         }
 
@@ -199,35 +219,30 @@
             grid-column: span 3;
             background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             color: var(--bg);
-            font-size: 1.5rem;
+            font-size: 1.2rem;
             font-weight: 900;
-            height: 80px;
-            letter-spacing: 2px;
+            min-height: 55px;
+            letter-spacing: 1px;
             border: none;
-            border-radius: 20px;
-            margin-top: 5px;
-            box-shadow: 0 8px 25px rgba(0, 228, 255, 0.3);
+            border-radius: 14px;
+            box-shadow: 0 4px 15px rgba(0, 228, 255, 0.3);
         }
 
         .key-submit:active {
             transform: scale(0.97);
             filter: brightness(1.1);
-            box-shadow: 0 4px 15px rgba(0, 228, 255, 0.2);
         }
 
         .btn-logout {
             background-color: transparent;
             color: #ff6b6b;
             border: 1px solid rgba(255, 77, 77, 0.25);
-            border-radius: 12px;
-            padding: 14px 25px;
-            font-size: 0.85rem;
-            width: auto;
-            align-self: center;
-            margin: 25px auto;
+            border-radius: 10px;
+            padding: 8px 15px;
+            font-size: 0.75rem;
+            margin: 5px auto;
             text-transform: uppercase;
             font-weight: 700;
-            letter-spacing: 1px;
         }
 
         #toast {
@@ -262,11 +277,11 @@
 
         .hint {
             text-align: center;
-            font-size: 0.8rem;
+            font-size: 0.7rem;
             color: var(--accent);
-            margin-top: 15px;
             opacity: 0.8;
             font-weight: 600;
+            margin-top: 5px;
         }
         
         .loading-overlay {
@@ -301,8 +316,15 @@
 <body>
 
     <header>
-        <h1>DragonWave</h1>
-        <p>Hivatalos Köridő Rögzítő</p>
+        <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
+            <h1>DragonWave</h1>
+            <p>Köridő Rögzítő</p>
+        </div>
+        <div class="stats-container" id="nav-stats" style="display:none;">
+            <div class="stat-item"><span style="color:#00e4ff">FUTÓ (22K)</span><br><strong id="stat-futo" style="font-size:1rem;">0</strong></div>
+            <div class="stat-item"><span style="color:#ff9900">FORDULT</span><br><strong id="stat-fordult" style="font-size:1rem;">0</strong></div>
+            <div class="stat-item"><span style="color:#ff4444">MÉG NEM</span><br><strong id="stat-kell" style="font-size:1rem;">0</strong></div>
+        </div>
     </header>
 
     <div id="toast">Message here</div>
@@ -327,9 +349,9 @@
         <div id="app-view">
             <h2>Köridő Rögzítés</h2>
             
-            <div class="input-group" style="margin-bottom: 15px;">
+            <div class="input-group" style="margin-bottom: 10px;">
                 <label>Melyik ellenőrzőpont?</label>
-                <select id="checkpoint-select" style="font-size: 1rem; padding: 12px; height: auto;">
+                <select id="checkpoint-select" style="font-size: 0.95rem; padding: 10px; height: auto;">
                     <option value="22km_tav_11km_fordulo">22km táv ➔ 11km Forduló</option>
                 </select>
             </div>
@@ -398,7 +420,30 @@
             loginView.classList.remove('active');
             appView.classList.add('active');
             logoutBtn.style.display = 'block';
+            document.getElementById('nav-stats').style.display = 'flex';
             bibInput.value = '';
+            fetchStats();
+            if(!window.statsInterval) window.statsInterval = setInterval(fetchStats, 3000);
+        }
+        
+        async function fetchStats() {
+            if(!adminPassword) return;
+            try {
+                const response = await fetch(`${API_BASE}/data`);
+                if(response.ok) {
+                    const data = await response.json();
+                    if(data.racers) {
+                        const futo22k = data.racers.filter(r => r.status === 'running' && r.distance === '22km').length;
+                        const checkpoints = data.checkpoints || [];
+                        const fordult = checkpoints.filter(c => c.checkpoint_name === '22km_tav_11km_fordulo').length;
+                        const kell = data.racers.filter(r => r.status === 'running' && r.distance === '22km' && !checkpoints.some(c => c.racer_bib === r.bib && c.checkpoint_name === '22km_tav_11km_fordulo')).length;
+                        
+                        document.getElementById('stat-futo').textContent = futo22k;
+                        document.getElementById('stat-fordult').textContent = fordult;
+                        document.getElementById('stat-kell').textContent = kell;
+                    }
+                }
+            } catch(e) {}
         }
 
         let toastTimeout;
