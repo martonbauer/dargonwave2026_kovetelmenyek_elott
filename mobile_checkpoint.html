@@ -311,6 +311,70 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* HIGH CONTRAST OUTDOOR MODE */
+        body.sun-mode {
+            background: #ffffff !important;
+            color: #000000 !important;
+        }
+        body.sun-mode #app-view, body.sun-mode #login-view, body.sun-mode header {
+            background: #ffffff !important;
+            border: 2px solid #000 !important;
+            color: #000000 !important;
+        }
+        body.sun-mode input, body.sun-mode select {
+            background: #fff !important;
+            border: 2px solid #000 !important;
+            color: #000 !important;
+        }
+        body.sun-mode .key-btn {
+            background: #fff !important;
+            color: #000 !important;
+            border: 2px solid #000 !important;
+        }
+        body.sun-mode .key-btn:active {
+            background: #000 !important;
+            color: #fff !important;
+        }
+        body.sun-mode .key-submit {
+            background: #000 !important;
+            color: #fff !important;
+        }
+        body.sun-mode h1, body.sun-mode h2, body.sun-mode p, body.sun-mode label, body.sun-mode .hint {
+            color: #000 !important;
+            font-weight: 900 !important;
+            text-shadow: none !important;
+        }
+        body.sun-mode .stat-item {
+            background: #e0e0e0 !important;
+            border: 2px solid #000 !important;
+        }
+        body.sun-mode .stat-item span, body.sun-mode .stat-item strong {
+            color: #000 !important;
+            font-weight: 900 !important;
+        }
+        body.sun-mode #bib-input {
+            color: #000 !important;
+        }
+        .sun-toggle-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--border);
+            color: white;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.2rem;
+            margin-right: 5px;
+        }
+        body.sun-mode .sun-toggle-btn {
+            background: #fff;
+            color: #000;
+            border: 2px solid #000;
+        }
+
     </style>
 </head>
 <body>
@@ -318,8 +382,11 @@
     <header>
         <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
             <h1>DragonWave</h1>
-            <p>Köridő Rögzítő</p>
+            <div style="display: flex; align-items: center;">
+                <button class="sun-toggle-btn" onclick="toggleSunMode()" title="Napsütés mód">☀️</button>
+            </div>
         </div>
+        <p>Köridő Rögzítő</p>
         <div class="stats-container" id="nav-stats" style="display:none;">
             <div class="stat-item"><span style="color:#00e4ff">FUTÓ (22K)</span><br><strong id="stat-futo" style="font-size:1rem;">0</strong></div>
             <div class="stat-item"><span style="color:#ff9900">FORDULT</span><br><strong id="stat-fordult" style="font-size:1rem;">0</strong></div>
@@ -406,8 +473,17 @@
             ? 'http://localhost:3001/api' : '/api';
 
         function init() {
+            // --- THEME ---
+            if(localStorage.getItem('dragonwave_sun_mode') === 'true') {
+                document.body.classList.add('sun-mode');
+            }
             if (adminPassword) showApp();
             else showLogin();
+        }
+
+        function toggleSunMode() {
+            document.body.classList.toggle('sun-mode');
+            localStorage.setItem('dragonwave_sun_mode', document.body.classList.contains('sun-mode'));
         }
 
         function showLogin() {
