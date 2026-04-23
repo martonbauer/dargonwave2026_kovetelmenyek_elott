@@ -1393,3 +1393,9 @@ form select:focus {
     filter: brightness(1.1);
     transform: scale(1.02);
 }
+
+@media (max-width: 768px) {
+    .member-edit-row {
+        grid-template-columns: 1fr;
+    }
+}

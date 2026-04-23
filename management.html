@@ -413,7 +413,7 @@
                     <div id="admin-data-section-table" class="admin-data-sub hidden">
                         <!-- Table Landing View -->
                         <div id="admin-table-landing-view">
-                            <div class="admin-landing-grid" style="grid-template-columns: repeat(4, 1fr); gap: 15px;">
+                            <div class="admin-landing-grid" style="gap: 15px;">
                                 <div class="landing-card" onclick="window.showTableSubSection('all')">
                                     <div class="icon">👥</div>
                                     <h3>összes versenyzői adatbázis</h3>
@@ -564,7 +564,7 @@
                     <div id="admin-data-section-export" class="admin-data-sub hidden">
                         <!-- Results Landing View -->
                         <div id="admin-results-landing-view">
-                            <div class="admin-landing-grid" style="grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                            <div class="admin-landing-grid" style="gap: 15px;">
                                 <div class="landing-card" onclick="window.showResultsSubSection('all')">
                                     <div class="icon">🏆</div>
                                     <h3>összes eredménylista</h3>
@@ -679,12 +679,12 @@
                             <h3 class="card-title">🐉 Sárkányhajó Egység Összeállítása</h3>
                             <p class="card-desc">Jelölje ki az egyéni regisztráltakat, majd hozzon létre belőlük egy új hajóegységet.</p>
                             
-                            <div style="margin-bottom: 20px; display: flex; gap: 10px; align-items: flex-end;">
-                                <div style="flex: 1;">
+                            <div style="margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;">
+                                <div style="flex: 2; min-width: 200px;">
                                     <label>Új Csapat Rajtszáma</label>
                                     <input type="number" id="new-team-bib" placeholder="Pl. 900" style="margin-bottom:0;">
                                 </div>
-                                <button onclick="window.createDragonTeam()" class="btn-primary" style="width: auto; padding: 12px 30px; margin-bottom:0;">EGYSÉG LÉTREHOZÁSA</button>
+                                <button onclick="window.createDragonTeam()" class="btn-primary" style="flex: 1; min-width: 200px; padding: 12px 30px; margin-bottom:0;">EGYSÉG LÉTREHOZÁSA</button>
                             </div>
 
                             <div class="table-responsive">

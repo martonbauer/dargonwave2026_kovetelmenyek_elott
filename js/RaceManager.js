@@ -619,11 +619,13 @@ export class RaceManager {
                 </div>
                 <div style="margin-top: 15px;">
                     <label>Ötpróba azonosító (opcionális)</label>
-                    <div style="display: flex; gap: 0; align-items: center;">
-                        <span style="background: rgba(0, 145, 255, 0.1); color: var(--accent-primary); padding: 8px 12px; border: 1px solid var(--accent-primary); border-right: none; border-radius: 4px 0 0 4px; font-family: 'Space Mono', monospace; font-weight: bold;">5P</span>
-                        <input type="text" class="member-otproba" placeholder="123456" pattern="[0-9]{6}" title="6 darab számjegy" maxlength="6" style="flex: 2; border-radius: 0 4px 4px 0;">
-                        <label style="flex: 1; display: flex; align-items: center; gap: 5px; font-size: 0.75rem; cursor: pointer; border: 1px solid var(--glass-border); padding: 5px; border-radius: 4px; margin-left: 10px;">
-                            <input type="checkbox" onchange="const inp=this.parentElement.parentElement.querySelector('.member-otproba'); inp.disabled=this.checked; if(this.checked) inp.value='';"> Nincs
+                    <div style="display: flex; gap: 0; align-items: center; flex-wrap: wrap;">
+                        <div style="display: flex; flex: 2; min-width: 150px; margin-bottom: 5px;">
+                            <span style="background: rgba(0, 145, 255, 0.1); color: var(--accent-primary); padding: 8px 12px; border: 1px solid var(--accent-primary); border-right: none; border-radius: 4px 0 0 4px; font-family: 'Space Mono', monospace; font-weight: bold;">5P</span>
+                            <input type="text" class="member-otproba" placeholder="123456" pattern="[0-9]{6}" title="6 darab számjegy" maxlength="6" style="flex: 1; border-radius: 0 4px 4px 0; margin-bottom: 0;">
+                        </div>
+                        <label style="flex: 1; min-width: 80px; display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 0.75rem; cursor: pointer; border: 1px solid var(--glass-border); padding: 5px; border-radius: 4px; margin-left: 10px; margin-bottom: 5px; height: 42px;">
+                            <input type="checkbox" onchange="const inp=this.parentElement.parentElement.querySelector('.member-otproba'); inp.disabled=this.checked; if(this.checked) inp.value='';" style="margin: 0; transform: scale(1.2);"> Nincs
                         </label>
                     </div>
                 </div>

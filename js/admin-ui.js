@@ -145,16 +145,16 @@ export function renderAdminTable(filterType = 'all') {
             `<button onclick="window.raceManager.updateRacerStatus('${r.id}', 'is_paid', true).then(() => renderAdminTable(window.currentTableFilter))" class="action-btn" style="background:transparent; border:1px solid #5BB226; color:#5BB226; padding:2px 8px; font-size:0.8rem;">Függőben</button>`;
 
         tr.innerHTML = `
-            <td><strong>#${(r.bib || 0).toString().padStart(3, '0')}</strong></td>
-            <td>${memberList}</td>
-            <td>${otprobaList}</td>
-            <td>${window.raceManager.formatCategoryName(r.category)}</td>
-            <td style="font-weight: bold;">${r.distance || '-'}</td>
-            <td style="color:${statusColor}">${(r.status || 'registered').toUpperCase()}</td>
-            <td class="time" ${dataStartAttr}>${timeStr}</td>
-            <td style="text-align:center;">${checkInHtml}</td>
-            <td style="text-align:center;">${paidHtml}</td>
-            <td style="white-space: nowrap; text-align:center;">
+            <td data-label="Rajtszám"><strong>#${(r.bib || 0).toString().padStart(3, '0')}</strong></td>
+            <td data-label="Egység Tagjai">${memberList}</td>
+            <td data-label="Ötpróba ID">${otprobaList}</td>
+            <td data-label="Kategória">${window.raceManager.formatCategoryName(r.category)}</td>
+            <td data-label="Táv" style="font-weight: bold;">${r.distance || '-'}</td>
+            <td data-label="Státusz" style="color:${statusColor}">${(r.status || 'registered').toUpperCase()}</td>
+            <td data-label="Időeredmény" class="time" ${dataStartAttr}>${timeStr}</td>
+            <td data-label="Megjelent" style="text-align:center;">${checkInHtml}</td>
+            <td data-label="Barion" style="text-align:center;">${paidHtml}</td>
+            <td data-label="Művelet" style="white-space: nowrap; text-align:center;">
                 <button class="action-btn edit" onclick="window.raceManager.openEditModal('${r.id}')" style="background:var(--accent-secondary); padding: 5px 8px; font-size: 1rem; border-radius: 6px; margin-right: 5px;" title="Szerkesztés">✏️</button>
                 <button class="action-btn delete" onclick="window.raceManager.deleteRacer('${r.id}', ${r.bib || 'null'})" style="background:#dc3545; padding: 5px 8px; font-size: 1rem; border-radius: 6px;" title="Törlés">🗑️</button>
             </td>
@@ -668,15 +668,15 @@ export function renderAdminCategoryDetail(distId, catId) {
             `<button onclick="window.raceManager.updateRacerStatus('${r.id}', 'is_paid', true).then(() => window.renderAdminCategoryDetail('${distId}', '${catId}'))" class="action-btn" style="background:transparent; border:1px solid #5BB226; color:#5BB226; padding:2px 8px; font-size:0.8rem;">Függőben</button>`;
 
         tr.innerHTML = `
-            <td><strong>#${(r.bib || 0).toString().padStart(3, '0')}</strong></td>
-            <td>${memberList}</td>
-            <td>${otprobaList}</td>
-            <td>${rm.formatCategoryName(r.category)}</td>
-            <td style="color:${statusColor}">${(r.status || 'registered').toUpperCase()}</td>
-            <td class="time" ${dataStartAttr}>${timeStr}</td>
-            <td style="text-align:center;">${checkInHtml}</td>
-            <td style="text-align:center;">${paidHtml}</td>
-            <td style="white-space: nowrap; text-align: center;">
+            <td data-label="Rajtszám"><strong>#${(r.bib || 0).toString().padStart(3, '0')}</strong></td>
+            <td data-label="Egység Tagjai">${memberList}</td>
+            <td data-label="Ötpróba ID">${otprobaList}</td>
+            <td data-label="Kategória">${rm.formatCategoryName(r.category)}</td>
+            <td data-label="Státusz" style="color:${statusColor}">${(r.status || 'registered').toUpperCase()}</td>
+            <td data-label="Időeredmény" class="time" ${dataStartAttr}>${timeStr}</td>
+            <td data-label="Megjelent" style="text-align:center;">${checkInHtml}</td>
+            <td data-label="Barion" style="text-align:center;">${paidHtml}</td>
+            <td data-label="Művelet" style="white-space: nowrap; text-align: center;">
                 <div style="display: flex; gap: 8px; justify-content: center;">
                     <button class="action-btn edit" style="margin:0; padding: 6px 12px; font-size: 0.75rem;" onclick="window.raceManager.openEditModal('${r.id}')">Szerkesztés</button>
                     <button class="action-btn delete" style="margin:0; padding: 6px 12px; font-size: 0.75rem;" onclick="window.raceManager.deleteRacer('${r.id}', ${r.bib || 'null'})">Törlés</button>
@@ -968,16 +968,16 @@ export function renderResultsTable(filterType = 'all') {
 
         const cp = (rm.data.checkpoints || []).find(c => c.racer_bib === r.bib && c.checkpoint_name === '22km_tav_11km_fordulo');
         const forduloTd = showFordulo ? 
-            `<td style="font-family:'Space Mono'; color:#ff9900;">${cp ? formatTime(cp.timestamp - r.start_time) : '-'}</td>` : '';
+            `<td data-label="Forduló (11km)" style="font-family:'Space Mono'; color:#ff9900;">${cp ? formatTime(cp.timestamp - r.start_time) : '-'}</td>` : '';
 
         tr.innerHTML = `
-            <td style="${rankDecor}">${rank}.</td>
-            <td><strong>#${(r.bib || 0).toString().padStart(3, '0')}</strong></td>
-            <td>${memberList}</td>
-            <td>${rm.formatCategoryName(r.category)}</td>
-            <td>${r.distance || '-'}</td>
+            <td data-label="Helyezés" style="${rankDecor}">${rank}.</td>
+            <td data-label="Rajtszám"><strong>#${(r.bib || 0).toString().padStart(3, '0')}</strong></td>
+            <td data-label="Egység Tagjai">${memberList}</td>
+            <td data-label="Kategória">${rm.formatCategoryName(r.category)}</td>
+            <td data-label="Táv">${r.distance || '-'}</td>
             ${forduloTd}
-            <td style="font-family:'Space Mono'; font-weight:bold; color:var(--accent-primary);">${formatTime(r.total_time || 0)}</td>
+            <td data-label="Időeredmény" style="font-family:'Space Mono'; font-weight:bold; color:var(--accent-primary);">${formatTime(r.total_time || 0)}</td>
         `;
         tbody.appendChild(tr);
     });
@@ -1143,14 +1143,14 @@ export function renderResultsCategoryDetail(distId, catId) {
 
         const cp = (rm.data.checkpoints || []).find(c => c.racer_bib === r.bib && c.checkpoint_name === '22km_tav_11km_fordulo');
         const forduloTd = (distId === '22km') ? 
-            `<td style="font-family:'Space Mono'; color:#ff9900;">${cp ? formatTime(cp.timestamp - r.start_time) : '-'}</td>` : '';
+            `<td data-label="Forduló (11km)" style="font-family:'Space Mono'; color:#ff9900;">${cp ? formatTime(cp.timestamp - r.start_time) : '-'}</td>` : '';
 
         tr.innerHTML = `
-            <td style="${rankDecor}">${rank}.</td>
-            <td><strong>#${(r.bib || 0).toString().padStart(3, '0')}</strong></td>
-            <td>${memberList}</td>
+            <td data-label="Helyezés" style="${rankDecor}">${rank}.</td>
+            <td data-label="Rajtszám"><strong>#${(r.bib || 0).toString().padStart(3, '0')}</strong></td>
+            <td data-label="Egység Tagjai">${memberList}</td>
             ${forduloTd}
-            <td style="font-family:'Space Mono'; font-weight:bold; color:var(--accent-primary);">${formatTime(r.total_time || 0)}</td>
+            <td data-label="Időeredmény" style="font-family:'Space Mono'; font-weight:bold; color:var(--accent-primary);">${formatTime(r.total_time || 0)}</td>
         `;
         tbody.appendChild(tr);
     });
@@ -1193,11 +1193,11 @@ export function renderTeamManager() {
         const hasTeam = m.racerBib && m.racerBib > 0;
         
         tr.innerHTML = `
-            <td><input type="checkbox" class="dragon-member-check" value="${m.id}"></td>
-            <td style="font-weight:bold;">${m.name}</td>
-            <td>${m.birth_date || '-'}</td>
-            <td>${m.otproba_id || '-'}</td>
-            <td style="font-size:0.8rem; color:${hasTeam ? 'var(--accent-primary)' : '#888'};">
+            <td data-label="Kiválaszt"><input type="checkbox" class="dragon-member-check" value="${m.id}"></td>
+            <td data-label="Név" style="font-weight:bold;">${m.name}</td>
+            <td data-label="Szül.idő">${m.birth_date || '-'}</td>
+            <td data-label="Ötpróba ID">${m.otproba_id || '-'}</td>
+            <td data-label="Aktuális Egység" style="font-size:0.8rem; color:${hasTeam ? 'var(--accent-primary)' : '#888'};">
                 ${hasTeam ? `Egység: #${m.racerBib}` : '<span style="color:#ff9800; font-weight:bold;">Egyéni jelentkező</span>'}
             </td>
         `;
