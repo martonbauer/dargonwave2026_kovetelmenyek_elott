@@ -148,7 +148,7 @@ export class RaceManager {
     }
 
     // --- 2. VERSENY VEZÉRLÉSI LOGIKA (RACE CONTROL LOGIC) ---
-    async registerRacer(members, category, distance, is_series, email, phone, contactName) {
+    async registerRacer(members, category, distance, is_series, email, phone, contactName, isSilent = false) {
         try {
             const formattedMembers = members.map(m => ({
                 name: m.name,
@@ -182,15 +182,23 @@ export class RaceManager {
                 await this.loadData();
                 this.renderUI();
 
-                if (result.isDuplicate) {
-                    showToast(`FIGYELEM: Te már neveztél! A nevezésedet rögzítettük 'Függő Duplikáció' állapotban. Az Adminisztrátor fogja jóváhagyni.`, 'info');
-                } else {
-                    showToast(`Sikeres nevezés! Rajtszám: ${result.bib.toString().padStart(3, '0')}`, 'success');
-                }
+                if (!isSilent) {
+                    if (result.isDuplicate) {
+                        showToast(`FIGYELEM: Te már neveztél! A nevezésedet rögzítettük 'Függő Duplikáció' állapotban. Az Adminisztrátor fogja jóváhagyni.`, 'info');
+                    } else {
+                        showToast(`Sikeres nevezés! Rajtszám: ${result.bib.toString().padStart(3, '0')}`, 'success');
+                    }
 
-                setTimeout(() => {
-                    window.location.href = "https://sarkanyhajozz.hu/termek/dunakeszi-futam-elonevezes/";
-                }, 3000);
+                    setTimeout(() => {
+                        window.location.href = "https://sarkanyhajozz.hu/termek/dunakeszi-futam-elonevezes/";
+                    }, 3000);
+                } else {
+                    if (result.isDuplicate) {
+                        showToast(`FIGYELEM: Duplikált nevezés rögzítve!`, 'warning');
+                    } else {
+                        showToast(`Sikeres nevezés rögzítve!`, 'success');
+                    }
+                }
 
                 return result.bib;
             } else {

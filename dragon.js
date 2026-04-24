@@ -608,7 +608,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 members.push({ name, birth_date, otproba_id });
             });
             const payModal = document.getElementById('payment-modal');
-            if(payModal) {
+            const notice = document.getElementById('reg-form-payment-notice');
+            const isAdmin = notice && notice.classList.contains('hidden');
+
+            if(payModal && !isAdmin) {
                 payModal.classList.add('active');
                 
                 const btnPaySuccess = document.getElementById('btn-pay-success');
@@ -654,7 +657,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 };
             } else {
-                await window.raceManager.registerRacer(members, kategoria, tav, false, email, phone, contactName);
+                await window.raceManager.registerRacer(members, kategoria, tav, false, email, phone, contactName, isAdmin);
                 this.reset();
                 window.updateCategorySelect();
             }
