@@ -184,8 +184,6 @@ app.post('/api/register', async (req, res) => {
         const { error: rError } = await supabase.from('racers').insert({
             id: racerId, bib, category, distance, 
             is_series: is_series ? 1 : 0, 
-            checked_in: 0,
-            is_paid: 0,
             email, phone, status: finalStatus
         });
         if (rError) throw rError;
@@ -504,9 +502,7 @@ app.put('/api/racer/:id', authenticateAdmin, async (req, res) => {
         }
         await supabase.from('racers').update({ 
             bib, category, distance, status, email, phone,
-            is_series: is_series ? 1 : 0, 
-            checked_in: checked_in ? 1 : 0,
-            is_paid: is_paid ? 1 : 0
+            is_series: is_series ? 1 : 0
         }).eq('id', id);
         if (members) {
             await supabase.from('members').delete().eq('racer_id', id);

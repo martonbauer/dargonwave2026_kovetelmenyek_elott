@@ -625,6 +625,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         // 1. Átmeneti regisztráció a szerveren
                         const formRes = await window.raceManager.registerRacer(members, kategoria, tav, false, email, phone, contactName, true); // true = silent flag (opcionálisan kiegészítjük, de a race manager bírja)
                         
+                        if (!formRes) {
+                            newBtn.disabled = false;
+                            newBtn.textContent = 'Tovább a fizetésre ➔';
+                            return;
+                        }
+
                         // 2. Barion fizetés indítása API-n keresztül
                         const payload = {
                             email: email,
