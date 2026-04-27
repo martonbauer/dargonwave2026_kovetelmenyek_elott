@@ -1104,7 +1104,12 @@ export function renderResultsCategoryDetail(distId, catId) {
     // Szűrés kategória és táv szerint
     let finishers = [];
     if (catId === 'sarkany') {
-        finishers = rm.data.racers.filter(r => (r.category || '').includes('sarkany') && r.status === 'finished');
+        finishers = rm.data.racers.filter(r => {
+            if (!(r.category || '').includes('sarkany') || r.status !== 'finished') return false;
+            // Csak a már csapatba beosztottak jelennek meg az eredményeknél:
+            const isTeam = r.id.startsWith('DRAGON_') || (r.members && r.members.length > 1);
+            return isTeam;
+        });
     } else {
         const baseCatId = catId.replace(/_(11km|22km|4km)$/, '');
         finishers = rm.data.racers.filter(r => {
@@ -1177,7 +1182,13 @@ export function renderTeamManager() {
     dragonRacers.forEach(r => {
         if (r.members) {
             r.members.forEach(m => {
-                allDragonMembers.push({ ...m, racerBib: r.bib, racerStatus: r.status });
+                allDragonMembers.push({ 
+                    ...m, 
+                    racerBib: r.bib, 
+                    racerStatus: r.status, 
+                    racerId: r.id, 
+                    teamSize: r.members.length 
+                });
             });
         }
     });
@@ -1190,7 +1201,7 @@ export function renderTeamManager() {
     allDragonMembers.forEach(m => {
         const tr = document.createElement('tr');
         // Kiemelés, ha már van rajtszáma (azaz már egy egység része)
-        const hasTeam = m.racerBib && m.racerBib > 0;
+        const hasTeam = m.racerId.startsWith('DRAGON_') || m.teamSize > 1;
         
         tr.innerHTML = `
             <td data-label="Kiválaszt"><input type="checkbox" class="dragon-member-check" value="${m.id}"></td>

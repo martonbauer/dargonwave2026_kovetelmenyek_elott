@@ -163,8 +163,9 @@ app.post('/api/register', async (req, res) => {
         if (members && members.length > 0) {
             for (const m of members) {
                 // 1. Ellenőrzés Ötpróba ID alapján
-                if (m.otproba_id && m.otproba_id.trim().length > 0) {
-                    const { data } = await supabase.from('members').select('id').eq('otproba_id', m.otproba_id.trim()).limit(1);
+                const otp = m.otproba_id ? m.otproba_id.trim() : '';
+                if (otp.length > 0 && otp.toLowerCase() !== 'nincs') {
+                    const { data } = await supabase.from('members').select('id').eq('otproba_id', otp).limit(1);
                     if (data && data.length > 0) { isDuplicate = true; break; }
                 }
                 // 2. Ellenőrzés Név + Születési dátum alapján
@@ -500,10 +501,20 @@ app.put('/api/racer/:id', authenticateAdmin, async (req, res) => {
             const { data: existing } = await supabase.from('racers').select('id').eq('bib', bib).neq('id', id).maybeSingle();
             if (existing) return res.status(400).json({ error: `A #${bib} rajtszám már foglalt egy másik versenyzőnél!` });
         }
-        await supabase.from('racers').update({ 
-            bib, category, distance, status, email, phone,
-            is_series: is_series ? 1 : 0
-        }).eq('id', id);
+        const updateData = {};
+        if (bib !== undefined) updateData.bib = bib;
+        if (category !== undefined) updateData.category = category;
+        if (distance !== undefined) updateData.distance = distance;
+        if (status !== undefined) updateData.status = status;
+        if (email !== undefined) updateData.email = email;
+        if (phone !== undefined) updateData.phone = phone;
+        if (is_series !== undefined) updateData.is_series = is_series ? 1 : 0;
+        if (checked_in !== undefined) updateData.checked_in = checked_in;
+        if (is_paid !== undefined) updateData.is_paid = is_paid;
+
+        if (Object.keys(updateData).length > 0) {
+            await supabase.from('racers').update(updateData).eq('id', id);
+        }
         if (members) {
             await supabase.from('members').delete().eq('racer_id', id);
             await supabase.from('members').insert(members.map(m => ({ racer_id: id, ...m })));
@@ -593,7 +604,7 @@ app.post('/api/upload-csv', authenticateAdmin, bodyParser.json({ limit: '10mb' }
                             
                             membersToInsert.push({ racer_id: "", name: mName, birth_date: mBirth, otproba_id: mOtp });
                             
-                            if (mOtp.length > 0) {
+                            if (mOtp.length > 0 && mOtp.toLowerCase() !== 'nincs') {
                                 const { data } = await supabase.from('members').select('id').eq('otproba_id', mOtp).limit(1);
                                 if (data && data.length > 0) isDuplicate = true;
                             }
