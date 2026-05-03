@@ -760,7 +760,17 @@ app.post('/api/create-dragon-team', authenticateAdmin, async (req, res) => {
                 return res.status(400).json({ error: `A #${bib} rajtszám már foglalt egy másik kategóriában!` });
             }
             if (name) {
-                await supabase.from('racers').update({ name: name }).eq('id', targetRacerId);
+                const { data: dTags } = await supabase.from('members').select('id').eq('racer_id', targetRacerId).eq('otproba_id', 'CSAPATNEV');
+                if (dTags && dTags.length > 0) {
+                    await supabase.from('members').update({ name: name }).eq('id', dTags[0].id);
+                } else {
+                    await supabase.from('members').insert({
+                        racer_id: targetRacerId,
+                        name: name,
+                        birth_date: '1900-01-01',
+                        otproba_id: 'CSAPATNEV'
+                    });
+                }
             }
         } else {
             console.log(`[CreateDragonTeam] Creating new racer for Bib: ${bib}`);
@@ -769,12 +779,20 @@ app.post('/api/create-dragon-team', authenticateAdmin, async (req, res) => {
             const { error: rError } = await supabase.from('racers').insert({
                 id: targetRacerId, 
                 bib: parseInt(bib), 
-                name: name || '',
                 category: 'sarkanyhajo_otproba', 
                 distance: '11km', 
                 status: 'registered'
             });
             if (rError) throw rError;
+
+            if (name) {
+                await supabase.from('members').insert({
+                    racer_id: targetRacerId,
+                    name: name,
+                    birth_date: '1900-01-01',
+                    otproba_id: 'CSAPATNEV'
+                });
+            }
         }
 
         // 3. Tagok behelyezése a cél egységbe
