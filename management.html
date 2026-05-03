@@ -302,6 +302,19 @@
                             </div>
                         </div>
                     </div>
+                    <!-- Kiosztatlan Idők Panel -->
+                    <div class="admin-card" id="unassigned-times-card" style="margin-top: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <div>
+                                <h3 class="card-title" style="margin-bottom: 5px;">⏱️ Kiosztatlan Célidők (Vakrögzítések)</h3>
+                                <p class="card-desc" style="margin: 0;">Rajtszám nélkül rögzített idők utólagos párosítása.</p>
+                            </div>
+                            <button onclick="window.raceManager.loadUnassignedTimes()" class="btn-secondary" style="padding: 8px 15px;">🔄 Frissítés</button>
+                        </div>
+                        <div id="unassigned-times-container" style="display: flex; flex-direction: column; gap: 10px; max-height: 300px; overflow-y: auto; background: rgba(0,0,0,0.1); padding: 10px; border-radius: 8px; border: 1px solid var(--glass-border);">
+                            <div class="empty-text">Nincs kiosztatlan idő.</div>
+                        </div>
+                    </div>
                     <!-- Legutóbbi események naplója -->
                     <div class="admin-card" id="event-log-card" style="margin-top: 20px;">
                         <h3 class="card-title">📝 Legutóbbi Rögzítések (Élő Napló)</h3>
@@ -455,6 +468,7 @@
                                     <button onclick="window.filterAdminTable('11km')" class="btn-secondary" style="flex: 1; min-width: 150px;">📐 11 km (Rövid)</button>
                                     <button onclick="window.filterAdminTable('4km')" class="btn-secondary" style="flex: 1; min-width: 150px;">🛶 4 km (SUP)</button>
                                     <button onclick="window.filterAdminTable('sarkany')" class="btn-secondary" style="flex: 1; min-width: 150px;">🐉 Sárkányhajó</button>
+                                    <button onclick="window.filterAdminTable('running')" class="btn-secondary" style="flex: 1; min-width: 150px; border-color: orange; color: orange; font-weight: bold;">🏃 Vízen lévők</button>
                                 </div>
                                 <div style="text-align: center;">
                                     <button id="btn-export-filtered" onclick="window.exportFilteredTable()" class="btn-primary" style="background: #28a745; width: auto; padding: 10px 30px;">📥 Aktuális lista EXCEL exportja</button>

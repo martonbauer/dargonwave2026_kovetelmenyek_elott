@@ -440,6 +440,8 @@
             
             <p class="hint">Több befutó esetén használd a TÖMEGES gombot!</p>
             
+            <button class="key-btn" style="width:100%; margin-top:15px; background:linear-gradient(135deg, #FFB800, #FF8A00); border:none; color:#0b192c; min-height:48px;" onclick="handleUnassignedTime()">⏱ IDŐ RÖGZÍTÉSE (RAJTSZÁM NÉLKÜL)</button>
+            
             <div class="loading-overlay" id="app-loading">
                 <div class="loading-spinner"></div>
             </div>
@@ -601,6 +603,31 @@
             } catch (err) {
                 document.getElementById('app-loading').style.display = 'none';
                 showToast(`Kapcsolódási hiba! Ellenőrizd a netet.`, 'error');
+            }
+        }
+
+        async function handleUnassignedTime() {
+            document.getElementById('app-loading').style.display = 'flex';
+            try {
+                const response = await fetch(`${API_BASE}/unassigned-time`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminPassword}`
+                    },
+                    body: JSON.stringify({ timestamp: Date.now() })
+                });
+                const data = await response.json();
+                document.getElementById('app-loading').style.display = 'none';
+                
+                if (response.ok && data.success) {
+                    showToast('⏱ Idő sikeresen rögzítve!\nKésőbb párosíthatod.', 'success');
+                } else {
+                    showToast(`Hiba: ${data.error || 'Ismeretlen'}`, 'error');
+                }
+            } catch (err) {
+                document.getElementById('app-loading').style.display = 'none';
+                showToast(`Kapcsolódási hiba!`, 'error');
             }
         }
 

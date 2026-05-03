@@ -7,6 +7,7 @@ const fs = require('fs');
 
 // --- 0. ELŐZMÉNYEK KEZELÉSE (HISTORY MANAGEMENT) ---
 const HISTORY_FILE = path.join(__dirname, 'history', 'bib_history.json');
+const UNASSIGNED_FILE = path.join(__dirname, 'history', 'unassigned_times.json');
 
 async function ensureHistoryDir() {
     const dir = path.dirname(HISTORY_FILE);
@@ -14,6 +15,22 @@ async function ensureHistoryDir() {
     catch (e) {}
     try { await fs.promises.access(HISTORY_FILE); }
     catch (e) { await fs.promises.writeFile(HISTORY_FILE, JSON.stringify([])); }
+    try { await fs.promises.access(UNASSIGNED_FILE); }
+    catch (e) { await fs.promises.writeFile(UNASSIGNED_FILE, JSON.stringify([])); }
+}
+
+async function getUnassignedTimes() {
+    await ensureHistoryDir();
+    try { 
+        const data = await fs.promises.readFile(UNASSIGNED_FILE, 'utf8');
+        return JSON.parse(data); 
+    }
+    catch (e) { return []; }
+}
+
+async function saveUnassignedTimes(times) {
+    await ensureHistoryDir();
+    await fs.promises.writeFile(UNASSIGNED_FILE, JSON.stringify(times, null, 2));
 }
 
 async function getBibHistory() {
@@ -445,6 +462,72 @@ app.post('/api/stop-bulk-racers', authenticateAdmin, async (req, res) => {
         
         res.json({ success: true, results });
     } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// --- 10.1 KIOSZTATLAN IDŐK KEZELÉSE (UNASSIGNED TIMES) ---
+app.post('/api/unassigned-time', authenticateAdmin, async (req, res) => {
+    const { timestamp } = req.body;
+    const now = timestamp || Date.now();
+    try {
+        const times = await getUnassignedTimes();
+        const newTime = { id: Date.now().toString() + '_' + Math.floor(Math.random()*1000), timestamp: now, dateString: new Date(now).toISOString() };
+        times.push(newTime);
+        await saveUnassignedTimes(times);
+        emitRefresh();
+        res.json({ success: true, id: newTime.id });
+    } catch(err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/unassigned-times', authenticateAdmin, async (req, res) => {
+    res.json(await getUnassignedTimes());
+});
+
+app.post('/api/assign-time', authenticateAdmin, async (req, res) => {
+    const { id, bib } = req.body;
+    try {
+        const times = await getUnassignedTimes();
+        const timeIndex = times.findIndex(t => t.id === id);
+        if (timeIndex === -1) return res.status(404).json({ error: 'Kiosztatlan idő nem található!' });
+        
+        const timestamp = times[timeIndex].timestamp;
+        
+        const { data: racer } = await supabase.from('racers').select('*').eq('bib', bib).single();
+        if (!racer) return res.status(404).json({ error: 'Nincs ilyen rajtszám!' });
+        
+        if (racer.status === 'finished') {
+            return res.status(400).json({ error: 'Már beérkezett!' });
+        }
+        if (racer.status !== 'running') {
+            return res.status(400).json({ error: 'Nincs futamban!' });
+        }
+
+        const total_time = timestamp - racer.start_time;
+        await supabase.from('racers').update({ status: 'finished', finish_time: timestamp, total_time }).eq('bib', bib);
+        
+        times.splice(timeIndex, 1);
+        await saveUnassignedTimes(times);
+        
+        await checkAndStopEmptyBatchTimers();
+        emitRefresh();
+        res.json({ success: true });
+    } catch(err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/unassigned-time/:id', authenticateAdmin, async (req, res) => {
+    const { id } = req.params;
+    try {
+        let times = await getUnassignedTimes();
+        times = times.filter(t => t.id !== id);
+        await saveUnassignedTimes(times);
+        emitRefresh();
+        res.json({ success: true });
+    } catch(err) {
         res.status(500).json({ error: err.message });
     }
 });

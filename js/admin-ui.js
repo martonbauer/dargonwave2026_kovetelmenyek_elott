@@ -92,6 +92,8 @@ export function renderAdminTable(filterType = 'all') {
         racers = racers.filter(r => r.distance === '4km');
     } else if (filterType === 'sarkany') {
         racers = racers.filter(r => r.category.includes('sarkany'));
+    } else if (filterType === 'running') {
+        racers = racers.filter(r => r.status === 'running');
     }
 
     // Keresési szűrő alkalmazása
@@ -156,7 +158,11 @@ export function renderAdminTable(filterType = 'all') {
             <td data-label="Barion" style="text-align:center;">${paidHtml}</td>
             <td data-label="Művelet" style="white-space: nowrap; text-align:center;">
                 <button class="action-btn edit" onclick="window.raceManager.openEditModal('${r.id}')" style="background:var(--accent-secondary); padding: 5px 8px; font-size: 1rem; border-radius: 6px; margin-right: 5px;" title="Szerkesztés">✏️</button>
-                <button class="action-btn delete" onclick="window.raceManager.deleteRacer('${r.id}', ${r.bib || 'null'})" style="background:#dc3545; padding: 5px 8px; font-size: 1rem; border-radius: 6px;" title="Törlés">🗑️</button>
+                <button class="action-btn delete" onclick="window.raceManager.deleteRacer('${r.id}', ${r.bib || 'null'})" style="background:#dc3545; padding: 5px 8px; font-size: 1rem; border-radius: 6px; margin-right: 5px;" title="Törlés">🗑️</button>
+                ${r.status === 'running' ? `
+                <button class="action-btn" onclick="if(confirm('Biztosan DNF (Feladta) státuszba teszed?')) window.raceManager.updateRacerStatus('${r.id}', 'status', 'dnf').then(() => renderAdminTable(window.currentTableFilter))" style="background:#FFA500; color:black; padding: 5px 8px; font-size: 0.8rem; border-radius: 6px; margin-right: 5px; font-weight:bold;" title="Feladta">DNF</button>
+                <button class="action-btn" onclick="if(confirm('Biztosan DSQ (Kizárva) státuszba teszed?')) window.raceManager.updateRacerStatus('${r.id}', 'status', 'dsq').then(() => renderAdminTable(window.currentTableFilter))" style="background:#800080; color:white; padding: 5px 8px; font-size: 0.8rem; border-radius: 6px; font-weight:bold;" title="Kizárva">DSQ</button>
+                ` : ''}
             </td>
         `;
         tbody.appendChild(tr);

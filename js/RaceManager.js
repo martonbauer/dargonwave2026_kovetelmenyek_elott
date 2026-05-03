@@ -804,6 +804,7 @@ export class RaceManager {
         this.renderRunningListCards();
         this.renderNotTurnedListCards();
         this.renderLiveLog();
+        if (this.adminPassword) this.loadUnassignedTimes();
     }
 
     renderAdminStats() {
@@ -1136,5 +1137,98 @@ export class RaceManager {
                 <span style="color: #888; font-size: 0.75rem;">[${new Date(e.time).toLocaleTimeString('hu-HU')}]</span> ${e.msg}
             </div>
         `).join('');
+    }
+
+    async loadUnassignedTimes() {
+        try {
+            const response = await fetch(`${API_URL}/unassigned-times`, {
+                headers: { 'Authorization': `Bearer ${this.adminPassword}` }
+            });
+            if (response.ok) {
+                const times = await response.json();
+                this.renderUnassignedTimes(times);
+            }
+        } catch (err) {
+            console.error("Failed to load unassigned times", err);
+        }
+    }
+
+    renderUnassignedTimes(times) {
+        const container = document.getElementById('unassigned-times-container');
+        if (!container) return;
+
+        if (!times || times.length === 0) {
+            container.innerHTML = '<div class="empty-text">Nincs kiosztatlan idő.</div>';
+            return;
+        }
+
+        // Legújabb elöl
+        times.sort((a,b) => b.timestamp - a.timestamp);
+
+        container.innerHTML = times.map(t => {
+            const timeStr = new Date(t.timestamp).toLocaleTimeString('hu-HU');
+            return `
+                <div style="display: flex; gap: 10px; align-items: center; background: rgba(255, 184, 0, 0.05); padding: 10px; border-radius: 8px; border: 1px solid rgba(255, 184, 0, 0.2);">
+                    <div style="flex: 1;">
+                        <div style="color: var(--text-secondary); font-size: 0.75rem;">Időpont:</div>
+                        <div style="font-family: 'Space Mono', monospace; font-size: 1.1rem; color: #ffb800; font-weight: bold;">${timeStr}</div>
+                    </div>
+                    <div style="display: flex; gap: 5px; align-items: center;">
+                        <input type="number" id="assign-bib-${t.id}" placeholder="Rajtszám" style="width: 80px; padding: 8px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 6px; color: white; text-align: center;">
+                        <button onclick="window.raceManager.assignTime('${t.id}')" class="btn-primary" style="padding: 8px 15px; margin: 0; background: #28a745; min-height: 0;">PÁROSÍT</button>
+                        <button onclick="window.raceManager.deleteUnassignedTime('${t.id}')" class="btn-secondary" style="padding: 8px 12px; margin: 0; background: rgba(220, 53, 69, 0.1); color: #dc3545; border-color: rgba(220, 53, 69, 0.3); min-height: 0;">TÖRLÉS</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    async assignTime(id) {
+        const bibInput = document.getElementById(`assign-bib-${id}`);
+        if (!bibInput) return;
+        const bib = parseInt(bibInput.value);
+        if (isNaN(bib)) {
+            showToast("Kérlek adj meg egy érvényes rajtszámot!", "error");
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/assign-time`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.adminPassword}` 
+                },
+                body: JSON.stringify({ id, bib })
+            });
+            const data = await response.json();
+            if (response.ok && data.success) {
+                showToast("Sikeresen párosítva!", "success");
+                this.loadUnassignedTimes();
+            } else {
+                showToast(data.error || "Hiba a párosítás során!", "error");
+            }
+        } catch (err) {
+            showToast("Hálózati hiba!", "error");
+        }
+    }
+
+    async deleteUnassignedTime(id) {
+        if (!confirm("Biztosan törlöd ezt az időt? Ezt nem lehet visszavonni!")) return;
+        try {
+            const response = await fetch(`${API_URL}/unassigned-time/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${this.adminPassword}` }
+            });
+            const data = await response.json();
+            if (response.ok && data.success) {
+                showToast("Idő törölve!", "success");
+                this.loadUnassignedTimes();
+            } else {
+                showToast(data.error || "Hiba a törlés során!", "error");
+            }
+        } catch (err) {
+            showToast("Hálózati hiba!", "error");
+        }
     }
 }
