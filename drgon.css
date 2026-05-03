@@ -422,7 +422,27 @@ header {
     gap: 10px;
 }
 
-#bib-input {
+@media (max-width: 650px) {
+    .bib-input-wrapper {
+        flex-direction: column;
+    }
+    .bib-input-wrapper .button-group {
+        width: 100%;
+    }
+    .bib-input-wrapper .button-group button {
+        flex: 1;
+    }
+    .bib-recorder .button-group {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+    .bib-recorder .button-group button {
+        flex: 1;
+        min-width: 120px;
+    }
+}
+
+#bib-input, #checkpoint-bib-input {
     flex: 1;
     min-width: 0;
     font-family: 'Space Mono', monospace;
@@ -435,9 +455,10 @@ header {
     margin-bottom: 0;
     border-radius: 12px;
     transition: all 0.3s;
+    width: 100%;
 }
 
-#bib-input:focus {
+#bib-input:focus, #checkpoint-bib-input:focus {
     border-color: var(--accent-primary);
     box-shadow: 0 0 20px rgba(0, 145, 255, 0.2);
     outline: none;
