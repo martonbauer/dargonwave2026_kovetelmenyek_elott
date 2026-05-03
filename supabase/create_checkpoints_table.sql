@@ -12,5 +12,9 @@ CREATE TABLE IF NOT EXISTS checkpoints (
 -- Enable RLS (Sor szintű biztonság engedélyezése)
 ALTER TABLE checkpoints ENABLE ROW LEVEL SECURITY;
 
+-- Csekkoljuk és töröljük a policy-t ha már létezik, hogy többször is futtatható legyen a script
+DROP POLICY IF EXISTS "Public Access" ON checkpoints;
+
 -- Public Access Policies (Publikus hozzáférés engedélyezése a backend számára)
-CREATE POLICY "Public Access" ON checkpoints FOR ALL USING (true);
+CREATE POLICY "Public Access" ON checkpoints FOR ALL USING (true) WITH CHECK (true);
+
