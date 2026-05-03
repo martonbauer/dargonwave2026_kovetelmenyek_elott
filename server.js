@@ -735,18 +735,18 @@ app.post('/api/upload-csv', authenticateAdmin, bodyParser.json({ limit: '10mb' }
 });
 
 app.post('/api/create-dragon-team', authenticateAdmin, async (req, res) => {
-    const { memberIds, bib } = req.body;
-    if (!memberIds || !Array.isArray(memberIds) || memberIds.length === 0) {
-        return res.status(400).json({ error: 'Nincs kijelölt tag!' });
-    }
+    const { memberIds, bib, name } = req.body;
     if (!bib) return res.status(400).json({ error: 'Nincs megadva rajtszám!' });
 
     try {
-        // 1. Megszerezzük a kiválasztott tagok jelenlegi racer_id-it (későbbi takarításhoz)
-        const { data: oldMembers, error: oldError } = await supabase.from('members').select('racer_id').in('id', memberIds);
-        if (oldError) throw oldError;
-        
-        const oldRacerIds = [...new Set((oldMembers || []).map(m => m.racer_id))].filter(id => id);
+        let oldRacerIds = [];
+        if (memberIds && Array.isArray(memberIds) && memberIds.length > 0) {
+            // 1. Megszerezzük a kiválasztott tagok jelenlegi racer_id-it (későbbi takarításhoz)
+            const { data: oldMembers, error: oldError } = await supabase.from('members').select('racer_id').in('id', memberIds);
+            if (oldError) throw oldError;
+            
+            oldRacerIds = [...new Set((oldMembers || []).map(m => m.racer_id))].filter(id => id);
+        }
 
         // 2. Megnézzük, létezik-e már a cél rajtszám
         const { data: existingRacer } = await supabase.from('racers').select('id, category').eq('bib', parseInt(bib)).maybeSingle();
@@ -759,6 +759,9 @@ app.post('/api/create-dragon-team', authenticateAdmin, async (req, res) => {
             if (!(existingRacer.category || '').includes('sarkany')) {
                 return res.status(400).json({ error: `A #${bib} rajtszám már foglalt egy másik kategóriában!` });
             }
+            if (name) {
+                await supabase.from('racers').update({ name: name }).eq('id', targetRacerId);
+            }
         } else {
             console.log(`[CreateDragonTeam] Creating new racer for Bib: ${bib}`);
             // Ha nem létezik, létrehozzuk
@@ -766,6 +769,7 @@ app.post('/api/create-dragon-team', authenticateAdmin, async (req, res) => {
             const { error: rError } = await supabase.from('racers').insert({
                 id: targetRacerId, 
                 bib: parseInt(bib), 
+                name: name || '',
                 category: 'sarkanyhajo_otproba', 
                 distance: '11km', 
                 status: 'registered'
@@ -774,11 +778,13 @@ app.post('/api/create-dragon-team', authenticateAdmin, async (req, res) => {
         }
 
         // 3. Tagok behelyezése a cél egységbe
-        const { error: mError } = await supabase.from('members')
-            .update({ racer_id: targetRacerId })
-            .in('id', memberIds);
-        
-        if (mError) throw mError;
+        if (memberIds && Array.isArray(memberIds) && memberIds.length > 0) {
+            const { error: mError } = await supabase.from('members')
+                .update({ racer_id: targetRacerId })
+                .in('id', memberIds);
+            
+            if (mError) throw mError;
+        }
 
         // 4. Takarítás: töröljük azokat a régi rekordokat, amik kiürültek
         for (const oldId of oldRacerIds) {
