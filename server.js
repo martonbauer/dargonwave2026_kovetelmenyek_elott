@@ -746,8 +746,8 @@ app.post('/api/upload-csv', authenticateAdmin, bodyParser.json({ limit: '10mb' }
 });
 
 app.post('/api/create-dragon-team', authenticateAdmin, async (req, res) => {
-    const { memberIds, bib, name } = req.body;
-    if (!bib) return res.status(400).json({ error: 'Nincs megadva rajtszám!' });
+    let { memberIds, bib, name } = req.body;
+    if (!bib && !name) return res.status(400).json({ error: 'Nincs megadva se csapatnév, se rajtszám!' });
 
     try {
         let oldRacerIds = [];
@@ -759,8 +759,19 @@ app.post('/api/create-dragon-team', authenticateAdmin, async (req, res) => {
             oldRacerIds = [...new Set((oldMembers || []).map(m => m.racer_id))].filter(id => id);
         }
 
-        // 2. Megnézzük, létezik-e már a cél rajtszám
-        const { data: existingRacer } = await supabase.from('racers').select('id, category').eq('bib', parseInt(bib)).maybeSingle();
+        // 2. Megnézzük, létezik-e már a cél rajtszám vagy csapatnév
+        let existingRacer = null;
+        if (bib) {
+            const { data } = await supabase.from('racers').select('id, category, bib').eq('bib', parseInt(bib)).maybeSingle();
+            existingRacer = data;
+        } else if (name) {
+            const { data: teamMember } = await supabase.from('members').select('racer_id').ilike('name', name).eq('otproba_id', 'CSAPATNEV').maybeSingle();
+            if (teamMember) {
+                const { data } = await supabase.from('racers').select('id, category, bib').eq('id', teamMember.racer_id).maybeSingle();
+                existingRacer = data;
+                if (existingRacer) bib = existingRacer.bib;
+            }
+        }
         
         let targetRacerId = existingRacer ? existingRacer.id : null;
 
@@ -768,7 +779,7 @@ app.post('/api/create-dragon-team', authenticateAdmin, async (req, res) => {
             console.log(`[CreateDragonTeam] Using existing racer: ${existingRacer.id} (Bib: ${bib})`);
             // Ha létezik, de nem sárkányhajó, akkor hiba
             if (!(existingRacer.category || '').includes('sarkany')) {
-                return res.status(400).json({ error: `A #${bib} rajtszám már foglalt egy másik kategóriában!` });
+                return res.status(400).json({ error: `A #${bib} rajtszám vagy csapat már foglalt egy másik kategóriában!` });
             }
             if (name) {
                 const { data: dTags } = await supabase.from('members').select('id').eq('racer_id', targetRacerId).eq('otproba_id', 'CSAPATNEV');
@@ -784,6 +795,12 @@ app.post('/api/create-dragon-team', authenticateAdmin, async (req, res) => {
                 }
             }
         } else {
+            // Auto-generate bib if missing
+            if (!bib) {
+                bib = await getNextBib('11km', 'sarkanyhajo_otproba');
+                if (!bib) return res.status(400).json({ error: 'Nincs szabad rajtszám az új csapatnak!' });
+            }
+
             console.log(`[CreateDragonTeam] Creating new racer for Bib: ${bib}`);
             // Ha nem létezik, létrehozzuk
             targetRacerId = "DRAGON_" + Date.now();
@@ -825,7 +842,7 @@ app.post('/api/create-dragon-team', authenticateAdmin, async (req, res) => {
             }
         }
 
-        res.json({ success: true, racerId: targetRacerId });
+        res.json({ success: true, racerId: targetRacerId, bib: bib });
     } catch (err) {
         console.error("[CreateDragonTeam Error]", err);
         res.status(500).json({ error: err.message });

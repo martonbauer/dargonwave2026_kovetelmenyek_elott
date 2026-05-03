@@ -1229,11 +1229,13 @@ window.selectAllDragonMembers = (checked) => {
 
 window.createDragonTeam = async () => {
     const selectedIds = Array.from(document.querySelectorAll('.dragon-member-check:checked')).map(cb => cb.value);
-    const bib = document.getElementById('new-team-bib').value;
-    const name = document.getElementById('new-team-name').value;
+    const bibInput = document.getElementById('new-team-bib');
+    const bib = bibInput ? bibInput.value : '';
+    const nameInput = document.getElementById('new-team-name');
+    const name = nameInput ? nameInput.value : '';
 
-    if (!bib) {
-        showToast("Adja meg az új egység rajtszámát!", "error");
+    if (!bib && !name) {
+        showToast("Adja meg a csapat nevét vagy a rajtszámát!", "error");
         return;
     }
 
@@ -1248,9 +1250,9 @@ window.createDragonTeam = async () => {
         });
         const result = await response.json();
         if (response.ok) {
-            showToast(`Sikeres csapatépítés! #${bib} egység létrehozva.`, "success");
-            document.getElementById('new-team-bib').value = '';
-            document.getElementById('new-team-name').value = '';
+            showToast(`Sikeres csapatépítés! #${result.bib || bib} egység feldolgozva.`, "success");
+            if (bibInput) bibInput.value = '';
+            if (nameInput) nameInput.value = '';
             await window.raceManager.loadData();
             renderTeamManager();
             window.renderAdminTable();
