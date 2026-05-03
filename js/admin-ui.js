@@ -1,4 +1,4 @@
-import { showToast, showConfirmModal, formatTime } from './ui-utils.js';
+import { showToast, showConfirmModal, formatTime, formatMemberListHtml, formatRacerName, formatOtprobaListHtml } from './ui-utils.js';
 import { API_URL } from './api.js';
 
 /**
@@ -100,7 +100,7 @@ export function renderAdminTable(filterType = 'all') {
     if (window.adminSearchQuery) {
         const query = window.adminSearchQuery.toLowerCase();
         racers = racers.filter(r => {
-            const nameMatch = r.members && r.members.some(m => m.name.toLowerCase().includes(query));
+            const nameMatch = formatRacerName(r).toLowerCase().includes(query);
             const bibMatch = r.bib && r.bib.toString().includes(query);
             const catMatch = r.category && window.raceManager.formatCategoryName(r.category).toLowerCase().includes(query);
             return nameMatch || bibMatch || catMatch;
@@ -135,8 +135,8 @@ export function renderAdminTable(filterType = 'all') {
             timeStr = formatTime(r.total_time || 0);
         }
 
-        const memberList = r.members ? r.members.map(m => `<div style="margin-bottom:2px;">${m.name || '?'} <span style="font-size:0.7rem; color:#888;">(${m.birth_date || '?'})</span></div>`).join('') : (r.name || '-');
-        const otprobaList = r.members ? r.members.map(m => `<div style="margin-bottom:2px;">${m.otproba_id || '-'}</div>`).join('') : (r.otproba_id || '-');
+        const memberList = formatMemberListHtml(r);
+        const otprobaList = formatOtprobaListHtml(r);
         
         const isChecked = !!r.checked_in;
         const isPaid = !!r.is_paid;
@@ -335,8 +335,8 @@ export function exportResultsToExcel() {
                 rows.push([
                     r.status === 'finished' ? rank++ : '-',
                     r.bib,
-                    r.members ? r.members.map(m => m.name).join(', ') : (r.name || '-'),
-                    r.members ? r.members.map(m => m.otproba_id || '').filter(id => id).join(', ') : (r.otproba_id || '-'),
+                    formatRacerName(r),
+                    r.members ? r.members.filter(m => m.otproba_id !== 'CSAPATNEV').map(m => m.otproba_id || '').filter(id => id).join(', ') : (r.otproba_id || '-'),
                     r.distance,
                     r.status,
                     r.status === 'finished' ? formatTime(r.total_time) : (r.status === 'running' ? 'Folyamatban' : 'Regisztrálva')
@@ -385,8 +385,8 @@ export function exportResultsToExcel() {
             sRows.push([
                 r.status === 'finished' ? sRank++ : '-',
                 r.bib,
-                r.members ? r.members.map(m => m.name).join(', ') : (r.name || '-'),
-                r.members ? r.members.map(m => m.otproba_id || '').filter(id => id).join(', ') : (r.otproba_id || '-'),
+                formatRacerName(r),
+                r.members ? r.members.filter(m => m.otproba_id !== 'CSAPATNEV').map(m => m.otproba_id || '').filter(id => id).join(', ') : (r.otproba_id || '-'),
                 r.status,
                 r.status === 'finished' ? formatTime(r.total_time) : (r.status === 'running' ? 'Folyamatban' : 'Regisztrálva')
             ]);
@@ -446,9 +446,9 @@ export function exportFilteredTableToExcel(filterType, specificCatId = null) {
     racers.forEach(r => {
         rows.push([
             r.bib,
-            r.members ? r.members.map(m => m.name).join(', ') : (r.name || '-'),
-            r.members ? r.members.map(m => m.birth_date || '').filter(d => d).join(', ') : '-',
-            r.members ? r.members.map(m => m.otproba_id || '').filter(id => id).join(', ') : (r.otproba_id || '-'),
+            formatRacerName(r),
+            r.members ? r.members.filter(m => m.otproba_id !== 'CSAPATNEV').map(m => m.birth_date || '').filter(d => d).join(', ') : '-',
+            r.members ? r.members.filter(m => m.otproba_id !== 'CSAPATNEV').map(m => m.otproba_id || '').filter(id => id).join(', ') : (r.otproba_id || '-'),
             rm.formatCategoryName(r.category),
             r.distance,
             r.is_series ? 'Igen' : 'Nem',
@@ -545,7 +545,7 @@ export function renderAdminCategoryList() {
             let namesListHtml = '';
             if (hasRacers) {
                 const names = racers.slice(0, 3).map(r => {
-                    const name = r.members ? r.members.map(m => m.name).join(', ') : (r.name || '-');
+                    const name = formatRacerName(r);
                     return `<div style="font-size: 0.72rem; color: #bbb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px;">• ${name}</div>`;
                 }).join('');
                 namesListHtml = `
@@ -663,8 +663,8 @@ export function renderAdminCategoryDetail(distId, catId) {
             timeStr = formatTime(r.total_time || 0);
         }
 
-        const memberList = r.members ? r.members.map(m => `<div style="margin-bottom:2px;">${m.name || '?'} <span style="font-size:0.7rem; color:#888;">(${m.birth_date || '?'})</span></div>`).join('') : (r.name || '-');
-        const otprobaList = r.members ? r.members.map(m => `<div style="margin-bottom:2px;">${m.otproba_id || '-'}</div>`).join('') : (r.otproba_id || '-');
+        const memberList = formatMemberListHtml(r);
+        const otprobaList = formatOtprobaListHtml(r);
         const isChecked = !!r.checked_in;
         const isPaid = !!r.is_paid;
         
@@ -775,7 +775,7 @@ window.searchRacerByBib = (bib, rowIdx) => {
     const racer = rm.data.racers.find(r => r.bib == bib);
 
     if (racer) {
-        const names = racer.members ? racer.members.map(m => m.name).join(', ') : (racer.name || '-');
+        const names = formatRacerName(racer);
         infoContainer.innerHTML = `
             <div style="width: 100%; padding: 10px 20px;">
                 <div style="font-weight: bold; color: var(--accent-primary); font-size: 1.1rem; margin-bottom: 5px;">${names}</div>

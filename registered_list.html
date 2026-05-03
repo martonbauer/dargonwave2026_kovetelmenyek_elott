@@ -166,7 +166,16 @@
 
                 registered.sort((a,b) => (a.bib || 0) - (b.bib || 0)).forEach(r => {
                     const tr = document.createElement('tr');
-                    const names = r.members ? r.members.map(m => m.name).join(', ') : (r.name || '-');
+                    let names = r.name || '-';
+                    if (r.members && r.members.length > 0) {
+                        const tMem = r.members.find(m => m.otproba_id === 'CSAPATNEV');
+                        const rMems = r.members.filter(m => m.otproba_id !== 'CSAPATNEV');
+                        if (tMem) {
+                            names = rMems.length > 0 ? `<strong>${tMem.name}</strong> <span style="font-size:0.85em; color:var(--text-secondary);">(${rMems.map(m => m.name).join(', ')})</span>` : `<strong>${tMem.name}</strong>`;
+                        } else {
+                            names = rMems.map(m => m.name).join(', ');
+                        }
+                    }
                     
                     tr.innerHTML = `
                         <td><strong class="bib-badge">#${(r.bib || 0).toString().padStart(3, '0')}</strong></td>

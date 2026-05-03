@@ -191,3 +191,40 @@ export function executeConfirmedAction() {
     }
     closeConfirmModal();
 }
+
+/**
+ * Versenyző taglistájának HTML formázása (CSAPATNEV kezelése)
+ */
+export function formatMemberListHtml(racer) {
+    if (!racer.members || racer.members.length === 0) return racer.name || '-';
+    const t = racer.members.find(m => m.otproba_id === 'CSAPATNEV');
+    const rm = racer.members.filter(m => m.otproba_id !== 'CSAPATNEV');
+    let html = '';
+    if (t) html += `<div style="margin-bottom:4px; font-weight:bold; color:var(--accent-primary);">${t.name}</div>`;
+    html += rm.map(m => `<div style="margin-bottom:2px;">${m.name || '?'} <span style="font-size:0.7rem; color:#888;">(${m.birth_date || '?'})</span></div>`).join('');
+    return html || (racer.name || '-');
+}
+
+/**
+ * Versenyző egyszerű nevének lekérése (Excel / Keresés / Címkék)
+ */
+export function formatRacerName(racer) {
+    if (!racer.members || racer.members.length === 0) return racer.name || '-';
+    const t = racer.members.find(m => m.otproba_id === 'CSAPATNEV');
+    const rm = racer.members.filter(m => m.otproba_id !== 'CSAPATNEV');
+    let nameStr = t ? t.name : '';
+    if (rm.length > 0) {
+        const memNames = rm.map(m => m.name).join(', ');
+        nameStr = t ? `${t.name} (${memNames})` : memNames;
+    }
+    return nameStr || racer.name || '-';
+}
+
+/**
+ * Ötpróba ID-k HTML formázása (CSAPATNEV kihagyása)
+ */
+export function formatOtprobaListHtml(racer) {
+    if (!racer.members || racer.members.length === 0) return racer.otproba_id || '-';
+    const rm = racer.members.filter(m => m.otproba_id !== 'CSAPATNEV');
+    return rm.map(m => `<div style="margin-bottom:2px;">${m.otproba_id || '-'}</div>`).join('') || '-';
+}

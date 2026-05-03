@@ -400,8 +400,19 @@ app.post('/api/stop-racer', authenticateAdmin, async (req, res) => {
 
         const total_time = now - racer.start_time;
         await supabase.from('racers').update({ status: 'finished', finish_time: now, total_time }).eq('bib', bib);
-        const { data: members } = await supabase.from('members').select('name').eq('racer_id', racer.id);
-        const names = (members || []).map(m => m.name).join(', ');
+        const { data: members } = await supabase.from('members').select('name, otproba_id').eq('racer_id', racer.id);
+        let names = racer.name || '-';
+        if (members && members.length > 0) {
+            const teamMember = members.find(m => m.otproba_id === 'CSAPATNEV');
+            const realMembers = members.filter(m => m.otproba_id !== 'CSAPATNEV');
+            if (teamMember && realMembers.length > 0) {
+                names = `${teamMember.name} (${realMembers.map(m => m.name).join(', ')})`;
+            } else if (teamMember) {
+                names = teamMember.name;
+            } else {
+                names = realMembers.map(m => m.name).join(', ');
+            }
+        }
         await checkAndStopEmptyBatchTimers();
         res.json({ success: true, racer: { name: names, total_time } });
     } catch (err) {
